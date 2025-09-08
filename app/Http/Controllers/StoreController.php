@@ -24,6 +24,8 @@ class StoreController extends Controller
             $stores = Store::where('company_id', $companyId)->get();
         } elseif ($user->hasRole('admin')) {
             $stores = Store::where('company_id', $user->company_id)->get();
+        } else {
+            abort(403, 'Acceso no autorizado.');
         }
 
         return view('store.index', compact('stores'));
@@ -81,6 +83,8 @@ class StoreController extends Controller
             if ($store->company_id != $companyId) abort(403, 'Acceso no autorizado.');
         } elseif ($user->hasRole('admin')) {
             if ($store->company_id != $user->company_id) abort(403, 'Acceso no autorizado.');
+        } elseif($user->hasRole('user')){
+            if($store->company_id != $user->company_id) abort(403,'Acceso no autorizado.');
         } else {
             abort(403, 'Acceso no autorizado.');
         }

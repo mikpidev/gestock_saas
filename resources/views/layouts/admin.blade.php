@@ -52,14 +52,17 @@
 
         </div>
     </nav>
-
     </header>
+
 
 
     
 
     <main class="container-fluid mt-4">
+        
+        @isset($store) ? <x-store-panel :store="$store" />
         @yield('content')
+        
     </main>
 
 

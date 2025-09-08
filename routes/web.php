@@ -7,6 +7,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\StoreTaxInfoController;
 use App\Http\Controllers\ProductTypeController;
+use App\Http\Controllers\CustomersController;
 use App\Http\Middleware\PreventBackHistory4;
 
 
@@ -74,35 +75,63 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('users.destroy'); 
 
 
-        // Listar productos de una tienda
-        Route::get('stores/{store}/product_types', [ProductTypeController::class, 'index'])
-            ->name('stores.product_types.index');
+    // Listar productos de una tienda
+    Route::get('stores/{store}/product_types', [ProductTypeController::class, 'index'])
+        ->name('stores.product_types.index');
         
-        // Formulario de creación de producto en una tienda
-        Route::get('stores/{store}/product_types/create', [ProductTypeController::class, 'create'])
-            ->name('stores.product_types.create');
+    // Formulario de creación de producto en una tienda
+    Route::get('stores/{store}/product_types/create', [ProductTypeController::class, 'create'])
+        ->name('stores.product_types.create');
         
-        // Guardar producto nuevo
-        Route::post('stores/{store}/product_types', [ProductTypeController::class, 'store'])
-            ->name('stores.product_types.store');
+    // Guardar producto nuevo
+    Route::post('stores/{store}/product_types', [ProductTypeController::class, 'store'])
+        ->name('stores.product_types.store');
         
-        // Formulario de edición de producto en una tienda
-        Route::get('stores/{store}/product_types/{productType}/edit', [ProductTypeController::class, 'edit'])
-            ->name('stores.product_types.edit');
+    // Formulario de edición de producto en una tienda
+    Route::get('stores/{store}/product_types/{productType}/edit', [ProductTypeController::class, 'edit'])
+        ->name('stores.product_types.edit');
         
-        // Actualizar producto
-        Route::put('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'update'])
-            ->name('stores.product_types.update');
+    // Actualizar producto
+    Route::put('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'update'])
+        ->name('stores.product_types.update');
 
-        // Mostrar detalles de un producto
-        Route::get('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'show'])
-            ->name('stores.product_types.show');
+    // Mostrar detalles de un producto
+    Route::get('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'show'])
+        ->name('stores.product_types.show');
 
-        //eliminar producto
-        Route::delete('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'destroy'])
-            ->name('stores.product_types.destroy');
+    //eliminar producto
+    Route::delete('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'destroy'])
+        ->name('stores.product_types.destroy');
         
-
+        // Listar customers de una tienda
+        Route::get('stores/{store}/customers', [CustomersController::class, 'index'])
+            ->name('stores.customers.index');
+        
+        // Formulario de creación de customer
+        Route::get('stores/{store}/customers/create', [CustomersController::class, 'create'])
+            ->name('stores.customers.create');
+        
+        // Guardar customer nuevo
+        Route::post('stores/{store}/customers', [CustomersController::class, 'store'])
+            ->name('stores.customers.store');
+        
+        // Formulario de edición de customer
+        Route::get('stores/{store}/customers/{customer}/edit', [CustomersController::class, 'edit'])
+            ->name('stores.customers.edit');
+        
+        // Actualizar customer
+        Route::put('stores/{store}/customers/{customer}', [CustomersController::class, 'update'])
+            ->name('stores.customers.update');
+        
+        // Mostrar detalles de un customer
+        Route::get('stores/{store}/customers/{customer}', [CustomersController::class, 'show'])
+            ->name('stores.customers.show');
+        
+        // Eliminar customer
+        Route::delete('stores/{store}/customers/{customer}', [CustomersController::class, 'destroy'])
+            ->name('stores.customers.destroy');
+    
 });
+
 
 
