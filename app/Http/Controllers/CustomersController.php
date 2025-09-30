@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use Illuminate\Http\Request;
 use App\Models\Store;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CustomersController extends Controller
@@ -43,8 +43,6 @@ class CustomersController extends Controller
     public function index(Store $store)
     {
         $this->validateStoreAccess($store);
-
-        // obtener clientes solo de la tienda actual
         $customers = $store->customers()->get();
 
         return view('customers.index', compact('customers', 'store'));
@@ -66,40 +64,32 @@ class CustomersController extends Controller
     {
         $this->validateStoreAccess($store);
 
-        // validación condicional para NRC
         $request->validate([
+            'nit' => 'required|string|max:14|unique:customers,nit',
+            'nrc' => 'nullable|string|max:10',
             'nombre' => 'required|string|max:200',
-            'tipo_documento' => 'required|in:DUI,NIT,Pasaporte',
-            'numero_documento' => 'required|string|max:20',
-            'nrc' => $request->tipo_cliente === 'Juridico' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'razon_social' => 'required|string|max:200',
-            'actividad_economica' => 'required|string|max:200',
-            'direccion_fiscal' => 'required|string',
-            'email' => 'required|email|max:100',
-            'telefono' => 'required|string|max:8',
-            'tipo_cliente' => 'required|in:Natural,Juridico',
-            'comentarios' => 'nullable|string',
-        ], [
-            'nombre.required' => 'El nombre es obligatorio.',
-            'tipo_documento.in' => 'El tipo de documento debe ser DUI, NIT o Pasaporte.',
-            'email.email' => 'El correo electrónico no es válido.',
-            'telefono.max' => 'El teléfono no debe exceder los 8 caracteres.',
-            'tipo_cliente.in' => 'El tipo de cliente debe ser Natural o Jurídico.',
+            'codActividad' => 'required|string|max:10',
+            'descActividad' => 'nullable|string|max:255',
+            'nombreComercial' => 'nullable|string|max:200',
+            'direccion_departamento' => 'required|string|max:2',
+            'direccion_municipio' => 'required|string|max:2',
+            'direccion_complemento' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:15',
+            'correo' => 'nullable|email|max:100',
         ]);
 
-        // crear cliente
         Customer::create([
-            'nombre' => $request->nombre,
-            'tipo_documento' => $request->tipo_documento,
-            'numero_documento' => $request->numero_documento,
+            'nit' => $request->nit,
             'nrc' => $request->nrc,
-            'razon_social' => $request->razon_social,
-            'actividad_economica' => $request->actividad_economica,
-            'direccion_fiscal' => $request->direccion_fiscal,
-            'email' => $request->email,
+            'nombre' => $request->nombre,
+            'codActividad' => $request->codActividad,
+            'descActividad' => $request->descActividad,
+            'nombreComercial' => $request->nombreComercial,
+            'direccion_departamento' => $request->direccion_departamento,
+            'direccion_municipio' => $request->direccion_municipio,
+            'direccion_complemento' => $request->direccion_complemento,
             'telefono' => $request->telefono,
-            'tipo_cliente' => $request->tipo_cliente,
-            'comentarios' => $request->comentarios,
+            'correo' => $request->correo,
             'store_id' => $store->id,
             'company_id' => $store->company_id,
         ]);
@@ -110,12 +100,15 @@ class CustomersController extends Controller
     }
 
     /**
-     * Mostrar cliente específico.
+     * Mostrar un cliente específico.
      */
     public function show(Store $store, Customer $customer)
     {
-        $store = $customer->store;
         $this->validateStoreAccess($store);
+
+        if ($customer->store_id !== $store->id) {
+            abort(403, 'No tienes permiso para acceder a este cliente.');
+        }
 
         return view('customers.show', compact('customer', 'store'));
     }
@@ -126,11 +119,11 @@ class CustomersController extends Controller
     public function edit(Store $store, Customer $customer)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($customer->store_id !== $store->id) {
             abort(403, 'No tienes permiso para acceder a este cliente.');
         }
-    
+
         return view('customers.edit', compact('store', 'customer'));
     }
 
@@ -140,39 +133,39 @@ class CustomersController extends Controller
     public function update(Request $request, Store $store, Customer $customer)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($customer->store_id !== $store->id) {
             abort(403, 'No tienes permiso para acceder a este cliente.');
         }
-    
+
         $request->validate([
+            'nit' => 'required|string|max:14|unique:customers,nit,' . $customer->id,
+            'nrc' => 'nullable|string|max:10',
             'nombre' => 'required|string|max:200',
-            'tipo_documento' => 'required|in:DUI,NIT,Pasaporte',
-            'numero_documento' => 'required|string|max:20',
-            'nrc' => $request->tipo_cliente === 'Juridico' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'razon_social' => 'required|string|max:200',
-            'actividad_economica' => 'required|string|max:200',
-            'direccion_fiscal' => 'required|string',
-            'email' => 'required|email|max:100',
-            'telefono' => 'required|string|max:8',
-            'tipo_cliente' => 'required|in:Natural,Juridico',
-            'comentarios' => 'nullable|string',
+            'codActividad' => 'required|string|max:10',
+            'descActividad' => 'nullable|string|max:255',
+            'nombreComercial' => 'nullable|string|max:200',
+            'direccion_departamento' => 'required|string|max:2',
+            'direccion_municipio' => 'required|string|max:2',
+            'direccion_complemento' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:15',
+            'correo' => 'nullable|email|max:100',
         ]);
-    
+
         $customer->update($request->only([
-            'nombre',
-            'tipo_documento',
-            'numero_documento',
+            'nit',
             'nrc',
-            'razon_social',
-            'actividad_economica',
-            'direccion_fiscal',
-            'email',
+            'nombre',
+            'codActividad',
+            'descActividad',
+            'nombreComercial',
+            'direccion_departamento',
+            'direccion_municipio',
+            'direccion_complemento',
             'telefono',
-            'tipo_cliente',
-            'comentarios'
+            'correo',
         ]));
-    
+
         return redirect()
             ->route('stores.customers.index', $store)
             ->with('success', 'Cliente actualizado exitosamente.');

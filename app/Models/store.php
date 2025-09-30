@@ -85,5 +85,12 @@ class Store extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    //relacion venta
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
+    }
+
     
 }

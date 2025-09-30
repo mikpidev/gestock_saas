@@ -8,29 +8,31 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\StoreTaxInfoController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\CustomersController;
+use App\Http\Controllers\SaleController;
 use App\Http\Middleware\PreventBackHistory4;
+use App\Http\Controllers\ReciboController;
 
 
 
 //Cache prevent back history
 Route::middleware([PreventBackHistory4::class])->group(function () {
-    
+
     //Breeze rutas
     Route::get('/', function () {
         return redirect()->route('login');
     });
-    
+
     Route::get('/home', [HomeController::class, 'index'])
         ->middleware(['auth'])
-        ->name('home'); 
-    
+        ->name('home');
+
     Route::middleware('auth')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
-    
-    require __DIR__.'/auth.php';
+
+    require __DIR__ . '/auth.php';
 
     // CRUDS
 
@@ -57,7 +59,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::post('stores_tax_info/{store}', [StoreTaxInfoController::class, 'store'])
         ->name('stores_tax_info.store');
 
-    
+
     //rutas para usuarios
     Route::resource('stores.users', \App\Http\Controllers\UserController::class);
 
@@ -72,25 +74,25 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::put('users/{user}', [\App\Http\Controllers\UserController::class, 'update'])
         ->name('users.update');
     Route::delete('users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])
-        ->name('users.destroy'); 
+        ->name('users.destroy');
 
 
     // Listar productos de una tienda
     Route::get('stores/{store}/product_types', [ProductTypeController::class, 'index'])
         ->name('stores.product_types.index');
-        
+
     // Formulario de creación de producto en una tienda
     Route::get('stores/{store}/product_types/create', [ProductTypeController::class, 'create'])
         ->name('stores.product_types.create');
-        
+
     // Guardar producto nuevo
     Route::post('stores/{store}/product_types', [ProductTypeController::class, 'store'])
         ->name('stores.product_types.store');
-        
+
     // Formulario de edición de producto en una tienda
     Route::get('stores/{store}/product_types/{productType}/edit', [ProductTypeController::class, 'edit'])
         ->name('stores.product_types.edit');
-        
+
     // Actualizar producto
     Route::put('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'update'])
         ->name('stores.product_types.update');
@@ -102,36 +104,67 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //eliminar producto
     Route::delete('stores/{store}/product_types/{productType}', [ProductTypeController::class, 'destroy'])
         ->name('stores.product_types.destroy');
-        
-        // Listar customers de una tienda
-        Route::get('stores/{store}/customers', [CustomersController::class, 'index'])
-            ->name('stores.customers.index');
-        
-        // Formulario de creación de customer
-        Route::get('stores/{store}/customers/create', [CustomersController::class, 'create'])
-            ->name('stores.customers.create');
-        
-        // Guardar customer nuevo
-        Route::post('stores/{store}/customers', [CustomersController::class, 'store'])
-            ->name('stores.customers.store');
-        
-        // Formulario de edición de customer
-        Route::get('stores/{store}/customers/{customer}/edit', [CustomersController::class, 'edit'])
-            ->name('stores.customers.edit');
-        
-        // Actualizar customer
-        Route::put('stores/{store}/customers/{customer}', [CustomersController::class, 'update'])
-            ->name('stores.customers.update');
-        
-        // Mostrar detalles de un customer
-        Route::get('stores/{store}/customers/{customer}', [CustomersController::class, 'show'])
-            ->name('stores.customers.show');
-        
-        // Eliminar customer
-        Route::delete('stores/{store}/customers/{customer}', [CustomersController::class, 'destroy'])
-            ->name('stores.customers.destroy');
+
+    // Listar customers de una tienda
+    Route::get('stores/{store}/customers', [CustomersController::class, 'index'])
+        ->name('stores.customers.index');
+
+    // Formulario de creación de customer
+    Route::get('stores/{store}/customers/create', [CustomersController::class, 'create'])
+        ->name('stores.customers.create');
+
+    // Guardar customer nuevo
+    Route::post('stores/{store}/customers', [CustomersController::class, 'store'])
+        ->name('stores.customers.store');
+
+    // Formulario de edición de customer
+    Route::get('stores/{store}/customers/{customer}/edit', [CustomersController::class, 'edit'])
+        ->name('stores.customers.edit');
+
+    // Actualizar customer
+    Route::put('stores/{store}/customers/{customer}', [CustomersController::class, 'update'])
+        ->name('stores.customers.update');
+
+    // Mostrar detalles de un customer
+    Route::get('stores/{store}/customers/{customer}', [CustomersController::class, 'show'])
+        ->name('stores.customers.show');
+
+    // Eliminar customer
+    Route::delete('stores/{store}/customers/{customer}', [CustomersController::class, 'destroy'])
+        ->name('stores.customers.destroy');
+
+
+    // Listar ventas de una tienda
+    Route::get('stores/{store}/sales', [SaleController::class, 'index'])
+    ->name('stores.sales.index');
+
+    // Formulario de creación de venta
+    Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
+        ->name('stores.sales.create');
+
+    // Guardar venta nueva
+    Route::post('stores/{store}/sales', [SaleController::class, 'store'])
+        ->name('stores.sales.store');
+
+    // Formulario de edición de venta
+    Route::get('stores/{store}/sales/{sale}/edit', [SaleController::class, 'edit'])
+        ->name('stores.sales.edit');
+
+    // Actualizar venta
+    Route::put('stores/{store}/sales/{sale}', [SaleController::class, 'update'])
+        ->name('stores.sales.update');
+
+    // Mostrar detalles de una venta
+    Route::get('stores/{store}/sales/{sale}', [SaleController::class, 'show'])
+        ->name('stores.sales.show');
+
+    // Eliminar venta
+    Route::delete('stores/{store}/sales/{sale}', [SaleController::class, 'destroy'])
+        ->name('stores.sales.destroy');
+
+
+    //Imprimir recibo
     
+    Route::get('/stores/{store}/recibos/{sale}', [ReciboController::class, 'mostrar'])
+    ->name('stores.recibos.mostrar');
 });
-
-
-

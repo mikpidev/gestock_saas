@@ -12,17 +12,17 @@ class Customer extends Model
     protected $fillable = [
         'company_id',
         'store_id',
-        'nombre',
-        'tipo_documento',
-        'numero_documento',
+        'nit',
         'nrc',
-        'razon_social',
-        'actividad_economica',
-        'direccion_fiscal',
-        'email',
+        'nombre',
+        'codActividad',
+        'descActividad',
+        'nombreComercial',
+        'direccion_departamento',
+        'direccion_municipio',
+        'direccion_complemento',
         'telefono',
-        'tipo_cliente',
-        'comentarios',
+        'correo',
     ];
 
     //uso de soft deletes
@@ -45,6 +45,8 @@ class Customer extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    
 
 
 

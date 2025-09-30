@@ -46,14 +46,6 @@
     }
 </style>
 <div class="gestok-form-card">
-    <div class="gestok-form-header">
-        <h1>{{ $store->store_name }}</h1>
-
-    </div>
-
-
-
-
 
 
     </div>

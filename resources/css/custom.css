@@ -80,3 +80,8 @@ a:hover {
     border-color: #1e7e34;
     color: black; /* texto blanco en hover */
 }
+
+.divider {
+    border-top: 2px solid #ccc;
+    margin: 2rem 0;
+}

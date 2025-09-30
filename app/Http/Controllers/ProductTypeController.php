@@ -18,19 +18,18 @@ class ProductTypeController extends Controller
             return redirect()->route('login')->with('error', 'Por favor, inicia sesión.');
         }
 
-        if ($user->hasRole('superadmin')){
+        if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
             if ($store->company_id != $companyId) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
-
         } elseif ($user->hasRole('admin')) {
             if ($store->company_id != $user->company_id) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
-        }
+            }
         } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
-    }
+        }
     }
 
     /**
@@ -66,13 +65,14 @@ class ProductTypeController extends Controller
         $this->validateStoreAccess($store);
 
         // Validar los datos del formulario
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category' => 'string|max:255',
-            'description' => 'nullable|string',
-        ],
+        $request->validate(
+            [
+                'name' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'stock' => 'required|integer|min:0',
+                'category' => 'string|max:255',
+                'description' => 'nullable|string',
+            ],
             //mensajes personalizados
             [
                 'name.required' => 'El nombre es obligatorio.',
@@ -80,11 +80,12 @@ class ProductTypeController extends Controller
                 'price.numeric' => 'El precio debe ser un número entero o Decimal.',
                 'stock.required' => 'La cantidad es obligatoria.',
                 'stock.integer' => 'La cantidad debe ser un número entero.',
-            
-        ]);
+
+            ]
+        );
 
         // Crear el nuevo tipo de producto asociado a la tienda y compañía
-            ProductType::create([
+        ProductType::create([
             'name' => $request->name,
             'price' => $request->price,
             'stock' => $request->stock,
@@ -98,7 +99,6 @@ class ProductTypeController extends Controller
         return redirect()
             ->route('stores.product_types.index', $store)
             ->with('success', 'Tipo de producto creado exitosamente.');
-
     }
 
     /**
@@ -120,7 +120,7 @@ class ProductTypeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit (Store $store ,ProductType $productType)
+    public function edit(Store $store, ProductType $productType)
     {
         //validar acceso a la tienda
         $this->validateStoreAccess($productType->store);
@@ -138,7 +138,7 @@ class ProductTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request , Store $store,ProductType $productType )
+    public function update(Request $request, Store $store, ProductType $productType)
     {
         //validar que usuario pertenezca a esta tienda
         if ($productType->store_id !== Auth::user()->store_id) {
@@ -151,13 +151,14 @@ class ProductTypeController extends Controller
 
 
         //validar formulario
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category' => 'string|max:255',
-            'description' => 'nullable|string',
-        ],
+        $request->validate(
+            [
+                'name' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'stock' => 'required|integer|min:0',
+                'category' => 'string|max:255',
+                'description' => 'nullable|string',
+            ],
             //mensajes personalizados
             [
                 'name.required' => 'El nombre es obligatorio.',
@@ -165,8 +166,9 @@ class ProductTypeController extends Controller
                 'price.numeric' => 'El precio debe ser un número entero o Decimal.',
                 'stock.required' => 'La cantidad es obligatoria.',
                 'stock.integer' => 'La cantidad debe ser un número entero.',
-            
-        ]);
+
+            ]
+        );
 
         //actualizar
         $productType->update([
@@ -203,6 +205,18 @@ class ProductTypeController extends Controller
         return redirect()
             ->route('stores.product_types.index', $productType->store)
             ->with('success', 'Tipo de producto eliminado exitosamente.');
+    }
 
+    public function createSale(Store $store)
+    {
+        // Trae todos los productos de la tienda
+        $products = ProductType::where('store_id', $store->id)->get();
+
+        // Inicializa una fila vacía para el formulario
+        $oldProducts = old('products', [
+            ['id' => '', 'quantity' => 1, 'price' => 0]
+        ]);
+
+        return view('sales.create', compact('store', 'products', 'oldProducts'));
     }
 }

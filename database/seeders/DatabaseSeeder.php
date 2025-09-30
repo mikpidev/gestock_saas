@@ -19,5 +19,11 @@ class DatabaseSeeder extends Seeder
 
         // (Opcional) si quieres seguir creando usuarios de prueba
         // User::factory(10)->create();
+
+        //llamar seeder para departamentos 
+        $this->call(\Database\Seeders\DepartamentosSeeder::class);
+
+        //llamar seeder municipios
+        $this->call(\Database\Seeders\MunicipiosSeeder::class);
     }
 }

@@ -56,12 +56,18 @@
 
 
 
-    
 
     <main class="container-fluid mt-4">
-        
-        @isset($store) ? <x-store-panel :store="$store" />
+        <div class="gestok-form-header">    
+            @isset($store) 
+                <x-store-panel :store="$store" />
+            @endisset
+        </div>
+        <div class="divider"></div>
+ 
         @yield('content')
+
+        
         
     </main>
 
@@ -72,7 +78,19 @@
             <small>&copy; {{ date('Y') }} Gestok App. Todos los derechos reservados.</small>
         </div>
     </footer>
-
+    <div class="modal fade" id="gestokModal" tabindex="-1" aria-labelledby="gestokModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="gestokModalLabel">Gestok</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+            <p class="text-center">Aquí se cargará el contenido...</p>
+        </div>
+        </div>
+    </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>

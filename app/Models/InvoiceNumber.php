@@ -20,4 +20,10 @@ class InvoiceNumber extends Model
         ])->number;
     }
 
+        public function sale()
+    {
+        return $this->hasOne(Sale::class);
+    }
+
+
 }

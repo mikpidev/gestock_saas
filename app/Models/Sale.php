@@ -17,7 +17,7 @@ class Sale extends Model
         'store_id',
         'user_id',
         'customer_id',
-        'invoice_number',
+        'invoice_number_id',
         'sale_date',
         'total_amount',
         'tax_amount',
@@ -30,7 +30,7 @@ class Sale extends Model
     public function store()
     {
         return $this->belongsTo(Store::class);
-    }   
+    }
 
     //relacion con el usuario que realizo la venta
     public function user()
@@ -50,8 +50,30 @@ class Sale extends Model
         return $this->hasMany(SaleDetail::class);
     }
 
-    //uaso de soft deletes
-    use SoftDeletes, HasFactory;
+    //relacion con invoice numbers
 
+    public function invoiceNumber()
+    {
+        return $this->belongsTo(InvoiceNumber::class, 'invoice_number_id');
+    }
+
+    public function productType()
+    {
+        return $this->belongsTo(ProductType::class, 'product_type_id');
+    }
+
+    public function details()
+    {
+        return $this->hasMany(SaleDetail::class);
+        
+    }
+
+    protected $casts = [
+        'sale_date' => 'datetime',
+    ];
     
+
+
+    //uso de soft deletes
+    use SoftDeletes, HasFactory;
 }
