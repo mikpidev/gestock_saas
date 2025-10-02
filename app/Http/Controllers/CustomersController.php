@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Store;
+use App\Models\TipoDocumento;
+use App\Models\CodActividad;
+use App\Models\Departamento;
+use App\Models\Municipio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -54,7 +58,20 @@ class CustomersController extends Controller
     public function create(Store $store)
     {
         $this->validateStoreAccess($store);
-        return view('customers.create', compact('store'));
+
+        // Traer catálogos
+        $tiposDocumento = TipoDocumento::all();
+        $actividades = CodActividad::all();
+        $departamentos = Departamento::all();
+        $municipios = Municipio::all();
+
+        return view('customers.create', compact(
+            'store',
+            'tiposDocumento',
+            'actividades',
+            'departamentos',
+            'municipios'
+        ));
     }
 
     /**
@@ -65,34 +82,34 @@ class CustomersController extends Controller
         $this->validateStoreAccess($store);
 
         $request->validate([
-            'nit' => 'required|string|max:14|unique:customers,nit',
+            'tipoDocumento' => 'required|string|max:2',
+            'numDocumento' => 'required|string|max:14|unique:customers,numDocumento',
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'required|string|max:200',
+            'nombre' => 'required|string|max:255',
+            'nombreComercial' => 'nullable|string|max:255',
             'codActividad' => 'required|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'nombreComercial' => 'nullable|string|max:200',
             'direccion_departamento' => 'required|string|max:2',
             'direccion_municipio' => 'required|string|max:2',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
-            'correo' => 'nullable|email|max:100',
+            'correo' => 'nullable|email|max:255',
         ]);
 
-        Customer::create([
-            'nit' => $request->nit,
-            'nrc' => $request->nrc,
-            'nombre' => $request->nombre,
-            'codActividad' => $request->codActividad,
-            'descActividad' => $request->descActividad,
-            'nombreComercial' => $request->nombreComercial,
-            'direccion_departamento' => $request->direccion_departamento,
-            'direccion_municipio' => $request->direccion_municipio,
-            'direccion_complemento' => $request->direccion_complemento,
-            'telefono' => $request->telefono,
-            'correo' => $request->correo,
-            'store_id' => $store->id,
-            'company_id' => $store->company_id,
-        ]);
+        Customer::create($request->only([
+            'tipoDocumento',
+            'numDocumento',
+            'nrc',
+            'nombre',
+            'nombreComercial',
+            'codActividad',
+            'descActividad',
+            'direccion_departamento',
+            'direccion_municipio',
+            'direccion_complemento',
+            'telefono',
+            'correo',
+        ]));
 
         return redirect()
             ->route('stores.customers.index', $store)
@@ -124,7 +141,20 @@ class CustomersController extends Controller
             abort(403, 'No tienes permiso para acceder a este cliente.');
         }
 
-        return view('customers.edit', compact('store', 'customer'));
+        // Traer catálogos
+        $tiposDocumento = TipoDocumento::all();
+        $actividades = CodActividad::all();
+        $departamentos = Departamento::all();
+        $municipios = Municipio::all();
+
+        return view('customers.edit', compact(
+            'store',
+            'customer',
+            'tiposDocumento',
+            'actividades',
+            'departamentos',
+            'municipios'
+        ));
     }
 
     /**
@@ -139,26 +169,28 @@ class CustomersController extends Controller
         }
 
         $request->validate([
-            'nit' => 'required|string|max:14|unique:customers,nit,' . $customer->id,
+            'tipoDocumento' => 'required|string|max:2',
+            'numDocumento' => 'required|string|max:14|unique:customers,numDocumento,'.$customer->id,
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'required|string|max:200',
+            'nombre' => 'required|string|max:255',
+            'nombreComercial' => 'nullable|string|max:255',
             'codActividad' => 'required|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'nombreComercial' => 'nullable|string|max:200',
             'direccion_departamento' => 'required|string|max:2',
             'direccion_municipio' => 'required|string|max:2',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
-            'correo' => 'nullable|email|max:100',
+            'correo' => 'nullable|email|max:255',
         ]);
 
         $customer->update($request->only([
-            'nit',
+            'tipoDocumento',
+            'numDocumento',
             'nrc',
             'nombre',
+            'nombreComercial',
             'codActividad',
             'descActividad',
-            'nombreComercial',
             'direccion_departamento',
             'direccion_municipio',
             'direccion_complemento',

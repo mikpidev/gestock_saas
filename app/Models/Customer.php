@@ -10,9 +10,8 @@ class Customer extends Model
     //informacion de la tabla
     protected $table = 'customers';
     protected $fillable = [
-        'company_id',
-        'store_id',
-        'nit',
+        'tipoDocumento',
+        'numDocumento',
         'nrc',
         'nombre',
         'codActividad',
@@ -23,6 +22,7 @@ class Customer extends Model
         'direccion_complemento',
         'telefono',
         'correo',
+        'store_id',
     ];
 
     //uso de soft deletes
@@ -45,6 +45,31 @@ class Customer extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    // Tipo de documento
+    public function tipoDocumentoCatalogo()
+    {
+        return $this->belongsTo(TipoDocumento::class, 'tipoDocumento', 'codigo');
+    }
+
+    // Actividad económica
+    public function actividad()
+    {
+        return $this->belongsTo(CodActividad::class, 'codActividad', 'codigo');
+    }
+
+    // Departamento
+    public function departamento()
+    {
+        return $this->belongsTo(Departamento::class, 'direccion_departamento', 'codigo');
+    }
+
+    // Municipio
+    public function municipio()
+    {
+        return $this->belongsTo(Municipio::class, 'direccion_municipio', 'codigo');
+    }
+
 
     
 

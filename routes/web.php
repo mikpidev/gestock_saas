@@ -11,6 +11,11 @@ use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\SaleController;
 use App\Http\Middleware\PreventBackHistory4;
 use App\Http\Controllers\ReciboController;
+use App\Http\Controllers\TipoDocumentoController;
+use App\Http\Controllers\ActividadEconomicaController;
+use App\Http\Controllers\DepartamentoController;
+use App\Http\Controllers\MunicipioController;
+
 
 
 
@@ -136,7 +141,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     // Listar ventas de una tienda
     Route::get('stores/{store}/sales', [SaleController::class, 'index'])
-    ->name('stores.sales.index');
+        ->name('stores.sales.index');
 
     // Formulario de creación de venta
     Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
@@ -164,7 +169,14 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
 
     //Imprimir recibo
-    
+
     Route::get('/stores/{store}/recibos/{sale}', [ReciboController::class, 'mostrar'])
-    ->name('stores.recibos.mostrar');
+        ->name('stores.recibos.mostrar');
+
+
+    Route::get('/catalogos/tipo-documento', [TipoDocumentoController::class, 'index'])->name('tipo_documento.index');
+    Route::get('/catalogos/actividades', [ActividadEconomicaController::class, 'index'])->name('actividades.index');
+    Route::get('/catalogos/departamentos', [DepartamentoController::class, 'index'])->name('departamentos.index');
+    Route::get('/catalogos/municipios', [MunicipioController::class, 'index'])->name('municipios.index');
+    Route::get('/catalogos/municipios/{codigo}', [MunicipioController::class, 'byDepartamento'])->name('municipios.byDepartamento');
 });
