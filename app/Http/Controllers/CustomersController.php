@@ -96,20 +96,23 @@ class CustomersController extends Controller
             'correo' => 'nullable|email|max:255',
         ]);
 
-        Customer::create($request->only([
-            'tipoDocumento',
-            'numDocumento',
-            'nrc',
-            'nombre',
-            'nombreComercial',
-            'codActividad',
-            'descActividad',
-            'direccion_departamento',
-            'direccion_municipio',
-            'direccion_complemento',
-            'telefono',
-            'correo',
-        ]));
+        Customer::create(array_merge(
+            $request->only([
+                'tipoDocumento',
+                'numDocumento',
+                'nrc',
+                'nombre',
+                'nombreComercial',
+                'codActividad',
+                'descActividad',
+                'direccion_departamento',
+                'direccion_municipio',
+                'direccion_complemento',
+                'telefono',
+                'correo',
+            ]),
+            ['store_id' => $store->id]
+        ));
 
         return redirect()
             ->route('stores.customers.index', $store)

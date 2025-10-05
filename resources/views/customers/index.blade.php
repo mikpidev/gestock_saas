@@ -27,8 +27,8 @@
             @forelse($customers as $customer)
                 <tr>
                     <td><a href="{{ route('stores.customers.show', [$store->id, $customer->id]) }}">{{ $customer->nombre }}</a></td>
-                    <td>{{ $customer->numero_documento }}</td>
-                    <td>{{ $customer->email }}</td>
+                    <td>{{ $customer->numDocumento }}</td>
+                    <td>{{ $customer->correo }}</td>
                     <td>{{ $customer->telefono }}</td>
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-1">

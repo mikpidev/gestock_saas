@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TipoDocumento extends Model
 {
-    protected $table = 'tipo_documento';
+    protected $table = 'tipo_documento_identificacion';
     protected $primaryKey = 'codigo';
     public $incrementing = false;
     protected $keyType = 'string';

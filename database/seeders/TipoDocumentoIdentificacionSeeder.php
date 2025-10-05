@@ -15,10 +15,11 @@ class TipoDocumentoIdentificacionSeeder extends Seeder
 
         DB::table('tipo_documento_identificacion')->insert([
 
-            ['codigo' => "01", 'nombre' => 'Sucursal'],
-            ['codigo' => "02", 'nombre' => 'Casa Matriz'],
-            ['codigo' => "04", 'nombre' => 'Bodega'],
-            ['codigo' => "07", 'nombre' => 'Patio']
+            ['codigo' => "36", 'nombre' => 'NIT'],
+            ['codigo' => "13", 'nombre' => 'DUI'],
+            ['codigo' => "37", 'nombre' => 'Otro'],
+            ['codigo' => "03", 'nombre' => 'Pasaporte'],
+            ['codigo' => "02", 'nombre' => 'Carnet de Residente']
 
         ]);
     }

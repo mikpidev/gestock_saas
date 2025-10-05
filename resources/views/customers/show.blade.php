@@ -36,12 +36,12 @@
                             
                             <div class="mb-3">
                                 <label class="form-label text-muted">Número de Documento</label>
-                                <p class="fw-bold">{{ $customer->numero_documento }}</p>
+                                <p class="fw-bold">{{ $customer->numDocumento }}</p>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label text-muted">Correo electrónico</label>
-                                <p class="fw-bold">{{ $customer->email }}</p>
+                                <p class="fw-bold">{{ $customer->correo }}</p>
                             </div>
                             
                             <div class="mb-3">
@@ -58,23 +58,21 @@
 
                             <div class="mb-3">
                                 <label class="form-label text-muted">Razón Social</label>
-                                <p class="fw-bold">{{ $customer->razon_social }}</p>
+                                <p class="fw-bold">{{ $customer->descActividad }}</p>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label text-muted">Actividad Económica</label>
-                                <p class="fw-bold">{{ $customer->actividad_economica }}</p>
+                                <label class="form-label text-muted">Codigo de Actividad Económica</label>
+                                <p class="fw-bold">{{ $customer->codActividad}}</p>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">Tipo de Cliente</label>
-                                <p class="fw-bold">{{ $customer->tipo_cliente }}</p>
+                                <label class="form-label text-muted">Dirección</label>
+                                <p class="fw-bold">{{ $customer->direccion_complemento }}</p>
+                                <p class="fw-bold">{{ $customer->departamento?->nombre }}</p>
+                                <p class="fw-bold">{{ $customer->municipio?->nombre }}</p>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label text-muted">Comentarios</label>
-                                <p class="fw-bold">{{ $customer->comentarios ?? 'N/A' }}</p>
-                            </div>
                         </div>
                     </div>
                 </div>
