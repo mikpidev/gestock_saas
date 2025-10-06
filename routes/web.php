@@ -45,7 +45,6 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::resource('companies', CompanyController::class);
 
     //rutas para tax info
-    Route::resource('stores_tax_info', StoreTaxInfoController::class);
     Route::resource('stores', StoreController::class);
 
     //rutas para tiendas
@@ -57,12 +56,14 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
 
     //rutas para tax info
-    Route::resource('stores_tax_info', StoreTaxInfoController::class);
-    Route::get('stores_tax_info/create/{store}', [StoreTaxInfoController::class, 'create'])
-        ->name('stores_tax_info.create');
+    Route::get('/stores/{store}/tax-info/create', [StoreTaxInfoController::class, 'create'])
+        ->name('store_tax_info.create');
 
     Route::post('stores_tax_info/{store}', [StoreTaxInfoController::class, 'store'])
         ->name('stores_tax_info.store');
+
+    Route::get('/stores/{store}/tax-info', [StoreTaxInfoController::class, 'show'])
+        ->name('store_tax_info.show');
 
 
     //rutas para usuarios

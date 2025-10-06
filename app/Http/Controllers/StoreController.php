@@ -6,6 +6,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Sale;
 
 class StoreController extends Controller
 {
@@ -75,24 +76,31 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
-
-        // Validar acceso según rol
+    
+        // 🔒 Validar acceso según rol
         if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
             if (!$companyId) abort(403, 'Se requiere compañía.');
             if ($store->company_id != $companyId) abort(403, 'Acceso no autorizado.');
-        } elseif ($user->hasRole('admin')) {
+        } elseif ($user->hasRole('admin') || $user->hasRole('user')) {
             if ($store->company_id != $user->company_id) abort(403, 'Acceso no autorizado.');
-        } elseif($user->hasRole('user')){
-            if($store->company_id != $user->company_id) abort(403,'Acceso no autorizado.');
         } else {
             abort(403, 'Acceso no autorizado.');
         }
-
-        $store->load('taxInfo', 'company');
-
-        return view('store.show', compact('store'));
+    
+        // 🔗 Cargar relaciones necesarias
+        $store->load(['taxInfo', 'company']);
+    
+        // 💰 Obtener las últimas 5 ventas de esta tienda
+        $ventas = Sale::where('store_id', $store->id)
+                        ->latest('created_at')
+                        ->take(5)
+                        ->get();
+    
+        // 📤 Enviar los datos a la vista
+        return view('store.show', compact('store', 'ventas'));
     }
+    
 
     public function edit(Request $request, Store $store)
     {

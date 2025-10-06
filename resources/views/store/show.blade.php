@@ -1,54 +1,76 @@
+
+
 @extends('layouts.admin')
 
 @section('content')
-<style>
-    /* Contenedor del panel */
-    .gestok-panel {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        justify-content: center;
-        padding: 2rem 0;
-        background: #fdfdfd;
-        min-height: 80vh;
-    }
+<div class="container mt-4">
 
-    /* Botones del menú */
-    .gestok-panel .menu-btn {
-        width: 140px;
-        height: 140px;
-        background: #fff;
-        color: #000;
-        border: 2px solid #000;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 1rem;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        transition: all 0.2s ease;
-    }
+    <!-- Sub-card: Información Fiscal -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
 
-    .gestok-panel .menu-btn:hover {
-        background: #f0f0f0;
-        transform: translateY(-3px);
-        box-shadow: 4px 4px 10px rgba(0,0,0,0.15);
-    }
-
-    /* Icono dentro del botón */
-    .gestok-panel .menu-btn svg {
-        width: 48px;
-        height: 48px;
-        margin-bottom: 10px;
-    }
-</style>
-<div class="gestok-form-card">
-
-
+        @if($store->taxInfo)
+        <a href="{{ route('store_tax_info.show', $store->id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-receipt"></i> Información Fiscal
+        </a>
+        @else
+        <a href="{{ route('store_tax_info.create', $store->id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-plus-circle"></i> Agregar Información Fiscal
+        </a>
+        @endif
     </div>
-</div>
 
+
+    <!-- Main-card: Últimas 5 Ventas -->
+    <div class="gestok-form-card" style="max-width: 900px;">
+        <div class="gestok-form-header">
+            <h1>Últimas 5 Ventas</h1>
+            <p>Resumen de actividad reciente</p>
+        </div>
+
+        <div class="gestok-form-body" style="overflow-x: auto;">
+            <table class="table table-striped" style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f5f5f5;">
+                    <tr>
+                        <th style="padding: 0.6rem;">Fecha</th>
+                        <th style="padding: 0.6rem;">Documento</th>
+                        <th style="padding: 0.6rem;">Cliente</th>
+                        <th style="padding: 0.6rem; text-align: right;">Total</th>
+                        <th style="padding: 0.6rem;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($ventas as $venta)
+                    <tr>
+                        <td style="padding: 0.6rem;">{{ $venta->fecha_emision?->format('d/m/Y') ?? $venta->created_at->format('d/m/Y') }}</td>
+                        <td style="padding: 0.6rem;">{{ $venta->tipo_dte ?? 'Factura' }} {{ $venta->numero_dte ?? 'N/A' }}</td>
+                        <td style="padding: 0.6rem;">{{ $venta->cliente->nombre ?? 'Cliente desconocido' }}</td>
+                        <td style="padding: 0.6rem; text-align: right;">${{ number_format($venta->total ?? 0, 2) }}</td>
+                        <td style="padding: 0.6rem;">
+                            @if($venta->estado === 'emitida')
+                            <span class="badge bg-success">Emitida</span>
+                            @elseif($venta->estado === 'anulada')
+                            <span class="badge bg-danger">Anulada</span>
+                            @else
+                            <span class="badge bg-secondary">{{ ucfirst($venta->estado ?? 'N/A') }}</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" style="padding: 1rem; text-align: center; color: #999;">
+                            No hay ventas registradas aún.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <div class="gestok-form-actions mt-3">
+                <a href="{{ route('stores.sales.index', $store->id) }}" class="btn">Ver todas las ventas</a>
+                <a href="{{ route('stores.index') }}" class="btn btn-secondary">Volver</a>
+            </div>
+        </div>
+    </div>
+
+</div>
 @endsection

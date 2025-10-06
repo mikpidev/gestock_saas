@@ -10,20 +10,20 @@
     margin: 2rem auto;
 }
 
-.gestok-form-header {
+.gestok-form-header-2 {
     background: #000;
     color: #fff;
     padding: 1.5rem;
     text-align: center;
 }
 
-.gestok-form-header h1 {
+.gestok-form-header-2 h1 {
     font-size: 1.6rem;
     font-weight: bold;
     margin: 0;
 }
 
-.gestok-form-header p {
+.gestok-form-header-2 p {
     font-size: 0.9rem;
     margin-top: 0.5rem;
 }
@@ -107,7 +107,7 @@
 </style>
 
 <div class="gestok-form-card">
-    <div class="gestok-form-header">
+    <div class="gestok-form-header-2">
         <h1>{{ isset($customer) ? 'Editar Cliente' : 'Nuevo Cliente' }}</h1>
         <p>{{ $store->store_name }}</p>
     </div>
