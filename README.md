@@ -36,5 +36,5 @@ Sistema web de **facturación electrónica** para la gestión de tiendas, client
 1. Clonar el repositorio:
 
 ```bash
-git clone https://github.com/usuario/proyecto-facturacion.git
-cd proyecto-facturacion
+git clone https://github.com/mikpidev/gestok_app
+cd gestok_app
