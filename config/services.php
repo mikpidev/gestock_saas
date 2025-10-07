@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'hacienda' => [
+        'base_url' => env('HACIENDA_API_URL_TEST'),
+        'user' => env('HACIENDA_USER'),
+        'pass' => env('HACIENDA_PASS'),
+    ],
+    
+    'firma' => [
+        'url' => env('FIRMA_API_URL'),
+    ],
+    
+
 ];

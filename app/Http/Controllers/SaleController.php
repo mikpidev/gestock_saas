@@ -10,6 +10,7 @@ use App\Models\InvoiceNumber;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class SaleController extends Controller
 {
@@ -26,52 +27,35 @@ class SaleController extends Controller
             if ($store->company_id != $companyId) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
-
         } elseif ($user->hasRole('admin')) {
             if ($store->company_id != $user->company_id) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
-
         } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Store $store)
     {
-        $sales = $store->sales()->with('customer')->get();
         $sales = $store->sales()->with(['customer', 'invoiceNumber'])->get();
         return view('sales.index', compact('store', 'sales'));
     }
-    
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(Store $store)
     {
         $this->validateStoreAccess($store);
-    
         $customers = Customer::where('store_id', $store->id)->get();
         $products = ProductType::where('store_id', $store->id)->get();
-        
-    
         return view('sales.create', compact('store', 'customers', 'products'));
     }
-    
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request, Store $store)
     {
         $this->validateStoreAccess($store);
-    
+
         $data = $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
+            'customers_id' => 'nullable|exists:customers,id',
             'sale_date' => 'required|date',
             'tax_amount' => 'nullable|numeric',
             'discount_amount' => 'nullable|numeric',
@@ -81,32 +65,57 @@ class SaleController extends Controller
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
         ]);
-    
-        // Calcular total
+
+        // Calcular totales
         $totalAmount = 0;
         foreach ($request->products as $product) {
             $totalAmount += $product['quantity'] * $product['price'];
         }
-    
-        // Aplicar descuento o impuesto si los hay
+
         $taxAmount = $data['tax_amount'] ?? 0;
         $discountAmount = $data['discount_amount'] ?? 0;
         $netAmount = $totalAmount + $taxAmount - $discountAmount;
-    
+
+        // Totales para DTE
+        $total_no_gravado = 0; // ejemplo, si aplica
+        $total_exenta = 0;     // ejemplo, si aplica
+        $total_gravada = $netAmount; // puede ajustar según impuestos
+        $total_iva = $taxAmount;
+
+        // Asignar datos
         $data['total_amount'] = $totalAmount;
         $data['net_amount'] = $netAmount;
-    
-        // Asignar tienda y usuario
         $data['store_id'] = $store->id;
         $data['user_id'] = Auth::id();
-    
-        // Generar Invoice number
-        $data['invoice_number_id'] = InvoiceNumber::getNextNumber($store->id);
-    
-        // Crear venta cabecera
+
+        $data['tipo_moneda'] = 'USD';
+        $data['tipo_operacion'] = 1;
+        $data['condicion_operacion'] = 1;
+        $data['total_no_gravado'] = $total_no_gravado;
+        $data['total_exenta'] = $total_exenta;
+        $data['total_gravada'] = $total_gravada;
+        $data['total_iva'] = $total_iva;
+
+        // Generar invoice con campos de Hacienda
+        $randomAlphaNum = strtoupper(Str::random(8));
+        $randomNumber15 = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
+        $numeroControl = "DTE-01-{$randomAlphaNum}-{$randomNumber15}";
+        $codigoGeneracion = Str::uuid()->toString();
+
+        $invoiceNumber = InvoiceNumber::create([
+            'store_id' => $store->id,
+            'numero_control' => $numeroControl,
+            'codigo_generacion' => $codigoGeneracion,
+            'used' => true
+        ]);
+
+        $data['invoice_number_id'] = $invoiceNumber->id;
+        $data['numero_control'] = $numeroControl;
+        $data['codigo_generacion'] = $codigoGeneracion;
+
         $sale = Sale::create($data);
-    
-        // Crear detalles del producto
+
+        // Crear detalles de venta
         foreach ($request->products as $product) {
             $sale->details()->create([
                 'product_type_id' => $product['id'],
@@ -115,38 +124,24 @@ class SaleController extends Controller
                 'subtotal' => $product['quantity'] * $product['price'],
             ]);
         }
-    
-        return redirect()->route('stores.sales.index', $store->id)
-        ->with('success', 'Venta creada correctamente.');
-    }
-    
 
-    /**
-     * Display the specified resource.
-     */
+        return redirect()->route('stores.sales.index', $store->id)
+            ->with('success', 'Venta creada correctamente.');
+    }
+
     public function show(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-
-        if ($sale->store_id != $store->id) {
-            abort(403, 'No puedes ver una venta de otra tienda.');
-        }
+        if ($sale->store_id != $store->id) abort(403, 'No puedes ver una venta de otra tienda.');
 
         $sale->load('customer', 'user', 'invoiceNumber', 'details.productType');
-
         return view('sales.show', compact('sale', 'store'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-
-        if ($sale->store_id != $store->id) {
-            abort(403, 'No puedes editar una venta de otra tienda.');
-        }
+        if ($sale->store_id != $store->id) abort(403, 'No puedes editar una venta de otra tienda.');
 
         $customers = Customer::all();
         $products = ProductType::all();
@@ -155,23 +150,17 @@ class SaleController extends Controller
         return view('sales.edit', compact('sale', 'store', 'customers', 'products'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-
-        if ($sale->store_id != $store->id) {
-            abort(403, 'No puedes actualizar una venta de otra tienda.');
-        }
+        if ($sale->store_id != $store->id) abort(403, 'No puedes actualizar una venta de otra tienda.');
 
         $data = $request->validate([
             'customers_id' => 'nullable|exists:customers,id',
             'sale_date' => 'required|date',
-            'total_amount' => 'required|numeric',
             'tax_amount' => 'nullable|numeric',
             'discount_amount' => 'nullable|numeric',
+            'total_amount' => 'required|numeric',
             'net_amount' => 'required|numeric',
             'payment_status' => 'required|in:paid,unpaid,partial',
             'products' => 'required|array|min:1',
@@ -184,7 +173,6 @@ class SaleController extends Controller
 
         // Reemplazar detalles antiguos
         $sale->details()->delete();
-
         foreach ($request->products as $product) {
             $sale->details()->create([
                 'product_type_id' => $product['id'],
@@ -194,24 +182,17 @@ class SaleController extends Controller
             ]);
         }
 
-        return redirect()->route('sales.index', $store->id)
+        return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta actualizada correctamente.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-
-        if ($sale->store_id != $store->id) {
-            abort(403, 'No puedes eliminar una venta de otra tienda.');
-        }
+        if ($sale->store_id != $store->id) abort(403, 'No puedes eliminar una venta de otra tienda.');
 
         $sale->delete();
-
         return redirect()->route('stores.sales.index', $store->id)
-        ->with('success', 'Venta creada correctamente.');
+            ->with('success', 'Venta eliminada correctamente.');
     }
 }
