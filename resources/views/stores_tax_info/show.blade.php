@@ -13,7 +13,7 @@
             <h5 class="card-subtitle">{{ $store->store_name ?? 'Sin Tienda'}}</h5>
 
             <p class="card-text"><strong>NIT</strong> {{ $storeTaxInfo->nit }}</p>
-            <p class="card-text"><strong>NRC</strong> {{ $storeTaxInfo->ncr ?? 'Sin NCR' }}</p>
+            <p class="card-text"><strong>NRC</strong> {{ $storeTaxInfo->nrc ?? 'Sin NCR' }}</p>
             <p class="card-text"><strong>Razón Social</strong> {{ $storeTaxInfo->razon_social }}</p>
             <p class="card-text"><strong>Actividad Económica</strong> {{ $storeTaxInfo->actividad_economica }}</p>
             <p class="card-text"><strong>Dirección Fiscal</strong> {{ $storeTaxInfo->direccion_fiscal }}</p>

@@ -15,6 +15,7 @@ use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\ActividadEconomicaController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\MunicipioController;
+use App\Http\Controllers\DTEController;
 
 
 
@@ -180,4 +181,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('/catalogos/departamentos', [DepartamentoController::class, 'index'])->name('departamentos.index');
     Route::get('/catalogos/municipios', [MunicipioController::class, 'index'])->name('municipios.index');
     Route::get('/catalogos/municipios/{codigo}', [MunicipioController::class, 'byDepartamento'])->name('municipios.byDepartamento');
+
+
+    Route::get('/test-dte', [DTEController::class, 'testDTE']);
 });

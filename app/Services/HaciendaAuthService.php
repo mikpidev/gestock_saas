@@ -37,7 +37,7 @@ class HaciendaAuthService
 
         try {
             $response = Http::asForm()
-                ->withOptions(['verify' => 'C:\docker\temp\04142309731011.crt'])
+                ->withOptions(['verify' => false])
                 ->post($this->url, [
                     'user' => $this->user,
                     'pwd' => $this->pass,

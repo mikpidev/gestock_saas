@@ -139,6 +139,13 @@
             <input type="text" name="razon_social" id="razon_social" class="form-control" value="{{ old('razon_social', $storeTaxInfo->razon_social ?? '') }}" required>
             @error('razon_social') <div class="text-danger">{{ $message }}</div> @enderror
 
+
+
+            {{-- Nombre Comercial --}}
+            <label for="actividad_economica">Nombre Comercial</label>
+            <input type="text" name="actividad_economica" id="actividad_economica" class="form-control" value="{{ old('actividad_economica', $storeTaxInfo->actividad_economica ?? '') }}" required>
+            @error('actividad_economica') <div class="text-danger">{{ $message }}</div> @enderror
+
             {{-- Actividad Económica --}}
             <label for="codActividad">Actividad Económica</label>
             <select id="codActividad" name="codActividad" class="select2" required>
@@ -151,6 +158,10 @@
             </select>
             @error('codActividad') <div class="text-danger">{{ $message }}</div> @enderror
 
+
+
+
+            
             {{-- Departamento --}}
             <label for="direccion_departamento">Departamento</label>
             <select id="direccion_departamento" name="direccion_departamento" class="select2" required>
