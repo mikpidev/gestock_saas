@@ -1,5 +1,3 @@
-
-
 @extends('layouts.admin')
 
 @section('content')
@@ -19,7 +17,6 @@
         @endif
     </div>
 
-
     <!-- Main-card: Últimas 5 Ventas -->
     <div class="gestok-form-card" style="max-width: 900px;">
         <div class="gestok-form-header">
@@ -32,26 +29,34 @@
                 <thead style="background: #f5f5f5;">
                     <tr>
                         <th style="padding: 0.6rem;">Fecha</th>
-                        <th style="padding: 0.6rem;">Documento</th>
+                        <th style="padding: 0.6rem;">Usuario</th>
                         <th style="padding: 0.6rem;">Cliente</th>
                         <th style="padding: 0.6rem; text-align: right;">Total</th>
                         <th style="padding: 0.6rem;">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($ventas as $venta)
+                    @forelse($sales as $sale)
                     <tr>
-                        <td style="padding: 0.6rem;">{{ $venta->fecha_emision?->format('d/m/Y') ?? $venta->created_at->format('d/m/Y') }}</td>
-                        <td style="padding: 0.6rem;">{{ $venta->tipo_dte ?? 'Factura' }} {{ $venta->numero_dte ?? 'N/A' }}</td>
-                        <td style="padding: 0.6rem;">{{ $venta->cliente->nombre ?? 'Cliente desconocido' }}</td>
-                        <td style="padding: 0.6rem; text-align: right;">${{ number_format($venta->total ?? 0, 2) }}</td>
+                        <td style="padding: 0.6rem;" class="text-nowrap">
+                            {{ $sale->created_at->format('d/m/Y') }}
+                        </td>
+                        <td style="padding: 0.6rem;" class="text-nowrap">
+                            {{ $sale->user->name ?? 'Factura' }}
+                        </td>
                         <td style="padding: 0.6rem;">
-                            @if($venta->estado === 'emitida')
-                            <span class="badge bg-success">Emitida</span>
-                            @elseif($venta->estado === 'anulada')
-                            <span class="badge bg-danger">Anulada</span>
+                            {{ $sale->customer->nombre ?? 'Cliente desconocido' }}
+                        </td>
+                        <td style="padding: 0.6rem; text-align: right;">
+                            ${{ number_format($sale->total_amount ?? 0, 2) }}
+                        </td>
+                        <td style="padding: 0.6rem;">
+                            @if($sale->estado === 'emitida')
+                                <span class="badge bg-success">Emitida</span>
+                            @elseif($sale->estado === 'anulada')
+                                <span class="badge bg-danger">Anulada</span>
                             @else
-                            <span class="badge bg-secondary">{{ ucfirst($venta->estado ?? 'N/A') }}</span>
+                                <span class="badge bg-secondary">{{ ucfirst($sale->estado ?? 'N/A') }}</span>
                             @endif
                         </td>
                     </tr>
@@ -66,7 +71,7 @@
             </table>
 
             <div class="gestok-form-actions mt-3">
-                <a href="{{ route('stores.sales.index', $store->id) }}" class="btn">Ver todas las ventas</a>
+                <a href="{{ route('stores.sales.index', $store->id) }}" class="btn btn-primary">Ver todas las ventas</a>
                 <a href="{{ route('stores.index') }}" class="btn btn-secondary">Volver</a>
             </div>
         </div>

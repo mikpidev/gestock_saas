@@ -138,12 +138,12 @@
             @csrf
 
             <!-- Selección de cliente -->
-            <label for="customer_id">Cliente</label>
-            <select id="customer_id" name="customer_id" class="form-control">
+            <label for="customers_id">Cliente</label>
+            <select id="customers_id" name="customers_id" class="form-control">
                 <option value="">-- Selecciona un cliente --</option>
                 @foreach($customers as $customer)
                 <option value="{{ $customer->id }}"
-                    {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
+                    {{ old('customers_id') == $customer->id ? 'selected' : '' }}>
                     {{ $customer->nombre }}
                 </option>
                 @endforeach

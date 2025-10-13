@@ -14,22 +14,21 @@
     <table class="table table-hover">
         <thead>
             <tr>
-                <th>Invoice #</th>
+                <th>Codigo de Generacion #</th>
                 <th>Cliente</th>
-                <th>Fecha</th>
                 <th>Total</th>
-                <th>Estado</th>
+                <th>Fecha</th>
                 <th>Acciones</th>
+
             </tr>
         </thead>
         <tbody>
             @forelse($sales as $sale)
             <tr>
-                <td>{{ $sale->invoiceNumber->number ?? 'N/A' }}</td>
+                <td>{{ $sale->codigo_generacion ?? 'N/A' }}</td>
                 <td>{{ $sale->customer->nombre ?? '' }}</td>
-                <td>{{ $sale->sale_date }}</td>
                 <td>{{ number_format($sale->net_amount, 2) }}</td>
-                <td>{{ ucfirst($sale->payment_status) }}</td>
+                <td>{{ $sale->sale_date }}</td>
                 <td class="text-center">
                     <div class="d-flex justify-content-center gap-1">
                         <a href="{{ route('stores.sales.edit', [$store->id, $sale->id]) }}" class="btn btn-sm btn-edit" title="Editar">

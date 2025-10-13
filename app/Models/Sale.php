@@ -12,68 +12,56 @@ use App\Models\SaleDetail;
 
 class Sale extends Model
 {
-    //campos que se pueden asignar masivamente
+    use SoftDeletes, HasFactory;
+
+    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'store_id',
         'user_id',
-        'customer_id',
-        'invoice_number_id',
+        'customers_id',
         'sale_date',
         'total_amount',
         'tax_amount',
         'discount_amount',
         'net_amount',
         'payment_status',
+        'numero_control',      // número de control para DTE
+        'codigo_generacion',   // UUID para DTE
+        'tipo_moneda',
+        'tipo_operacion',
+        'condicion_operacion',
+        'total_no_gravado',
+        'total_exenta',
+        'total_gravada',
+        'total_iva',
     ];
 
-    //realciones con otros modelos
+    // Casting de fechas
+    protected $casts = [
+        'sale_date' => 'datetime',
+    ];
+
+    // Relación con la tienda
     public function store()
     {
         return $this->belongsTo(Store::class);
     }
 
-    //relacion con el usuario que realizo la venta
+    // Relación con el usuario que realizó la venta
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    //relacion con el cliente
+    // Relación con el cliente
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class, 'customers_id');
     }
 
-    //relacion con los detalles de la venta
-    public function saleDetails()
-    {
-        return $this->hasMany(SaleDetail::class);
-    }
-
-    //relacion con invoice numbers
-
-    public function invoiceNumber()
-    {
-        return $this->belongsTo(InvoiceNumber::class, 'invoice_number_id');
-    }
-
-    public function productType()
-    {
-        return $this->belongsTo(ProductType::class, 'product_type_id');
-    }
-
+    // Relación con los detalles de la venta
     public function details()
     {
         return $this->hasMany(SaleDetail::class);
-        
     }
-
-    protected $casts = [
-        'sale_date' => 'datetime',
-    ];
-    
-
-
-    //uso de soft deletes
-    use SoftDeletes, HasFactory;
 }

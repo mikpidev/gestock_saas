@@ -77,7 +77,7 @@ class StoreController extends Controller
             return redirect()->route('login');
         }
     
-        // 🔒 Validar acceso según rol
+        // Validar acceso según rol
         if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
             if (!$companyId) abort(403, 'Se requiere compañía.');
@@ -88,17 +88,17 @@ class StoreController extends Controller
             abort(403, 'Acceso no autorizado.');
         }
     
-        // 🔗 Cargar relaciones necesarias
+        // Cargar relaciones necesarias
         $store->load(['taxInfo', 'company']);
     
-        // 💰 Obtener las últimas 5 ventas de esta tienda
-        $ventas = Sale::where('store_id', $store->id)
+        // Obtener las últimas 5 ventas de esta tienda
+        $sales = Sale::where('store_id', $store->id)
                         ->latest('created_at')
                         ->take(5)
                         ->get();
     
-        // 📤 Enviar los datos a la vista
-        return view('store.show', compact('store', 'ventas'));
+        // Enviar los datos a la vista
+        return view('store.show', compact('store', 'sales'));
     }
     
 

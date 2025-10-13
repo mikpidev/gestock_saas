@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Services\HaciendaAuthService;
@@ -22,91 +23,24 @@ class DTEController extends Controller
         $this->authService = $authService;
     }
 
-    public function generarDTE(Request $request)
+    public function generarDTE(Sale $sale)
     {
-        $request->validate([
-            'store_id' => 'required|exists:stores,id',
-            'user_id' => 'required|exists:users,id',
-            'customer_id' => 'nullable|exists:customers,id',
-            'products' => 'required|array|min:1',
-            'products.*.product_type_id' => 'required|exists:product_types,id',
-            'products.*.quantity' => 'required|numeric|min:1'
-        ]);
-
         try {
-            DB::beginTransaction();
-
-            // Generar identificadores
-            $randomAlphaNum = strtoupper(Str::random(8));
-            $randomNumber15 = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
-            $numeroControl = "DTE-01-{$randomAlphaNum}-{$randomNumber15}";
-            $codigoGeneracion = strtoupper(Str::uuid()->toString());
-
-            // Calcular totales
-            $totalGravada = 0;
-            $totalIVA = 0;
-
-            foreach ($request->products as $item) {
-                $product = ProductType::findOrFail($item['product_type_id']);
-                $subtotal = $product->price * $item['quantity'];
-                $iva = $subtotal * 0.13;
-                $totalIVA += $iva;
-                $totalGravada += $subtotal;
-            }
-
-            $netAmount = $totalGravada + $totalIVA;
-            $invoiceNumber = InvoiceNumber::getNextNumber($request->store_id);
-
-            // Crear la venta
-            $sale = Sale::create([
-                'store_id' => $request->store_id,
-                'user_id' => $request->user_id,
-                'customers_id' => $request->customer_id,
-                'sale_date' => Carbon::now(),
-                'total_amount' => $netAmount,
-                'tax_amount' => $totalIVA,
-                'discount_amount' => 0,
-                'net_amount' => $netAmount,
-                'tipo_moneda' => 'USD',
-                'numero_control' => $numeroControl,
-                'codigo_generacion' => $codigoGeneracion,
-                'tipo_operacion' => 1,
-                'condicion_operacion' => 1,
-                'total_no_gravado' => 0,
-                'total_exenta' => 0,
-                'total_gravada' => $totalGravada,
-                'total_iva' => $totalIVA,
-                'payment_status' => 'unpaid',
-            ]);
-
-            foreach ($request->products as $item) {
-                $product = ProductType::findOrFail($item['product_type_id']);
-                $subtotal = $product->price * $item['quantity'];
-
-                SaleDetail::create([
-                    'sale_id' => $sale->id,
-                    'product_type_id' => $product->id,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $product->price,
-                    'subtotal' => $subtotal,
-                ]);
-
-                $product->decrement('stock', $item['quantity']);
-            }
-
-            DB::commit();
-
-            // ✅ Construir el JSON DTE
+            // Construir JSON DTE
             $dteJson = $this->buildDTEJson($sale);
 
-            // ✅ Obtener token Hacienda
+            Log::info('DTE antes de firmar', $dteJson);
+
+            // Obtener token Hacienda
             $token = $this->authService->generateNewToken();
+
+            // Firmar documento
             $payloadFirmador = [
                 "nit" => '04142309731011',
                 "passwordPri" => '9e.VAGQEVNximSC',
                 "dteJson" => $dteJson
             ];
-            // ✅ 1️⃣ Firmar documento localmente
+
             $signResponse = Http::withHeaders([
                 'Content-Type' => 'application/json'
             ])->post('http://localhost:8113/firmardocumento/', $payloadFirmador);
@@ -119,6 +53,7 @@ class DTEController extends Controller
             }
 
             $signedData = $signResponse->json();
+            Log::info('Respuesta del firmador', $signedData);
 
             if (!isset($signedData['status']) || $signedData['status'] !== 'OK') {
                 return response()->json([
@@ -127,28 +62,31 @@ class DTEController extends Controller
                 ], 400);
             }
 
-            // ✅ 2️⃣ Enviar DTE firmado a Hacienda
+            // Enviar DTE firmado a Hacienda
             $mhResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-            ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', $signedData["body"]);
+                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', $signedData["body"]);
+
+            Log::info('Hacienda Response', [
+                'status' => $mhResponse->status(),
+                'body' => $mhResponse->body()
+            ]);
 
             $haciendaResponse = $mhResponse->json();
 
-            return response()->json([
-                'message' => 'DTE generado, firmado y enviado correctamente.',
-                'sale' => $sale->load('details.productType'),
-                'numero_control' => $numeroControl,
-                'codigo_generacion' => $codigoGeneracion,
-                'invoice_number' => $invoiceNumber,
-                'response_firmador' => $signedData,
-                'response_hacienda' => $haciendaResponse
-            ], 201);
+            // Guardar info del DTE en la venta
+            $sale->update([
+                'dte_codigo' => $sale->codigo_generacion,
+                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
+            ]);
+
+            return $haciendaResponse;
         } catch (\Throwable $th) {
-            DB::rollBack();
+            Log::error('Error generando DTE: ' . $th->getMessage());
             return response()->json([
-                'error' => 'Error al generar o enviar el DTE.',
+                'error' => 'Error generando DTE',
                 'message' => $th->getMessage()
             ], 500);
         }
@@ -156,71 +94,136 @@ class DTEController extends Controller
 
     private function buildDTEJson(Sale $sale)
     {
-        return [
+        $customer = $sale->customer;
+        $isConsumidorFinal = !$customer;
 
-            "dteJson" => [
-                "identificacion" => [
-                    "version" => 1,
-                    "ambiente" => "00",
-                    "tipoDte" => "01",
-                    "numeroControl" => $sale->numero_control,
-                    "codigoGeneracion" => $sale->codigo_generacion,
-                    "tipoModelo" => 1,
-                    "tipoOperacion" => $sale->tipo_operacion,
-                    "fecEmi" => $sale->sale_date->format('Y-m-d'),
-                    "horEmi" => Carbon::now()->format('H:i:s'),
-                    "tipoMoneda" => $sale->tipo_moneda,
-                ],
-                "documentoRelacionado" => null,
-                "emisor" => [
-                    "nit" => "04142309731011",
-                    "nrc" => "2515932",
-                    "nombre" => "JOSE ISRAEL RIVERA MORALES",
-                    "codActividad" => "56101",
-                    "descActividad" => "Comercio de productos varios",
-                    "nombreComercial" => "JOSE ISRAEL RIVERA MORALES",
-                    "tipoEstablecimiento" => 1,
-                    "direccion" => [
-                        "departamento" => "06",
-                        "municipio" => "20",
-                        "complemento" => "Colonia Escalón"
-                    ],
-                ],
-                "resumen" => [
-                    "totalGravada" => $sale->total_gravada,
-                    "totalIva" => $sale->total_iva,
-                    "totalPagar" => $sale->net_amount,
-                ],
-                "detalle" => $sale->details->map(function ($detail) {
-                    return [
-                        "cantidad" => $detail->quantity,
-                        "descripcion" => $detail->productType->name,
-                        "precioUnitario" => $detail->unit_price,
-                        "ventaGravada" => $detail->subtotal,
-                    ];
-                })->toArray(),
-            ]
+        // Receptor
+        $receptor = $isConsumidorFinal ? [
+            "tipoDocumento" => null,
+            "numDocumento" => null,
+            "nrc" => null,
+            "nombre" => "Consumidor Final",
+            "codActividad" => null,
+            "descActividad" => null,
+            "direccion" => [
+                "departamento" => "01",
+                "municipio" => "01",
+                "complemento" => "N/A"
+            ],
+            "telefono" => "00000000",
+            "correo" => "consumidor@final.com"
+        ] : [
+            "tipoDocumento" => $customer->tipo_documento ?? "36",
+            "numDocumento" => $customer->num_documento ?? "00000000000000",
+            "nrc" => $customer->nrc ?? null,
+            "nombre" => $customer->nombre,
+            "codActividad" => $customer->cod_actividad ?? null,
+            "descActividad" => $customer->desc_actividad ?? null,
+            "direccion" => [
+                "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "complemento" => $customer->direccion_complemento 
+            ],
+            "telefono" => $customer->telefono ?? "00000000",
+            "correo" => $customer->correo ?? "cliente@prueba.com"
         ];
-    }
 
-    public function testDTE()
-    {
-        $request = new \Illuminate\Http\Request([
-            'store_id' => 1, // ID de tu tienda de prueba
-            'user_id' => 1, // ID de un usuario de prueba
-            'customer_id' => null,
-            'products' => [
-                [
-                    'product_type_id' => 2,
-                    'quantity' => 2
+        // Cuerpo documento
+        $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
+            return [
+                "numItem" => $index + 1,
+                "tipoItem" => 4,
+                "numeroDocumento" => null,
+                "codigo" => "P" . str_pad($index + 1, 3, "0", STR_PAD_LEFT),
+                "codTributo" => null,
+                "descripcion" => $detail->productType->name,
+                "cantidad" => (float) $detail->quantity,
+                "uniMedida" => 99,
+                "precioUni" => (float) $detail->unit_price,
+                "montoDescu" => 0.00,
+                "ventaNoSuj" => 0.00,
+                "ventaExenta" => 0.00,
+                "ventaGravada" => (float) $detail->subtotal,
+                "tributos" => null,
+                "psv" => 0.00,
+                "noGravado" => 0.00,
+                "ivaItem" => (float) ($detail->subtotal * 0.13)
+            ];
+        })->toArray();
+        
+
+        return [
+            "identificacion" => [
+                "version" => 1,
+                "ambiente" => "00",
+                "tipoDte" => "01",
+                "numeroControl" => $sale->numero_control,
+                "codigoGeneracion" => $sale->codigo_generacion,
+                "tipoModelo" => 1,
+                "tipoOperacion" => $sale->tipo_operacion,
+                "fecEmi" => $sale->sale_date->format('Y-m-d'),
+                "horEmi" => Carbon::now()->format('H:i:s'),
+                "tipoMoneda" => $sale->tipo_moneda,
+                "tipoContingencia" => null,
+                "motivoContin" => null
+            ],
+            "documentoRelacionado" => null,
+            "emisor" => [
+                "nit" => "04142309731011",
+                "nrc" => "2515932",
+                "nombre" => "JOSE ISRAEL RIVERA MORALES",
+                "codActividad" => "56101",
+                "descActividad" => "Comercio de productos varios",
+                "nombreComercial" => "JOSE ISRAEL RIVERA MORALES",
+                "tipoEstablecimiento" => "01",
+                "direccion" => [
+                    "departamento" => "06",
+                    "municipio" => "20",
+                    "complemento" => "Colonia Escalón"
                 ],
+                "telefono" => "22223333",
+                "correo" => "contacto@ejemplo.com",
+                "codEstableMH" => null,
+                "codEstable" => null,
+                "codPuntoVentaMH" => null,
+                "codPuntoVenta" => null
+            ],
+            "receptor" => $receptor,
+            "otrosDocumentos" => null,
+            "ventaTercero" => null,
+            "cuerpoDocumento" => $cuerpoDocumento,
+            "resumen" => [
+                "totalNoSuj" => 0.00,
+                "totalExenta" => 0.00,
+                "totalGravada" => (float) $sale->total_gravada,
+                "subTotalVentas" => (float) $sale->total_gravada,
+                "descuNoSuj" => 0.00,
+                "descuExenta" => 0.00,
+                "descuGravada" => 0.00,
+                "porcentajeDescuento" => 0.00,
+                "totalDescu" => 0.00,
+                "tributos" => null,
+                "subTotal" => (float) $sale->total_gravada,
+                "ivaRete1" => 0.00,
+                "reteRenta" => 0.00,
+                "montoTotalOperacion" => (float) $sale->net_amount,
+                "totalNoGravado" => 0.00,
+                "totalPagar" => (float) $sale->net_amount,
+                "totalLetras" => $sale->total_letras ?? "Ciento trece dólares 00/100",
+                "totalIva" => null,
+                "saldoFavor" => 0.00,
+                "condicionOperacion" => 1,
+                "pagos" => null,
+                "numPagoElectronico" => null
+            ],
+            "extension" => null,
+            "apendice" => [
                 [
-                    'product_type_id' => 2,
-                    'quantity' => 1
+                    "campo" => "observacionExtra",
+                    "etiqueta" => "Nota adicional",
+                    "valor" => "Factura generada en modo de prueba"
                 ]
             ]
-        ]);
-
-        return $this->generarDTE($request);
+        ];
     }
 }

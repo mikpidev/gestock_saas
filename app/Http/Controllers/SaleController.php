@@ -38,7 +38,7 @@ class SaleController extends Controller
 
     public function index(Store $store)
     {
-        $sales = $store->sales()->with(['customer', 'invoiceNumber'])->get();
+        $sales = $store->sales()->with(['customer', 'details.productType'])->get();
         return view('sales.index', compact('store', 'sales'));
     }
 
@@ -53,7 +53,8 @@ class SaleController extends Controller
     public function store(Request $request, Store $store)
     {
         $this->validateStoreAccess($store);
-
+    
+        // Validar request
         $data = $request->validate([
             'customers_id' => 'nullable|exists:customers,id',
             'sale_date' => 'required|date',
@@ -65,56 +66,63 @@ class SaleController extends Controller
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
         ]);
-
+    
         // Calcular totales
-        $totalAmount = 0;
-        foreach ($request->products as $product) {
-            $totalAmount += $product['quantity'] * $product['price'];
-        }
-
+        $totalAmount = collect($request->products)->sum(function ($p) {
+            return $p['quantity'] * $p['price'];
+        });
+    
         $taxAmount = $data['tax_amount'] ?? 0;
         $discountAmount = $data['discount_amount'] ?? 0;
         $netAmount = $totalAmount + $taxAmount - $discountAmount;
-
+    
         // Totales para DTE
-        $total_no_gravado = 0; // ejemplo, si aplica
-        $total_exenta = 0;     // ejemplo, si aplica
-        $total_gravada = $netAmount; // puede ajustar según impuestos
+        $total_no_gravado = 0;
+        $total_exenta = 0;
+        $total_gravada = $netAmount;
         $total_iva = $taxAmount;
-
-        // Asignar datos
-        $data['total_amount'] = $totalAmount;
-        $data['net_amount'] = $netAmount;
-        $data['store_id'] = $store->id;
-        $data['user_id'] = Auth::id();
-
-        $data['tipo_moneda'] = 'USD';
-        $data['tipo_operacion'] = 1;
-        $data['condicion_operacion'] = 1;
-        $data['total_no_gravado'] = $total_no_gravado;
-        $data['total_exenta'] = $total_exenta;
-        $data['total_gravada'] = $total_gravada;
-        $data['total_iva'] = $total_iva;
-
-        // Generar invoice con campos de Hacienda
-        $randomAlphaNum = strtoupper(Str::random(8));
-        $randomNumber15 = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
-        $numeroControl = "DTE-01-{$randomAlphaNum}-{$randomNumber15}";
-        $codigoGeneracion = Str::uuid()->toString();
-
-        $invoiceNumber = InvoiceNumber::create([
+    
+        // Obtener siguiente número de factura
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id);
+    
+        // Generar número de control siguiendo patrón aceptado por Hacienda
+        $prefix = "DTE-01-";
+        
+        // Parte central: S###P###
+        $partCentral = 'S' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT) 
+                       . 'P' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
+        
+        // Parte final: 15 dígitos numéricos
+        $partFinal = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
+        
+        // Combinar todo
+        $numeroControl = $prefix . $partCentral . '-' . $partFinal;
+        
+        // Código de generación: UUID en mayúsculas
+        $codigoGeneracion = strtoupper(Str::uuid()->toString());
+        
+    
+        // Crear venta
+        $sale = Sale::create([
+            'customers_id' => $data['customers_id'] ?? null,
+            'sale_date' => $data['sale_date'],
+            'payment_status' => $data['payment_status'],
+            'total_amount' => $totalAmount,
+            'net_amount' => $netAmount,
             'store_id' => $store->id,
+            'user_id' => Auth::id(),
+            'tipo_moneda' => 'USD',
+            'tipo_operacion' => 1,
+            'condicion_operacion' => 1,
+            'total_no_gravado' => $total_no_gravado,
+            'total_exenta' => $total_exenta,
+            'total_gravada' => $total_gravada,
+            'total_iva' => $total_iva,
             'numero_control' => $numeroControl,
             'codigo_generacion' => $codigoGeneracion,
-            'used' => true
+            'invoice_number' => $invoiceNumber->number,
         ]);
-
-        $data['invoice_number_id'] = $invoiceNumber->id;
-        $data['numero_control'] = $numeroControl;
-        $data['codigo_generacion'] = $codigoGeneracion;
-
-        $sale = Sale::create($data);
-
+    
         // Crear detalles de venta
         foreach ($request->products as $product) {
             $sale->details()->create([
@@ -124,17 +132,26 @@ class SaleController extends Controller
                 'subtotal' => $product['quantity'] * $product['price'],
             ]);
         }
-
+    
+    
+        // Generar DTE
+        try {
+            app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
+        } catch (\Throwable $e) {
+            // Log si falla la generación del DTE, pero no interrumpe la venta
+            \Log::error('Error generando DTE: ' . $e->getMessage());
+        }
+    
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente.');
     }
-
+    
     public function show(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
         if ($sale->store_id != $store->id) abort(403, 'No puedes ver una venta de otra tienda.');
 
-        $sale->load('customer', 'user', 'invoiceNumber', 'details.productType');
+        $sale->load('customer', 'user', 'details.productType');
         return view('sales.show', compact('sale', 'store'));
     }
 
