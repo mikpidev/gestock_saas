@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\HaciendaToken;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class HaciendaAuthService
 {
@@ -14,27 +15,29 @@ class HaciendaAuthService
 
     public function __construct()
     {
-        // Asegurarse que la URL base está bien definida
         $this->user = env('HACIENDA_USER');
         $this->pass = env('HACIENDA_PASS');
     }
 
+    /**
+     * Obtiene un token válido de Hacienda.
+     */
     public function getToken()
     {
         $token = HaciendaToken::latest()->first();
 
-        if ($token && $token->expires_at->isFuture()) {
+        if ($token && $this->isTokenValid($token->token, $token->expires_at)) {
             return $token->token;
         }
 
         return $this->generateNewToken();
     }
 
+    /**
+     * Genera un nuevo token y lo guarda en base de datos.
+     */
     public function generateNewToken()
     {
-        // Debug: mostrar URL y datos antes de enviar
-        // dd($this->url, $this->user, $this->pass);
-
         try {
             $response = Http::asForm()
                 ->withOptions(['verify' => false])
@@ -43,28 +46,57 @@ class HaciendaAuthService
                     'pwd' => $this->pass,
                 ]);
         } catch (\Exception $e) {
-            throw new \Exception('Error de conexión: ' . $e->getMessage());
+            throw new \Exception('Error de conexión con Hacienda: ' . $e->getMessage());
         }
 
-        // Mostrar cuerpo crudo si falla para debugging
         if ($response->failed()) {
-            dd('Error en la petición', $response->body());
+            Log::error('Error en la petición de token a Hacienda', ['body' => $response->body()]);
+            throw new \Exception('Error en la petición de token a Hacienda');
         }
 
         $data = $response->json();
-
-        // Ajuste: revisar si el token realmente viene en esta ruta
         $tokenValue = $data['body']['token'] ?? $data['token'] ?? null;
 
         if (!$tokenValue) {
-            dd('Token no encontrado en la respuesta de Hacienda', $data);
+            Log::error('Token no encontrado en la respuesta de Hacienda', ['data' => $data]);
+            throw new \Exception('Token no encontrado en la respuesta de Hacienda');
         }
 
+        // Limpiar tokens antiguos
+        HaciendaToken::truncate();
+
+        // Guardar token con tiempo real de expiración
         $token = HaciendaToken::create([
             'token' => $tokenValue,
-            'expires_at' => Carbon::now()->addHours(47), // margen de seguridad
+            'expires_at' => Carbon::now()->addMinutes(5), // token válido 5 min
         ]);
 
+        Log::info('Nuevo token generado', ['token' => substr($tokenValue, 0, 20) . '...']);
+
         return $token->token;
+    }
+
+    /**
+     * Valida si un token aún es válido.
+     */
+    protected function isTokenValid($token, $expiresAt)
+    {
+        // Verificar fecha de expiración
+        if (!$expiresAt || Carbon::now()->greaterThanOrEqualTo($expiresAt)) {
+            return false;
+        }
+
+        // Opcional: decodificar JWT y validar exp real
+        try {
+            $payload = json_decode(base64_decode(explode('.', $token)[1]), true);
+            if (isset($payload['exp']) && Carbon::now()->timestamp >= $payload['exp']) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // Token inválido
+            return false;
+        }
+
+        return true;
     }
 }

@@ -58,57 +58,62 @@ class SaleController extends Controller
         $data = $request->validate([
             'customers_id' => 'nullable|exists:customers,id',
             'sale_date' => 'required|date',
-            'tax_amount' => 'nullable|numeric',
-            'discount_amount' => 'nullable|numeric',
             'payment_status' => 'required|in:paid,unpaid,partial',
+            'discount_amount' => 'nullable|numeric|min:0',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:product_types,id',
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
         ]);
     
-        // Calcular totales
-        $totalAmount = collect($request->products)->sum(function ($p) {
-            return $p['quantity'] * $p['price'];
-        });
-    
-        $taxAmount = $data['tax_amount'] ?? 0;
+        // Variables iniciales
         $discountAmount = $data['discount_amount'] ?? 0;
-        $netAmount = $totalAmount + $taxAmount - $discountAmount;
+        $totalAmount = 0;       // Total con IVA incluido
+        $totalIva = 0;          // IVA total calculado
+        $totalGravada = 0;      // Base imponible total (sin IVA)
+    
+        // Calcular totales según productos (precio ya incluye IVA)
+        foreach ($request->products as $p) {
+            $cantidad = $p['quantity'];
+            $precioConIVA = $p['price'];
+            $subtotalConIVA = $cantidad * $precioConIVA;
+    
+            // Desglosar IVA hacia atrás
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+    
+            $totalAmount += $subtotalConIVA;
+            $totalGravada += $baseSinIVA;
+            $totalIva += $ivaItem;
+        }
+    
+        // Aplicar descuentos si existen (afectan base + IVA)
+        $netAmount = $totalAmount - $discountAmount;
     
         // Totales para DTE
         $total_no_gravado = 0;
         $total_exenta = 0;
-        $total_gravada = $netAmount;
-        $total_iva = $taxAmount;
+        $total_gravada = round($totalGravada, 2);
+        $total_iva = round($totalIva, 2);
     
         // Obtener siguiente número de factura
         $invoiceNumber = InvoiceNumber::getNextNumber($store->id);
     
         // Generar número de control siguiendo patrón aceptado por Hacienda
         $prefix = "DTE-01-";
-        
-        // Parte central: S###P###
         $partCentral = 'S' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT) 
                        . 'P' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
-        
-        // Parte final: 15 dígitos numéricos
         $partFinal = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
-        
-        // Combinar todo
         $numeroControl = $prefix . $partCentral . '-' . $partFinal;
-        
-        // Código de generación: UUID en mayúsculas
         $codigoGeneracion = strtoupper(Str::uuid()->toString());
-        
     
         // Crear venta
         $sale = Sale::create([
             'customers_id' => $data['customers_id'] ?? null,
             'sale_date' => $data['sale_date'],
             'payment_status' => $data['payment_status'],
-            'total_amount' => $totalAmount,
-            'net_amount' => $netAmount,
+            'total_amount' => round($totalAmount, 2),
+            'net_amount' => round($netAmount, 2),
             'store_id' => $store->id,
             'user_id' => Auth::id(),
             'tipo_moneda' => 'USD',
@@ -125,20 +130,24 @@ class SaleController extends Controller
     
         // Crear detalles de venta
         foreach ($request->products as $product) {
+            $precioConIVA = $product['price'];
+            $subtotalConIVA = $product['quantity'] * $precioConIVA;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+    
             $sale->details()->create([
                 'product_type_id' => $product['id'],
                 'quantity' => $product['quantity'],
-                'unit_price' => $product['price'],
-                'subtotal' => $product['quantity'] * $product['price'],
+                'unit_price' => $precioConIVA,
+                'subtotal' => $subtotalConIVA,
+                'iva_item' => round($ivaItem, 2),
             ]);
         }
-    
     
         // Generar DTE
         try {
             app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
         } catch (\Throwable $e) {
-            // Log si falla la generación del DTE, pero no interrumpe la venta
             \Log::error('Error generando DTE: ' . $e->getMessage());
         }
     

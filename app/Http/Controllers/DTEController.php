@@ -61,13 +61,18 @@ class DTEController extends Controller
                     'response' => $signedData
                 ], 400);
             }
-
-            // Enviar DTE firmado a Hacienda
             $mhResponse = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => $token, 
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', $signedData["body"]);
+                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', [
+                    'ambiente' => '00',
+                    'idEnvio' => 1,
+                    'version' => 1,
+                    'tipoDte' => '01',
+                    'codigoGeneracion' => $sale->codigo_generacion,
+                    'documento' => $signedData["body"]
+                ]);
 
             Log::info('Hacienda Response', [
                 'status' => $mhResponse->status(),
@@ -122,35 +127,45 @@ class DTEController extends Controller
             "direccion" => [
                 "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
                 "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
-                "complemento" => $customer->direccion_complemento 
+                "complemento" => $customer->direccion_complemento
             ],
             "telefono" => $customer->telefono ?? "00000000",
             "correo" => $customer->correo ?? "cliente@prueba.com"
         ];
 
-        // Cuerpo documento
+        // Cuerpo documento (productos con IVA incluido)
         $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
+            $subtotalConIVA = (float) $detail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+
             return [
                 "numItem" => $index + 1,
-                "tipoItem" => 4,
+                "tipoItem" => 1,
                 "numeroDocumento" => null,
-                "codigo" => "P" . str_pad($index + 1, 3, "0", STR_PAD_LEFT),
+                "codigo" => null,
                 "codTributo" => null,
                 "descripcion" => $detail->productType->name,
                 "cantidad" => (float) $detail->quantity,
-                "uniMedida" => 99,
-                "precioUni" => (float) $detail->unit_price,
-                "montoDescu" => 0.00,
-                "ventaNoSuj" => 0.00,
-                "ventaExenta" => 0.00,
-                "ventaGravada" => (float) $detail->subtotal,
+                "uniMedida" => 59,
+                "precioUni" => round((float) $detail->unit_price, 2),
+                "montoDescu" => 0,
+                "ventaNoSuj" => 0,
+                "ventaExenta" => 0,
+                "ventaGravada" => round($subtotalConIVA, 2),
                 "tributos" => null,
-                "psv" => 0.00,
-                "noGravado" => 0.00,
-                "ivaItem" => (float) ($detail->subtotal * 0.13)
+                "psv" => 0,
+                "noGravado" => 0,
+                "ivaItem" => round($ivaItem, 2)
             ];
         })->toArray();
-        
+
+        // Total IVA para el resumen
+        $totalIva = $sale->details->sum(function ($detail) {
+            $subtotalConIVA = (float) $detail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            return $baseSinIVA * 0.13;
+        });
 
         return [
             "identificacion" => [
@@ -195,22 +210,22 @@ class DTEController extends Controller
             "resumen" => [
                 "totalNoSuj" => 0.00,
                 "totalExenta" => 0.00,
-                "totalGravada" => (float) $sale->total_gravada,
-                "subTotalVentas" => (float) $sale->total_gravada,
+                "totalGravada" => round($sale->net_amount, 2),
+                "subTotalVentas" => round($sale->net_amount, 2),
                 "descuNoSuj" => 0.00,
                 "descuExenta" => 0.00,
                 "descuGravada" => 0.00,
                 "porcentajeDescuento" => 0.00,
                 "totalDescu" => 0.00,
                 "tributos" => null,
-                "subTotal" => (float) $sale->total_gravada,
+                "subTotal" => round($sale->net_amount, 2),
                 "ivaRete1" => 0.00,
                 "reteRenta" => 0.00,
-                "montoTotalOperacion" => (float) $sale->net_amount,
+                "montoTotalOperacion" => round($sale->net_amount, 2),
                 "totalNoGravado" => 0.00,
-                "totalPagar" => (float) $sale->net_amount,
-                "totalLetras" => $sale->total_letras ?? "Ciento trece dólares 00/100",
-                "totalIva" => null,
+                "totalPagar" => round($sale->net_amount, 2),
+                "totalLetras" => $sale->total_letras ?? "SEIS DÓLARES 78/100",
+                "totalIva" => round($totalIva, 2),
                 "saldoFavor" => 0.00,
                 "condicionOperacion" => 1,
                 "pagos" => null,

@@ -34,7 +34,7 @@
             </tbody>
         </table>
 
-        <p><strong>Total:</strong> {{ number_format($sale->total, 2) }}</p>
+        <p><strong>Total:</strong> {{ number_format($sale->net_amount, 2) }}</p>
     </div>
 
     <div class="gestok-form-actions mt-3">
