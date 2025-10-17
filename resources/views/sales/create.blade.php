@@ -137,6 +137,18 @@
         <form action="{{ route('stores.sales.store', $store->id) }}" method="POST">
             @csrf
 
+            <!-- Selección de tipo de documento -->
+            <label for="tipo_documento_id">Tipo de Venta</label>
+            <select id="tipo_documento_id" name="tipo_documento_id" class="form-control">
+                @foreach($tipoDocumentos as $tipoDocumento)
+                <option value="{{ $tipoDocumento->id }}"
+                    {{ old('tipo_documento_id') == $tipoDocumento->id ? 'selected' : '' }}>
+                    {{ $tipoDocumento->nombre }}
+                </option>
+                @endforeach
+            </select>
+
+
             <!-- Selección de cliente -->
             <label for="customers_id">Cliente</label>
             <select id="customers_id" name="customers_id" class="form-control">

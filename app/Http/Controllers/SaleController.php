@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\ProductType;
 use App\Models\InvoiceNumber;
 use App\Models\Store;
+use App\Models\TipoDte;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -47,7 +48,8 @@ class SaleController extends Controller
         $this->validateStoreAccess($store);
         $customers = Customer::where('store_id', $store->id)->get();
         $products = ProductType::where('store_id', $store->id)->get();
-        return view('sales.create', compact('store', 'customers', 'products'));
+        $tipoDocumentos = TipoDte::all();
+        return view('sales.create', compact('store', 'tipoDocumentos', 'customers', 'products'));
     }
 
     public function store(Request $request, Store $store)
@@ -64,21 +66,20 @@ class SaleController extends Controller
             'products.*.id' => 'required|exists:product_types,id',
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
+            'tipo_documento_id' => 'required|exists:tipo_documento,id', // <-- nuevo campo
         ]);
     
-        // Variables iniciales
+        // Calcular totales
         $discountAmount = $data['discount_amount'] ?? 0;
-        $totalAmount = 0;       // Total con IVA incluido
-        $totalIva = 0;          // IVA total calculado
-        $totalGravada = 0;      // Base imponible total (sin IVA)
+        $totalAmount = 0;
+        $totalIva = 0;
+        $totalGravada = 0;
     
-        // Calcular totales según productos (precio ya incluye IVA)
         foreach ($request->products as $p) {
             $cantidad = $p['quantity'];
             $precioConIVA = $p['price'];
             $subtotalConIVA = $cantidad * $precioConIVA;
     
-            // Desglosar IVA hacia atrás
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
     
@@ -87,25 +88,21 @@ class SaleController extends Controller
             $totalIva += $ivaItem;
         }
     
-        // Aplicar descuentos si existen (afectan base + IVA)
         $netAmount = $totalAmount - $discountAmount;
-    
-        // Totales para DTE
         $total_no_gravado = 0;
         $total_exenta = 0;
         $total_gravada = round($totalGravada, 2);
         $total_iva = round($totalIva, 2);
-    
-        // Obtener siguiente número de factura
+        
+        $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
+        // Número de factura y control
         $invoiceNumber = InvoiceNumber::getNextNumber($store->id);
-    
-        // Generar número de control siguiendo patrón aceptado por Hacienda
-        $prefix = "DTE-01-";
+        $prefix = "DTE-{$tipoDTE}-";
         $partCentral = 'S' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT) 
                        . 'P' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
         $partFinal = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
         $numeroControl = $prefix . $partCentral . '-' . $partFinal;
-        $codigoGeneracion = strtoupper(Str::uuid()->toString());
+        $codigoGeneracion = strtoupper(\Str::uuid()->toString());
     
         // Crear venta
         $sale = Sale::create([
@@ -115,7 +112,7 @@ class SaleController extends Controller
             'total_amount' => round($totalAmount, 2),
             'net_amount' => round($netAmount, 2),
             'store_id' => $store->id,
-            'user_id' => Auth::id(),
+            'user_id' => auth()->id(),
             'tipo_moneda' => 'USD',
             'tipo_operacion' => 1,
             'condicion_operacion' => 1,
@@ -126,9 +123,10 @@ class SaleController extends Controller
             'numero_control' => $numeroControl,
             'codigo_generacion' => $codigoGeneracion,
             'invoice_number' => $invoiceNumber->number,
+            'tipo_documento_id' => $data['tipo_documento_id'], // <-- asignar el tipo de DTE
         ]);
     
-        // Crear detalles de venta
+        // Crear detalles
         foreach ($request->products as $product) {
             $precioConIVA = $product['price'];
             $subtotalConIVA = $product['quantity'] * $precioConIVA;
@@ -144,7 +142,7 @@ class SaleController extends Controller
             ]);
         }
     
-        // Generar DTE
+        // Generar DTE según tipo de documento
         try {
             app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
         } catch (\Throwable $e) {
@@ -154,6 +152,7 @@ class SaleController extends Controller
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente.');
     }
+    
     
     public function show(Store $store, Sale $sale)
     {

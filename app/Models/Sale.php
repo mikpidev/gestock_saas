@@ -18,6 +18,7 @@ class Sale extends Model
     protected $fillable = [
         'store_id',
         'user_id',
+        'tipo_documento_id',
         'customers_id',
         'sale_date',
         'total_amount',
@@ -64,4 +65,11 @@ class Sale extends Model
     {
         return $this->hasMany(SaleDetail::class);
     }
+
+    //relacion con tipo_documento TipoDTE
+    public function tipoDte()
+    {
+        return $this->belongsTo(TipoDte::class, 'tipo_documento_id');
+    }
+
 }
