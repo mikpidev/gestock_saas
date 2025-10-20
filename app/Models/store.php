@@ -31,21 +31,22 @@ class Store extends Model
 
 
 
-    
-        //eliminacion en cascada de la informacion fiscal al eliminar un establecimiento    
-    protected static function booted(){
-        static::deleting(function($store){
+
+    //eliminacion en cascada de la informacion fiscal al eliminar un establecimiento    
+    protected static function booted()
+    {
+        static::deleting(function ($store) {
             if ($store->taxInfoDelete) {
                 $store->taxInfoDelete->delete();
             }
-            
         });
     }
 
     //eliminacion en cascada de los usuarios y productos al eliminar un establecimiento
-    protected static function boot(){
+    protected static function boot()
+    {
         parent::boot();
-        static::deleting(function($store){
+        static::deleting(function ($store) {
             foreach ($store->users as $user) {
                 $user->delete();
             }
@@ -60,7 +61,7 @@ class Store extends Model
     {
         return $this->belongsTo(Company::class);
     }
-    
+
     //relacion con la informacion fiscal
     public function taxInfo()
     {
@@ -92,5 +93,8 @@ class Store extends Model
         return $this->hasMany(Sale::class);
     }
 
-    
+    public function creditNotes()
+    {
+        return $this->hasMany(CreditNote::class);
+    }
 }

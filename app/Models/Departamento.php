@@ -23,4 +23,10 @@ class Departamento extends Model
     {
         return $this->hasMany(Customer::class, 'direccion_departamento', 'codigo');
     }
+
+    
+    public function storetaxInfo()
+    {
+        return $this->hasMany(StoreTaxInfo::class, 'direccion_departamento', 'codigo');
+    }
 }

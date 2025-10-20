@@ -49,12 +49,12 @@ class StoreTaxInfo extends Model
     // Departamento (clave foránea: direccion_departamento → departamentos.id)
     public function departamento()
     {
-        return $this->belongsTo(Departamento::class, 'direccion_departamento', 'id');
+        return $this->belongsTo(Departamento::class, 'direccion_departamento', 'codigo');
     }
 
     // Municipio (clave foránea: direccion_municipio → municipios.id)
     public function municipio()
     {
-        return $this->belongsTo(Municipio::class, 'direccion_municipio', 'id');
+        return $this->belongsTo(Municipio::class, 'direccion_municipio', 'codigo');
     }
 }

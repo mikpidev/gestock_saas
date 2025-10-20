@@ -23,4 +23,10 @@ class Municipio extends Model
     {
         return $this->hasMany(Customer::class, 'direccion_municipio', 'codigo');
     }
+
+    
+    public function storetaxInfo()
+    {
+        return $this->hasMany(StoreTaxInfo::class, 'direccion_municipio', 'codigo');
+    }
 }

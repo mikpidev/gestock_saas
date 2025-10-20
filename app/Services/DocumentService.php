@@ -6,6 +6,9 @@ use App\Models\Sale;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use App\Models\CreditNote;
+
 
 class DocumentService
 {
@@ -43,6 +46,7 @@ class DocumentService
     {
         $customer = $sale->customer;
         $isConsumidorFinal = !$customer;
+        $storeTaxInfo = $sale->store->taxInfo;
 
         // Receptor
         $receptor = $isConsumidorFinal ? [
@@ -125,21 +129,23 @@ class DocumentService
                 "motivoContin" => null
             ],
             "documentoRelacionado" => null,
-            "emisor" => [
-                "nit" => "04142309731011",
-                "nrc" => "2515932",
-                "nombre" => "JOSE ISRAEL RIVERA MORALES",
-                "codActividad" => "56101",
-                "descActividad" => "Comercio de productos varios",
-                "nombreComercial" => "JOSE ISRAEL RIVERA MORALES",
-                "tipoEstablecimiento" => "01",
+            "emisor" =>[
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "nombreComercial" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01"
+                
+                ,
                 "direccion" => [
-                    "departamento" => "06",
-                    "municipio" => "20",
-                    "complemento" => "Colonia Escalón"
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
                 ],
-                "telefono" => "22223333",
-                "correo" => "contacto@ejemplo.com",
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
                 "codEstableMH" => null,
                 "codEstable" => null,
                 "codPuntoVentaMH" => null,
@@ -190,6 +196,8 @@ class DocumentService
     public function buildDTEJsonCF(Sale $sale, array $dteRelacionado = []): array
     {
         $customer = $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+
 
         // Cuerpo documento
         $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
@@ -236,21 +244,23 @@ class DocumentService
                 "motivoContin" => null
             ],
             "documentoRelacionado" => $dteRelacionado ?: null,
-            "emisor" => [
-                "nit" => "04142309731011",
-                "nrc" => "2515932",
-                "nombre" => "JOSE ISRAEL RIVERA MORALES",
-                "codActividad" => "56101",
-                "descActividad" => "Comercio de productos varios",
-                "nombreComercial" => "JOSE ISRAEL RIVERA MORALES",
-                "tipoEstablecimiento" => "01",
+            "emisor" =>[
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "nombreComercial" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01"
+                
+                ,
                 "direccion" => [
-                    "departamento" => "06",
-                    "municipio" => "20",
-                    "complemento" => "Colonia Escalón"
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
                 ],
-                "telefono" => "22223333",
-                "correo" => "contacto@ejemplo.com",
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
                 "codEstableMH" => null,
                 "codEstable" => null,
                 "codPuntoVentaMH" => null,
@@ -335,7 +345,123 @@ class DocumentService
         ];
     }
 
+    /** Crea el Json para NC (Notas de credito) */
 
+    public function buildDTEJsonNC(CreditNote $creditNote, Sale $sale): array
+    {
+        $sale = $creditNote->sale;
+        $customer = $creditNote->customer ?? $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+        
+        $cuerpoDocumento = $sale->details->map(function($detail, $index) use ($sale) {
+            $subtotalConIVA = (float) $detail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+            
+    
+            return [
+                "numItem" => $index + 1,
+                "tipoItem" => 1,
+                "numeroDocumento" => $sale->codigo_generacion,
+                "codigo" => $detail->productType->code ?? 'NA',
+                "codTributo" => null,
+                "descripcion" => $detail->productType->name,
+                "cantidad" => (float) $detail->quantity,
+                "uniMedida" => 59,
+                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
+                "montoDescu" => 0.00,
+                "ventaNoSuj" => 0.00,
+                "ventaExenta" => 0.00,
+                "ventaGravada" => round($baseSinIVA, 2),
+                "tributos" => ["20"],
+            ];
+        })->toArray();
+    
+        return [
+            "identificacion" => [
+                "version" => 3,
+                "ambiente" => "00",
+                "tipoDte" => "05",
+                "numeroControl" => $creditNote->numero_control,
+                "codigoGeneracion" => $creditNote->codigo_generacion,
+                "tipoModelo" => 1,
+                "tipoOperacion" => 1,
+                "fecEmi" => $creditNote->created_at->format('Y-m-d'),
+                "horEmi" => now()->format('H:i:s'),
+                "tipoMoneda" => "USD",
+                "tipoContingencia" => null,
+                "motivoContin" => null
+            ],
+            "documentoRelacionado" => [
+                [
+                "tipoDocumento" => str_pad((string) ($sale->tipoDte->codigo), 2, "0", STR_PAD_LEFT),
+                "tipoGeneracion" => 2,
+                "numeroDocumento" => $sale->codigo_generacion,
+                "fechaEmision" => $sale->sale_date->format('Y-m-d')
+                ]
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "nombreComercial" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01",
+                "direccion" => [
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
+                ],
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+            ],
+            "receptor" => [
+                "nit" => $customer->numDocumento ?? "00000000000000",
+                "nrc" => $customer->nrc ?? null,
+                "nombre" => $customer->nombre,
+                "nombreComercial" => $customer->nombreComercial,
+                "codActividad" => $customer->codActividad ?? null,
+                "descActividad" => $customer->descActividad ?? null,
+                "direccion" => [
+                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $customer->direccion_complemento
+                ],
+                "telefono" => $customer->telefono ?? "00000000",
+                "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+            "ventaTercero" => null,
+            "cuerpoDocumento" => $cuerpoDocumento,
+            "resumen" => [
+                "totalNoSuj" => 0.00,
+                "totalExenta" => 0.00,
+                "totalGravada" => round($sale->total_gravada, 2),
+                "subTotalVentas" => round($sale->total_gravada, 2),
+                "descuNoSuj" => 0.00,
+                "descuExenta" => 0.00,
+                "descuGravada" => 0.00,
+                "totalDescu" => 0.00,
+                "tributos" => [
+                    [
+                        "codigo" => "20",
+                        "descripcion" => "IVA",
+                        "valor" => round($sale->total_iva, 2)
+                    ]
+                ],
+                "subTotal" => round($sale->total_gravada, 2),
+                "ivaPerci1" => 0.00,
+                "ivaRete1" => 0.00,
+                "reteRenta" => 0.00,
+                "montoTotalOperacion" => round($sale->net_amount, 2),
+                "totalLetras" => $this->totalEnLetras($sale->net_amount),
+                "condicionOperacion" => 1
+            ],
+            "extension" => null,
+            "apendice" => null
+        ];
+    }
+    
 
     /**
      * Firma el documento usando el firmador local

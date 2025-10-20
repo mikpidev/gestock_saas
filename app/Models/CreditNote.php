@@ -3,38 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Store;
-use App\Models\User;
-use App\Models\Customer;
-use App\Models\SaleDetail;
 
-class Sale extends Model
+class CreditNote extends Model
 {
-    use SoftDeletes, HasFactory;
+    //fillable
 
-    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'store_id',
         'user_id',
-        'tipo_documento_id',
         'customers_id',
+        'sale_id',
         'sale_date',
         'total_amount',
         'tax_amount',
         'discount_amount',
         'net_amount',
-        'payment_status',
-        'numero_control',      // número de control para DTE
-        'codigo_generacion',   // UUID para DTE
+
+        // Campos nuevos para DTE
         'tipo_moneda',
+        'numero_control',
+        'codigo_generacion',
         'tipo_operacion',
+        'tipo_contingencia',
+        'motivo_contingencia',
         'condicion_operacion',
+
+        //Documento Relacionado
+        'documento_relacionado',
+
+        // Totales desglosados
         'total_no_gravado',
         'total_exenta',
         'total_gravada',
         'total_iva',
+
+        'payment_status',
     ];
 
     // Casting de fechas
@@ -72,9 +75,11 @@ class Sale extends Model
         return $this->belongsTo(TipoDte::class, 'tipo_documento_id');
     }
 
-    // Relación con las notas de crédito asociadas a esta venta
-    public function creditNotes()
+    //relacion con la venta original
+    public function sale()
     {
-        return $this->hasMany(CreditNote::class);
+        return $this->belongsTo(Sale::class, 'sale_id');
     }
-}   
+
+    
+}

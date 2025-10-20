@@ -33,6 +33,7 @@ class ReceptionService
         $versionDTE = [
             '01' => 1, // Factura Electrónica
             '03' => 3, // Comprobante Fiscal (CCF)
+            '14' => 4  // Nota de Crédito Electrónica
         ];
     
         $version = $versionDTE[$tipoDTE]; 
@@ -69,4 +70,49 @@ class ReceptionService
             ];
         }
     }
+
+    public function sendNCToHacienda($creditNote, $signedData, $token)
+    {
+        // Obtener código de DTE directamente de la relación
+        $tipoDTE = '05'; // Código fijo para Nota de Crédito Electrónica
+
+        $versionDTE = 3;
+
+        $version = $versionDTE;
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $token,
+                'Content-Type' => 'application/json'
+            ])->withOptions(['verify' => false])
+            ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', [
+                'ambiente' => '00',
+                'idEnvio' => 1,
+                'version' => $version,
+                'tipoDte' => $tipoDTE, 
+                'codigoGeneracion' => $creditNote->codigo_generacion,
+                'documento' => $signedData['body'] ?? null
+            ]);
+
+            Log::info("Hacienda Response ({$tipoDTE})", [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            return $response->json();
+        } catch (\Throwable $th) {
+            Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
+                'credit_note_id' => $creditNote->id,
+                'tipo_documento' => $creditNote->tipo_documento_id,
+                'trace' => $th->getTraceAsString()
+            ]);
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => $th->getMessage()
+            ];
+        }
+
+    }
+
+
 }

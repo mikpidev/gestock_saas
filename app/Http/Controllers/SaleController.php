@@ -11,7 +11,6 @@ use App\Models\Store;
 use App\Models\TipoDte;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class SaleController extends Controller
 {
@@ -66,7 +65,7 @@ class SaleController extends Controller
             'products.*.id' => 'required|exists:product_types,id',
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
-            'tipo_documento_id' => 'required|exists:tipo_documento,id', // <-- nuevo campo
+            'tipo_documento_id' => 'required|exists:tipo_documento,id',
         ]);
     
         // Calcular totales
@@ -95,16 +94,11 @@ class SaleController extends Controller
         $total_iva = round($totalIva, 2);
         
         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
-        // Número de factura y control
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id);
-        $prefix = "DTE-{$tipoDTE}-";
-        $partCentral = 'S' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT) 
-                       . 'P' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
-        $partFinal = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
-        $numeroControl = $prefix . $partCentral . '-' . $partFinal;
-        $codigoGeneracion = strtoupper(\Str::uuid()->toString());
-    
-        // Crear venta
+
+        // Generar next invoice y número de control
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE);
+
+        // Crear la venta
         $sale = Sale::create([
             'customers_id' => $data['customers_id'] ?? null,
             'sale_date' => $data['sale_date'],
@@ -120,10 +114,10 @@ class SaleController extends Controller
             'total_exenta' => $total_exenta,
             'total_gravada' => $total_gravada,
             'total_iva' => $total_iva,
-            'numero_control' => $numeroControl,
-            'codigo_generacion' => $codigoGeneracion,
+            'numero_control' => $invoiceNumber->numero_control,
+            'codigo_generacion' => $invoiceNumber->codigo_generacion,
             'invoice_number' => $invoiceNumber->number,
-            'tipo_documento_id' => $data['tipo_documento_id'], // <-- asignar el tipo de DTE
+            'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
         ]);
     
         // Crear detalles

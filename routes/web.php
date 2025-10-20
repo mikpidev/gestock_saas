@@ -182,6 +182,17 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('/catalogos/municipios', [MunicipioController::class, 'index'])->name('municipios.index');
     Route::get('/catalogos/municipios/{codigo}', [MunicipioController::class, 'byDepartamento'])->name('municipios.byDepartamento');
 
+    //ruta notas de credito
+    Route::get('stores/{store}/creditnotes', [\App\Http\Controllers\CreditNoteController::class, 'index'])
+        ->name('stores.creditnotes.index');
+    Route::get('stores/{store}/creditnotes/create', [\App\Http\Controllers\CreditNoteController::class, 'create'])
+        ->name('stores.creditnotes.create');
+    Route::post('stores/{store}/creditnotes', [\App\Http\Controllers\CreditNoteController::class, 'store'])
+        ->name('stores.creditnotes.store');
+    Route::get('stores/{store}/creditnotes/{creditNote}', [\App\Http\Controllers\CreditNoteController::class, 'show'])
+        ->name('stores.creditnotes.show');
+    Route::delete('stores/{store}/creditnotes/{creditNote}', [\App\Http\Controllers\CreditNoteController::class, 'destroy'])
+        ->name('stores.creditnotes.destroy');
 
-    Route::get('/test-dte', [DTEController::class, 'testDTE']);
+
 });
