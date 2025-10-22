@@ -16,6 +16,10 @@ use App\Http\Controllers\ActividadEconomicaController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\DTEController;
+use App\Models\Sale;
+use App\Http\Controllers\CreditNoteController;
+
+
 
 
 
@@ -194,5 +198,15 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::delete('stores/{store}/creditnotes/{creditNote}', [\App\Http\Controllers\CreditNoteController::class, 'destroy'])
         ->name('stores.creditnotes.destroy');
 
+    Route::get('/sales/{sale}/details', function (Sale $sale) {
+        $details = $sale->details()->with('productType')->get();
+
+        return response()->json([
+            'details' => $details
+        ]);
+    });
+
+    Route::get('/stores/{store}/sales/{sale}/details', [CreditNoteController::class, 'getSaleDetails'])
+    ->name('stores.sales.details');
 
 });

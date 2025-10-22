@@ -75,6 +75,8 @@ class SaleController extends Controller
         $totalGravada = 0;
     
         foreach ($request->products as $p) {
+            $product = ProductType::findOrFail($p['id']); // precio seguro
+
             $cantidad = $p['quantity'];
             $precioConIVA = $p['price'];
             $subtotalConIVA = $cantidad * $precioConIVA;

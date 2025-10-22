@@ -3,12 +3,11 @@
 @section('content')
 
 <style>
-    /* Se mantiene el mismo estilo */
     .gestok-form-card {
         background: #fff;
         color: #000;
         width: 100%;
-        max-width: 450px;
+        max-width: 800px;
         border-radius: 10px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         overflow: hidden;
@@ -83,6 +82,50 @@
         flex-direction: column;
     }
 
+    .details-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+
+    .details-table th,
+    .details-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .details-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .details-table input[type="number"] {
+        width: 80px;
+        padding: 0.3rem;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+
+    .sale-details-section {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        background: #f9f9f9;
+    }
+
+    .sale-info {
+        background: #e8f4fd;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+
+    .quantity-input {
+        text-align: center;
+    }
+
     @media (min-width: 400px) {
         .gestok-form-actions {
             flex-direction: row;
@@ -103,71 +146,168 @@
     </div>
 
     <div class="gestok-form-body">
-        <form action="{{ route('stores.creditnotes.store', $store->id) }}" method="POST">
+        <form action="{{ route('stores.creditnotes.store', $store->id) }}" method="POST" id="creditNoteForm">
             @csrf
 
             <!-- Seleccionar la venta asociada -->
-            <label for="sale_id">Venta relacionada</label>
-            <select id="sale_id" name="sale_id" required>
+            <label for="sale_id">Venta relacionada *</label>
+            <select id="sale_id" name="sale_id" required onchange="showSaleDetails()">
                 <option value="">-- Selecciona una venta --</option>
                 @foreach($sales as $sale)
-                    <option value="{{ $sale->id }}" {{ old('sale_id') == $sale->id ? 'selected' : '' }}>
-                        #{{ $sale->codigo_generacion }} — {{ $sale->customer->nombre ?? 'Sin cliente' }} ({{ $sale->sale_date->format('d/m/Y') }})
-                    </option>
+                <option value="{{ $sale->id }}"
+                    data-customer="{{ $sale->customer->nombre ?? 'Sin cliente' }}"
+                    data-date="{{ $sale->sale_date->format('d/m/Y') }}"
+                    data-total="{{ number_format($sale->total_amount, 2) }}"
+                    data-details='@json($sale->details)'>
+                    #{{ $sale->codigo_generacion }} — {{ $sale->customer->nombre ?? 'Sin cliente' }} ({{ $sale->sale_date->format('d/m/Y') }}) - ${{ number_format($sale->total_amount, 2) }}
+                </option>
                 @endforeach
             </select>
             @error('sale_id')
-                <div class="text-danger">{{ $message }}</div>
+            <div class="text-danger">{{ $message }}</div>
             @enderror
+
+            <!-- Información de la venta seleccionada -->
+            <div id="saleInfo" class="sale-info" style="display: none;">
+                <strong>Venta seleccionada:</strong>
+                <span id="saleCustomer"></span> -
+                <span id="saleDate"></span> -
+                Total: $<span id="saleTotal"></span>
+            </div>
+
+            <!-- Detalles de la venta -->
+            <div id="saleDetailsSection" class="sale-details-section" style="display: none;">
+                <h4>Seleccionar productos a acreditar</h4>
+                <p class="text-muted">Ingresa las cantidades que deseas acreditar de cada producto:</p>
+
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Precio Unit.</th>
+                            <th>Disponible</th>
+                            <th>Cant. a Acreditar</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="saleDetailsBody">
+                        <!-- Filas generadas dinámicamente -->
+                    </tbody>
+                </table>
+
+                <!-- Resumen de totales -->
+                <div id="totalsSummary" style="margin-top: 1rem; padding: 1rem; background: #f0f0f0; border-radius: 5px; display: none;">
+                    <strong>Resumen:</strong><br>
+                    Subtotal: $<span id="summarySubtotal">0.00</span><br>
+                    IVA (13%): $<span id="summaryTax">0.00</span><br>
+                    <strong>Total a acreditar: $<span id="summaryTotal">0.00</span></strong>
+                </div>
+            </div>
 
             <!-- Fecha de emisión -->
-            <label for="credit_date">Fecha de emisión</label>
-            <input type="date" id="credit_date" name="credit_date" value="{{ old('credit_date', now()->format('Y-m-d')) }}" required>
-            @error('credit_date')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-
-            <!-- Monto total -->
-            <label for="amount">Monto total</label>
-            <input type="number" step="0.01" id="amount" name="amount" value="{{ old('amount') }}" placeholder="Ej: 125.50" required>
-            @error('amount')
-                <div class="text-danger">{{ $message }}</div>
+            <label for="credit_note_date">Fecha de emisión *</label>
+            <input type="date" id="credit_note_date" name="credit_note_date" value="{{ old('credit_note_date', now()->format('Y-m-d')) }}" required>
+            @error('credit_note_date')
+            <div class="text-danger">{{ $message }}</div>
             @enderror
 
             <!-- Motivo -->
-            <label for="reason">Motivo</label>
-            <textarea id="reason" name="reason" rows="3" placeholder="Ejemplo: Devolución de producto, descuento aplicado..." required>{{ old('reason') }}</textarea>
+            <label for="reason">Motivo de la nota de crédito *</label>
+            <textarea id="reason" name="reason" rows="3" placeholder="Ejemplo: Devolución de producto, producto defectuoso, error en facturación..." required>{{ old('reason') }}</textarea>
             @error('reason')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-
-            <!-- Estado -->
-            <label for="status">Estado</label>
-            <select id="status" name="status" required>
-                <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Borrador</option>
-                <option value="issued" {{ old('status') == 'issued' ? 'selected' : '' }}>Emitida</option>
-                <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Anulada</option>
-            </select>
-            @error('status')
-                <div class="text-danger">{{ $message }}</div>
+            <div class="text-danger">{{ $message }}</div>
             @enderror
 
             <div class="gestok-form-actions">
-                <button type="submit" class="btn">Crear Nota de Crédito</button>
+                <button type="submit" class="btn" id="submitBtn" disabled>Crear Nota de Crédito</button>
                 <a href="{{ route('stores.creditnotes.index', $store->id) }}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
 
-@if ($errors->any())
-<div class="alert alert-danger mt-3">
-    <ul>
-        @foreach ($errors->all() as $error)
-        <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-</div>
-@endif
+<script>
+    function showSaleDetails() {
+        const saleId = document.getElementById('sale_id').value;
+        const saleInfo = document.getElementById('saleInfo');
+        const tbody = document.getElementById('saleDetailsBody');
+        const submitBtn = document.getElementById('submitBtn');
+
+        tbody.innerHTML = ''; // limpiar tabla
+
+        if (!saleId) {
+            saleInfo.style.display = 'none';
+            document.getElementById('saleDetailsSection').style.display = 'none';
+            submitBtn.disabled = true;
+            return;
+        }
+
+        const selectedOption = document.querySelector(`#sale_id option[value="${saleId}"]`);
+        document.getElementById('saleCustomer').textContent = selectedOption.dataset.customer;
+        document.getElementById('saleDate').textContent = selectedOption.dataset.date;
+        document.getElementById('saleTotal').textContent = selectedOption.dataset.total;
+        saleInfo.style.display = 'block';
+        document.getElementById('saleDetailsSection').style.display = 'block';
+
+        // cargar detalles desde data-details
+        const details = JSON.parse(selectedOption.dataset.details);
+
+        details.forEach(detail => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    ${detail.product_type?.name || 'Producto'}
+                    <input type="hidden" name="items[${detail.id}][sale_detail_id]" value="${detail.id}">
+                </td>
+                <td>$${parseFloat(detail.unit_price).toFixed(2)}</td>
+                <td>${parseFloat(detail.quantity).toFixed(2)}</td>
+                <td class="quantity-input">
+                    <input type="number"
+                        name="items[${detail.id}][quantity]"
+                        value="0"
+                        min="0"
+                        max="${parseFloat(detail.quantity).toFixed(2)}"
+                        step="1"
+                        onchange="updateTotals()"
+                        class="quantity-field">
+                </td>
+                <td class="item-subtotal">$0.00</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        updateTotals();
+    }
+
+    function updateTotals() {
+        const quantityFields = document.querySelectorAll('.quantity-field');
+        let subtotal = 0;
+
+        quantityFields.forEach(field => {
+            const quantity = parseFloat(field.value) || 0;
+            const unitPrice = parseFloat(field.closest('tr').querySelector('td:nth-child(2)').textContent.replace('$', ''));
+            const itemSubtotal = quantity * unitPrice;
+            field.closest('tr').querySelector('.item-subtotal').textContent = `$${itemSubtotal.toFixed(2)}`;
+            subtotal += itemSubtotal;
+        });
+
+        const tax = subtotal * 0.13;
+        const total = subtotal + tax;
+
+        document.getElementById('summarySubtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('summaryTax').textContent = tax.toFixed(2);
+        document.getElementById('summaryTotal').textContent = total.toFixed(2);
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = !Array.from(quantityFields).some(f => parseFloat(f.value) > 0);
+    }
+
+    document.getElementById('creditNoteForm').addEventListener('submit', function(e) {
+        if (!Array.from(document.querySelectorAll('.quantity-field')).some(f => parseFloat(f.value) > 0)) {
+            e.preventDefault();
+            alert('Debe seleccionar al menos un producto y cantidad para acreditar.');
+        }
+    });
+</script>
 
 @endsection

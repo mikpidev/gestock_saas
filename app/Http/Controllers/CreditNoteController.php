@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CreditNote;
+use App\Models\CreditNoteDetail;
 use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\SaleDetail;
@@ -13,6 +14,7 @@ use App\Models\Store;
 use App\Models\TipoDte;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+
 
 class CreditNoteController extends Controller
 {
@@ -59,7 +61,11 @@ class CreditNoteController extends Controller
         $this->validateStoreAccess($store);
         //mostrar ventas
 
-        $sales = $store->sales()->with('customer')->orderByDesc('sale_date')->get();
+        $sales = $store->sales()
+            ->with(['customer', 'details.productType'])
+            ->orderByDesc('sale_date')
+            ->get();
+
 
         return view('creditnotes.create', compact('store', 'sales'));
     }
@@ -71,55 +77,152 @@ class CreditNoteController extends Controller
     {
         // Validar acceso a la tienda
         $this->validateStoreAccess($store);
-    
-        // Validar únicamente los campos necesarios del formulario
+
+        // Validar campos incluyendo los items a acreditar
         $data = $request->validate([
             'sale_id' => 'required|exists:sales,id',
+            'credit_note_date' => 'required|date',
             'reason' => 'nullable|string|max:500',
+            'items' => 'required|array|min:1',
+            'items.*.sale_detail_id' => 'required|exists:sale_details,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
-    
-        // Obtener la venta asociada
-        $sale = Sale::with('customer')->findOrFail($data['sale_id']);
-    
-        // Obtener datos del cliente (puede ser null)
+
+        // Obtener la venta asociada con sus detalles
+        $sale = Sale::with(['customer', 'details', 'details.productType'])->findOrFail($data['sale_id']);
         $customer = $sale->customer;
 
         $tipoDTE = "05"; // Código para Nota de Crédito Electrónica
 
-    
-        // Obtener el correlativo (o tu generador interno)
+        // Calcular totales basados en los items a acreditar
+        $totales = $this->calcularTotalesNotaCredito($data['items'], $sale);
+
+        // Obtener el correlativo
         $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE);
-    
-        // Crear la nota de crédito usando la información de la venta
+
+
+
+        // Crear la nota de crédito
         $creditNote = CreditNote::create([
             'store_id' => $store->id,
             'sale_id' => $sale->id,
             'customers_id' => $customer?->id,
             'sale_date' => $sale->sale_date,
             'user_id' => Auth::id(),
-            'credit_note_date' => now(),
-            'total_amount' => $sale->total_amount,
-            'tax_amount' => $sale->tax_amount,
-            'discount_amount' => $sale->discount_amount,
-            'net_amount' => $sale->net_amount,
+            'credit_note_date' => $data['credit_note_date'],
+            'total_amount' => $totales['total_amount'],
+            'tax_amount' => $totales['tax_amount'],
+            'discount_amount' => 0.00,
+            'net_amount' => $totales['net_amount'],
             'numero_control' => $invoiceNumber?->numero_control ?? Str::upper(Str::random(8)),
             'codigo_generacion' => $invoiceNumber?->codigo_generacion ?? Str::uuid(),
             'invoice_number' => $invoiceNumber?->number ?? 'NC-' . now()->timestamp,
             'reason' => $data['reason'] ?? null,
+            'tipo_moneda' => 'USD',
+            'tipo_operacion' => 1,
+            'condicion_operacion' => 1,
+            // Campos de totales desglosados
+            'total_no_gravado' => 0.00,
+            'total_exenta' => 0.00,
+            'total_gravada' => $totales['subtotal'], // Base sin IVA
+            'total_iva' => $totales['tax_amount'],
+            'payment_status' => 'unpaid',
+            'documento_relacionado' => $sale->codigo_generacion, // Referencia a la factura original
         ]);
-    
-        // Generar DTE Json (manejo de errores incluido)
+
+        // Crear los detalles de la nota de crédito
+        foreach ($data['items'] as $itemData) {
+            $saleDetail = $sale->details->where('id', $itemData['sale_detail_id'])->first();
+            if ($saleDetail) {
+                $unitPrice = $saleDetail->unit_price;
+                $quantity = (float) $itemData['quantity'];
+                $subtotal = $unitPrice * $quantity;
+                $taxAmount = $subtotal * 0.13; // Asumiendo 13% IVA
+
+                CreditNoteDetail::create([
+                    'credit_note_id' => $creditNote->id,
+                    'sale_detail_id' => $saleDetail->id,
+                    'product_type_id' => $saleDetail->product_type_id,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $subtotal,
+                    'tax_amount' => $taxAmount,
+                ]);
+
+                \Log::info('ITEM DATA', $itemData);
+                \Log::info('SALE DETAIL ENCONTRADO', [$saleDetail]);
+            }
+        }
+
+        // En tu método store, DESPUÉS de crear los detalles:
+        $creditNote->load(['creditNoteDetails.saleDetail.productType', 'creditNoteDetails.productType']);
+
+        // Generar DTE
         try {
             app(\App\Http\Controllers\DTEController::class)->generarDTECreditNote($creditNote, $sale);
         } catch (\Throwable $e) {
             \Log::error('Error generando DTE: ' . $e->getMessage());
         }
-    
+
+
         return redirect()
             ->route('stores.creditnotes.index', $store->id)
             ->with('success', 'Nota de crédito creada correctamente.');
     }
-    
+
+    /**
+     * Calcular totales para la nota de crédito basado en los items seleccionados
+     */
+    private function calcularTotalesNotaCredito($items, $sale)
+    {
+        $subtotal = 0;
+        $taxAmount = 0;
+
+        foreach ($items as $itemData) {
+            $saleDetail = $sale->details->where('id', $itemData['sale_detail_id'])->first();
+
+            if ($saleDetail) {
+                $quantity = (float) $itemData['quantity'];
+                $unitPrice = (float) $saleDetail->unit_price; // Precio con IVA
+
+                // Obtener base sin IVA
+                $baseSinIVA = $unitPrice / 1.13;
+                $subtotalItem = $baseSinIVA * $quantity;
+                $ivaItem = $subtotalItem * 0.13;
+
+                $subtotal += $subtotalItem;
+                $taxAmount += $ivaItem;
+            }
+        }
+
+        $totalAmount = $subtotal + $taxAmount;
+
+        return [
+            'subtotal' => round($subtotal, 2),       // base sin IVA
+            'net_amount' => round($subtotal, 2),     // mismo valor
+            'tax_amount' => round($taxAmount, 2),    // IVA
+            'total_amount' => round($totalAmount, 2) // total con IVA
+        ];
+    }
+
+    public function getSaleDetails(Store $store, Sale $sale)
+    {
+        $this->validateStoreAccess($store);
+
+        // Verificar que la venta pertenezca a la tienda
+        if ($sale->store_id !== $store->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $details = $sale->details()->with('productType')->get();
+
+        return response()->json([
+            'details' => $details
+        ]);
+    }
+
+
+
     /**
      * Display the specified resource.
      */
@@ -162,6 +265,4 @@ class CreditNoteController extends Controller
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Nota de crédito eliminada correctamente.');
     }
-
-
 }

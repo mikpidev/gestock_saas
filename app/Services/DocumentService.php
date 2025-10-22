@@ -23,10 +23,10 @@ class DocumentService
 
         $entero = floor($monto);
         $centavos = round(($monto - $entero) * 100);
-    
+
         // Convertir parte entera a palabras
         $letrasEntero = $formatter->format($entero);
-    
+
         // Convertir centavos a palabras si es mayor que 0
         if ($centavos > 0) {
             $letrasCentavos = $formatter->format($centavos);
@@ -34,7 +34,7 @@ class DocumentService
         } else {
             $resultado = ucfirst($letrasEntero) . " con cero centavos";
         }
-    
+
         return $resultado;
     }
 
@@ -129,16 +129,14 @@ class DocumentService
                 "motivoContin" => null
             ],
             "documentoRelacionado" => null,
-            "emisor" =>[
+            "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nrc" => $storeTaxInfo->nrc,
                 "nombre" => $storeTaxInfo->actividad_economica,
                 "codActividad" => $storeTaxInfo->codActividad,
                 "descActividad" => $storeTaxInfo->razon_social,
                 "nombreComercial" => $storeTaxInfo->actividad_economica,
-                "tipoEstablecimiento" => "01"
-                
-                ,
+                "tipoEstablecimiento" => "01",
                 "direccion" => [
                     "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
                     "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
@@ -214,7 +212,7 @@ class DocumentService
                 "descripcion" => $detail->productType->name,
                 "cantidad" => (float) $detail->quantity,
                 "uniMedida" => 59,
-                "precioUni" => round((float) $detail->unit_price/1.13, 2),
+                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
                 "montoDescu" => 0.00,
                 "ventaNoSuj" => 0.00,
                 "ventaExenta" => 0.00,
@@ -244,16 +242,14 @@ class DocumentService
                 "motivoContin" => null
             ],
             "documentoRelacionado" => $dteRelacionado ?: null,
-            "emisor" =>[
+            "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nrc" => $storeTaxInfo->nrc,
                 "nombre" => $storeTaxInfo->actividad_economica,
                 "codActividad" => $storeTaxInfo->codActividad,
                 "descActividad" => $storeTaxInfo->razon_social,
                 "nombreComercial" => $storeTaxInfo->actividad_economica,
-                "tipoEstablecimiento" => "01"
-                
-                ,
+                "tipoEstablecimiento" => "01",
                 "direccion" => [
                     "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
                     "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
@@ -349,44 +345,59 @@ class DocumentService
 
     public function buildDTEJsonNC(CreditNote $creditNote, Sale $sale): array
     {
-        $sale = $creditNote->sale;
         $customer = $creditNote->customer ?? $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
-        
-        $cuerpoDocumento = $sale->details->map(function($detail, $index) use ($sale) {
-            $subtotalConIVA = (float) $detail->subtotal;
+
+        // USAR creditNoteDetails() con valores POSITIVOS
+        $cuerpoDocumento = $creditNote->creditNoteDetails->map(function ($creditNoteDetail, $index) use ($creditNote) {
+            $detail = $creditNoteDetail->saleDetail; // Detalle original de la venta
+            $subtotalConIVA = (float) $creditNoteDetail->subtotal;
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
-            
-    
+
+            // Para nota de crédito, usamos valores POSITIVOS
+            $cantidad = (float) $creditNoteDetail->quantity; // POSITIVO
+            $precioUni = round((float) $creditNoteDetail->unit_price / 1.13, 2);
+            $ventaGravada = $precioUni * $cantidad; // POSITIVO
+
             return [
                 "numItem" => $index + 1,
                 "tipoItem" => 1,
-                "numeroDocumento" => $sale->codigo_generacion,
-                "codigo" => $detail->productType->code ?? 'NA',
+                "numeroDocumento" => $creditNote->documento_relacionado,
+                "codigo" => $creditNoteDetail->productType->code ?? $detail->productType->code ?? 'NA',
                 "codTributo" => null,
-                "descripcion" => $detail->productType->name,
-                "cantidad" => (float) $detail->quantity,
+                "descripcion" => "NOTA CRÉDITO - " . ($creditNoteDetail->productType->name ?? $detail->productType->name),
+                "cantidad" => $cantidad, // POSITIVO
                 "uniMedida" => 59,
-                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
+                "precioUni" => $precioUni, // POSITIVO
                 "montoDescu" => 0.00,
                 "ventaNoSuj" => 0.00,
                 "ventaExenta" => 0.00,
-                "ventaGravada" => round($baseSinIVA, 2),
+                "ventaGravada" => round($ventaGravada, 2), // POSITIVO
                 "tributos" => ["20"],
             ];
         })->toArray();
-    
+        $now = now()->setTimezone('America/El_Salvador');
+
+        // Función interna para redondear con precisión a 2 decimales
+        $round2 = fn($value) => round((float)$value, 2, PHP_ROUND_HALF_UP);
+        // Cálculos redondeados para el resumen
+        $totalGravada = $round2($creditNote->subtotal);
+        $iva = $round2($creditNote->total_iva);
+        $montoTotal = $round2($creditNote->total_amount);
+        $subTotalVentas = $round2($totalGravada);
+        $totalDescu = 0.00;
+
         return [
             "identificacion" => [
                 "version" => 3,
                 "ambiente" => "00",
-                "tipoDte" => "05",
+                "tipoDte" => "05", // ← Esto indica que es Nota de Crédito
                 "numeroControl" => $creditNote->numero_control,
                 "codigoGeneracion" => $creditNote->codigo_generacion,
                 "tipoModelo" => 1,
                 "tipoOperacion" => 1,
-                "fecEmi" => $creditNote->created_at->format('Y-m-d'),
+                "fecEmi" => $creditNote->credit_note_date,
                 "horEmi" => now()->format('H:i:s'),
                 "tipoMoneda" => "USD",
                 "tipoContingencia" => null,
@@ -394,10 +405,10 @@ class DocumentService
             ],
             "documentoRelacionado" => [
                 [
-                "tipoDocumento" => str_pad((string) ($sale->tipoDte->codigo), 2, "0", STR_PAD_LEFT),
-                "tipoGeneracion" => 2,
-                "numeroDocumento" => $sale->codigo_generacion,
-                "fechaEmision" => $sale->sale_date->format('Y-m-d')
+                    "tipoDocumento" => str_pad((string) ($sale->tipoDte->codigo), 2, "0", STR_PAD_LEFT),
+                    "tipoGeneracion" => 2,
+                    "numeroDocumento" => $sale->codigo_generacion,
+                    "fechaEmision" => $sale->sale_date->format('Y-m-d')
                 ]
             ],
             "emisor" => [
@@ -436,32 +447,33 @@ class DocumentService
             "resumen" => [
                 "totalNoSuj" => 0.00,
                 "totalExenta" => 0.00,
-                "totalGravada" => round($sale->total_gravada, 2),
-                "subTotalVentas" => round($sale->total_gravada, 2),
+                "totalGravada" => $creditNote->total_gravada,
+                "subTotalVentas" => $creditNote->total_gravada,
                 "descuNoSuj" => 0.00,
                 "descuExenta" => 0.00,
                 "descuGravada" => 0.00,
-                "totalDescu" => 0.00,
+                "totalDescu" => $totalDescu,
                 "tributos" => [
                     [
                         "codigo" => "20",
                         "descripcion" => "IVA",
-                        "valor" => round($sale->total_iva, 2)
+                        "valor" => $iva
                     ]
                 ],
-                "subTotal" => round($sale->total_gravada, 2),
+                "subTotal" => $round2($creditNote->total_gravada - $totalDescu),
                 "ivaPerci1" => 0.00,
                 "ivaRete1" => 0.00,
                 "reteRenta" => 0.00,
-                "montoTotalOperacion" => round($sale->net_amount, 2),
-                "totalLetras" => $this->totalEnLetras($sale->net_amount),
-                "condicionOperacion" => 1
+                "montoTotalOperacion" => $montoTotal,
+                "totalLetras" => $this->totalEnLetras($montoTotal),
+                "condicionOperacion" => 1, // contado
             ],
+
             "extension" => null,
             "apendice" => null
         ];
     }
-    
+
 
     /**
      * Firma el documento usando el firmador local

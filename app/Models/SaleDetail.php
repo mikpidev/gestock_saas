@@ -64,4 +64,15 @@ class SaleDetail extends Model
         // Si no, usar la del tipo de producto
         return $this->productType ? $this->productType->nombre : 'Sin descripción';
     }
+
+    public function creditNoteDetails()
+    {
+        return $this->hasMany(CreditNoteDetail::class, 'sale_detail_id');
+    }
+
+    public function saleDetail()
+    {
+        return $this->belongsTo(SaleDetail::class);
+    }
+
 }

@@ -12,6 +12,7 @@ class CreditNote extends Model
         'store_id',
         'user_id',
         'customers_id',
+        'credit_note_date',
         'sale_id',
         'sale_date',
         'total_amount',
@@ -63,11 +64,7 @@ class CreditNote extends Model
         return $this->belongsTo(Customer::class, 'customers_id');
     }
 
-    // Relación con los detalles de la venta
-    public function details()
-    {
-        return $this->hasMany(SaleDetail::class);
-    }
+
 
     //relacion con tipo_documento TipoDTE
     public function tipoDte()
@@ -81,5 +78,8 @@ class CreditNote extends Model
         return $this->belongsTo(Sale::class, 'sale_id');
     }
 
-    
+    public function creditNoteDetails()
+    {
+        return $this->hasMany(CreditNoteDetail::class);
+    }
 }

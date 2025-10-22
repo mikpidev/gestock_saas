@@ -177,20 +177,22 @@
             <div id="products-wrapper">
                 @foreach(old('products', [['id' => '', 'quantity' => 1, 'price' => 0]]) as $i => $product)
                 <div class="product-row">
-                    <select name="products[{{ $i }}][id]" class="product-select" required>
+                    <select name="products[{{ $i }}][id]" class="product-select" required onchange="updateProductPrice(this, {{ $i }})">
                         <option value="">-- Selecciona producto --</option>
                         @foreach($products as $p)
-                        <option value="{{ $p->id }}"
-                            {{ $product['id'] == $p->id ? 'selected' : '' }}
-                            data-price="{{ $p->price }}">
+                        <option value="{{ $p->id }}" data-price="{{ $p->price }}"
+                            {{ $product['id'] == $p->id ? 'selected' : '' }}>
                             {{ $p->name }}
                         </option>
                         @endforeach
                     </select>
-                    <label for="quatity">Cantidad</label>
-                    <input type="number" name="products[{{ $i }}][quantity]" value="{{ $product['quantity'] }}" min="1" placeholder="Cantidad" required>
-                    <label for="price">Precio</label>
-                    <input type="number" step="0.01" name="products[{{ $i }}][price]" value="{{ $product['price'] ?? 0 }}" placeholder="Precio" class="product-price" required>
+
+                    <label for="quantity">Cantidad</label>
+                    <input type="number" name="products[{{ $i }}][quantity]" value="{{ $product['quantity'] }}" min="1" required>
+
+                    <label>Precio:</label>
+                    <span id="product-price-{{ $i }}">{{ $product['id'] ? number_format($products->firstWhere('id', $product['id'])->price, 2) : '0.00' }}</span>
+                    <input type="hidden" name="products[{{ $i }}][price]" id="product-price-hidden-{{ $i }}" value="{{ $product['id'] ? $products->firstWhere('id', $product['id'])->price : 0 }}">
                 </div>
                 @endforeach
             </div>
@@ -236,5 +238,11 @@
             }
         });
     });
+
+    function updateProductPrice(select, index) {
+        const price = select.selectedOptions[0].dataset.price || 0;
+        document.getElementById(`product-price-${index}`).textContent = parseFloat(price).toFixed(2);
+        document.getElementById(`product-price-hidden-${index}`).value = price;
+    }
 </script>
 @endsection
