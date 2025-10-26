@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\CreditNote;
+use App\Models\DebitNote;
+
 
 
 class DocumentService
@@ -474,6 +476,140 @@ class DocumentService
         ];
     }
 
+    /** Crea el Json para NC (Notas de debito) */
+
+    public function buildDTEJsonND(DebitNote $debitNote, Sale $sale): array
+    {
+        $customer = $debitNote->customer ?? $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+
+        // USAR debitNoteDetails() con valores POSITIVOS
+        $cuerpoDocumento = $debitNote->debitNoteDetails->map(function ($debitNoteDetail, $index) use ($debitNote) {
+            $detail = $debitNoteDetail->saleDetail; // Detalle original de la venta
+            $subtotalConIVA = (float) $debitNoteDetail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+
+            // Para nota de crédito, usamos valores POSITIVOS
+            $cantidad = (float) $debitNoteDetail->quantity; // POSITIVO
+            $precioUni = round((float) $debitNoteDetail->unit_price / 1.13, 2);
+            $ventaGravada = $precioUni * $cantidad; // POSITIVO
+
+            return [
+                "numItem" => $index + 1,
+                "tipoItem" => 1,
+                "numeroDocumento" => $debitNote->documento_relacionado,
+                "codigo" => $debitNoteDetail->productType->code ?? $detail->productType->code ?? 'NA',
+                "codTributo" => null,
+                "descripcion" => "NOTA DEBITO - " . ($debitNoteDetail->productType->name ?? $detail->productType->name),
+                "cantidad" => $cantidad, // POSITIVO
+                "uniMedida" => 59,
+                "precioUni" => $precioUni, // POSITIVO
+                "montoDescu" => 0.00,
+                "ventaNoSuj" => 0.00,
+                "ventaExenta" => 0.00,
+                "ventaGravada" => round($ventaGravada, 2), // POSITIVO
+                "tributos" => ["20"],
+            ];
+        })->toArray();
+        $now = now()->setTimezone('America/El_Salvador');
+
+        // Función interna para redondear con precisión a 2 decimales
+        $round2 = fn($value) => round((float)$value, 2, PHP_ROUND_HALF_UP);
+        // Cálculos redondeados para el resumen
+        $totalGravada = $round2($debitNote->subtotal);
+        $iva = $round2($debitNote->total_iva);
+        $montoTotal = $round2($debitNote->total_amount);
+        $subTotalVentas = $round2($totalGravada);
+        $totalDescu = 0.00;
+
+        return [
+            "identificacion" => [
+                "version" => 3,
+                "ambiente" => "00",
+                "tipoDte" => "06", // ← Esto indica que es Nota de Crédito
+                "numeroControl" => $debitNote->numero_control,
+                "codigoGeneracion" => $debitNote->codigo_generacion,
+                "tipoModelo" => 1,
+                "tipoOperacion" => 1,
+                "fecEmi" => $debitNote->debit_note_date,
+                "horEmi" => now()->format('H:i:s'),
+                "tipoMoneda" => "USD",
+                "tipoContingencia" => null,
+                "motivoContin" => null
+            ],
+            "documentoRelacionado" => [
+                [
+                    "tipoDocumento" => str_pad((string) ($sale->tipoDte->codigo), 2, "0", STR_PAD_LEFT),
+                    "tipoGeneracion" => 2,
+                    "numeroDocumento" => $sale->codigo_generacion,
+                    "fechaEmision" => $sale->sale_date->format('Y-m-d')
+                ]
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "nombreComercial" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01",
+                "direccion" => [
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
+                ],
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+            ],
+            "receptor" => [
+                "nit" => $customer->numDocumento ?? "00000000000000",
+                "nrc" => $customer->nrc ?? null,
+                "nombre" => $customer->nombre,
+                "nombreComercial" => $customer->nombreComercial,
+                "codActividad" => $customer->codActividad ?? null,
+                "descActividad" => $customer->descActividad ?? null,
+                "direccion" => [
+                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $customer->direccion_complemento
+                ],
+                "telefono" => $customer->telefono ?? "00000000",
+                "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+            "ventaTercero" => null,
+            "cuerpoDocumento" => $cuerpoDocumento,
+            "resumen" => [
+                "totalNoSuj" => 0.00,
+                "totalExenta" => 0.00,
+                "totalGravada" => $debitNote->total_gravada,
+                "subTotalVentas" => $debitNote->total_gravada,
+                "descuNoSuj" => 0.00,
+                "descuExenta" => 0.00,
+                "descuGravada" => 0.00,
+                "totalDescu" => $totalDescu,
+                "tributos" => [
+                    [
+                        "codigo" => "20",
+                        "descripcion" => "IVA",
+                        "valor" => $iva
+                    ]
+                ],
+                "subTotal" => $round2($debitNote->total_gravada - $totalDescu),
+                "ivaPerci1" => 0.00,
+                "ivaRete1" => 0.00,
+                "reteRenta" => 0.00,
+                "montoTotalOperacion" => $montoTotal,
+                "totalLetras" => $this->totalEnLetras($montoTotal),
+                "condicionOperacion" => 1, // contado
+                "numPagoElectronico" => null
+            ],
+
+            "extension" => null,
+            "apendice" => null
+        ];
+    }
+
 
     /**
      * Firma el documento usando el firmador local
@@ -504,4 +640,7 @@ class DocumentService
 
         return $signedData;
     }
+
+
+    
 }

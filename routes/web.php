@@ -18,11 +18,7 @@ use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\DTEController;
 use App\Models\Sale;
 use App\Http\Controllers\CreditNoteController;
-
-
-
-
-
+use App\Http\Controllers\DebitNoteController;
 
 //Cache prevent back history
 Route::middleware([PreventBackHistory4::class])->group(function () {
@@ -207,6 +203,21 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     });
 
     Route::get('/stores/{store}/sales/{sale}/details', [CreditNoteController::class, 'getSaleDetails'])
+    ->name('stores.sales.details');
+
+    //ruta notas de debito
+    Route::get('stores/{store}/debitnotes', [\App\Http\Controllers\DebitNoteController::class, 'index'])
+        ->name('stores.debitnotes.index');
+    Route::get('stores/{store}/debitnotes/create', [\App\Http\Controllers\DebitNoteController::class, 'create'])
+        ->name('stores.debitnotes.create');
+    Route::post('stores/{store}/debitnotes', [\App\Http\Controllers\DebitNoteController::class, 'store'])
+        ->name('stores.debitnotes.store');
+    Route::get('stores/{store}/debitnotes/{creditNote}', [\App\Http\Controllers\DebitNoteController::class, 'show'])
+        ->name('stores.debitnotes.show');
+    Route::delete('stores/{store}/debitnotes/{creditNote}', [\App\Http\Controllers\DebitNoteController::class, 'destroy'])
+        ->name('stores.debitnotes.destroy');
+    
+    Route::get('/stores/{store}/sales/{sale}/details', [DebitNoteController::class, 'getSaleDetails'])
     ->name('stores.sales.details');
 
 });

@@ -97,4 +97,9 @@ class Store extends Model
     {
         return $this->hasMany(CreditNote::class);
     }
+
+    public function debitNotes()
+    {
+        return $this->hasMany(DebitNote::class);
+    }
 }

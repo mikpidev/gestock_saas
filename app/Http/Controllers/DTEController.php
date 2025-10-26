@@ -9,6 +9,8 @@ use App\Services\DocumentService;
 use App\Services\HaciendaAuthService;
 use App\Services\ReceptionService;
 use App\Models\CreditNote;
+use App\Models\DebitNote;
+
 
 class DTEController extends Controller
 {
@@ -116,6 +118,51 @@ class DTEController extends Controller
             //  Guardar info del DTE en la nota de crédito
             $creditNote->update([
                 'dte_codigo' => $creditNote->codigo_generacion,
+                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
+            ]);
+
+            return response()->json($haciendaResponse);
+        } catch (\Throwable $th) {
+            Log::error('Error generando DTE: ' . $th->getMessage(), [
+                'sale_id' => $sale->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Error generando DTE',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+    {
+        try {
+
+            // Obtener tipo DTE desde la relación
+            $tipoDTE = "06"; // Código fijo para Nota de Crédito Electrónica
+            
+            if (!$tipoDTE) {
+                throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta nota de crédito');
+            }
+
+            $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale);
+            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
+
+            //  Firmar documento
+            $signedData = $this->documentService->signDocument($dteJson);
+            Log::info("Documento firmado ({$tipoDTE})", $signedData);
+
+            // Obtener token Hacienda
+            $token = $this->authService->generateNewToken();
+
+            //  Enviar a Hacienda
+            $haciendaResponse = $this->receptionService->sendNDToHacienda($debitNote, $signedData, $token);
+            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
+
+            //  Guardar info del DTE en la nota de crédito
+            $debitNote->update([
+                'dte_codigo' => $debitNote->codigo_generacion,
                 'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
             ]);
 
