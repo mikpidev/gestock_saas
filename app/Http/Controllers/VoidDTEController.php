@@ -2,42 +2,44 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Sale;
 use App\Services\DocumentService;
 use App\Services\HaciendaAuthService;
-use App\Services\ReceptionService;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Services\VoidService;
 
-
-class DTEController extends Controller
+class VoidDTEController extends Controller
 {
+    //
+
     protected DocumentService $documentService;
     protected HaciendaAuthService $authService;
-    protected ReceptionService $receptionService;
+    protected VoidService $voidService;
 
     public function __construct(
         DocumentService $documentService,
         HaciendaAuthService $authService,
-        ReceptionService $receptionService
+        VoidService $voidService
+
     ) {
+
         $this->documentService = $documentService;
         $this->authService = $authService;
-        $this->receptionService = $receptionService;
+        $this->voidService = $voidService;
     }
 
-    /**
-     * Genera y envía un DTE (Factura Electrónica)
-     */
-    public function generarDTE(Sale $sale)
+    public function voidDTE(Sale $sale)
     {
-        try {
 
-            // Obtener tipo DTE desde la relación
-            $tipoDTE = $sale->tipoDte?->codigo;
+        try{
 
+            $tipoDTE = $sale->tipoDTE?->codigo;
+
+            
             if (!$tipoDTE) {
                 throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta venta');
             }
@@ -47,13 +49,13 @@ class DTEController extends Controller
             switch ($tipoDTE) {
 
                 case '01': // Factura Electronica
-                    $dteJson = $this->documentService->buildDTEJsonFE($sale);
+                    $dteJson = $this->documentService->buildDTEJsonVoidFE($sale);
                     break;
                 case '03': // Comprobante Fiscal
-                    $dteJson = $this->documentService->buildDTEJsonCF($sale, []);
+                    $dteJson = $this->documentService->buildDTEJsonVoidCF($sale, []);
                     break;
                 case '14': // Sujeto Excluido
-                    $dteJson = $this->documentService->buildDTEJsonSE($sale, []);
+                    $dteJson = $this->documentService->buildDTEJsonVoidSE($sale, []);
                     break;
                 default:
                     throw new \Exception('Tipo de documento no soportado para DTE');
@@ -69,7 +71,7 @@ class DTEController extends Controller
             $token = $this->authService->generateNewToken();
 
             //  Enviar a Hacienda
-            $haciendaResponse = $this->receptionService->sendToHacienda($sale, $signedData, $token);
+            $haciendaResponse = $this->voidService->sendVoidToHacienda($sale, $signedData, $token);
             Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
 
             //  Guardar info del DTE en la venta
@@ -90,10 +92,10 @@ class DTEController extends Controller
                 'message' => $th->getMessage()
             ], 500);
         }
+
     }
 
-
-    public function generarDTECreditNote(CreditNote $creditNote, Sale $sale)
+    public function voidDTECreditNote(CreditNote $creditNote, Sale $sale)
     {
         try {
 
@@ -115,7 +117,7 @@ class DTEController extends Controller
             $token = $this->authService->generateNewToken();
 
             //  Enviar a Hacienda
-            $haciendaResponse = $this->receptionService->sendNCToHacienda($creditNote, $signedData, $token);
+            $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $signedData, $token);
             Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
 
             //  Guardar info del DTE en la nota de crédito
@@ -160,7 +162,7 @@ class DTEController extends Controller
             $token = $this->authService->generateNewToken();
 
             //  Enviar a Hacienda
-            $haciendaResponse = $this->receptionService->sendNDToHacienda($debitNote, $signedData, $token);
+            $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $signedData, $token);
             Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
 
             //  Guardar info del DTE en la nota de crédito

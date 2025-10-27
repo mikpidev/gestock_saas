@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Models\Void;
 
 
 
@@ -189,8 +190,75 @@ class DocumentService
             ]
         ];
     }
+
+
     /**
-     * Crea el JSON para Credito Fiscal(CF)
+     * Construye el JSON para Anular Factura Electrónica (FE)
+     * 
+     */
+
+    public function buildDTEJsonVoidFE(Sale $sale): array 
+    {
+
+        $customer = $sale->customer;
+        $isConsumidorFinal = !$customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+
+        return [
+
+            "identificacion" => [
+                "version" => 1,
+                "ambiente" => "00",
+                "codigoGeneracion" => $void->codigo_generacion,
+                "fecAnula" => $void->void_date->format('Y-m-d'),
+                "horAnula" => Carbon::now()->format('H:i:s'),
+
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01",
+                "codEstableMH" => null,
+                "codEstable" => null,
+                "codPuntoVentaMH" => null,
+                "codPuntoVenta" => null,
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+
+            ],
+            "documento" => [
+
+                "tipoDte" => "01",
+                    "codigoGeneracion" => $sale->codigo_generacion,
+                    "selloRecibido" => null,
+                    "numeroControl" => $sale->numero_control,
+                    "fecEmi" => $sale->sale_date->format('Y-m-d'),
+                    "montoIva" => $sale->total_iva,
+                    "codigoGeneracionR" => null,
+                    "tipoDocumento" => $customer->tipoDocumento ?? "36",
+                    "numDocumento" => $customer->numDocumento ?? "00000000000000",
+                    "nombre" => $customer->nombre,
+                    "telefono" => $customer->telefono ?? "00000000",
+                    "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+
+            "motivo" => [
+
+                "tipoAnulacion" => 2,
+                "motivoAnulacion" => $void->desc,
+                "nombreResponsable" =>$storeTaxInfo->actividad_economica,
+                "tipDocResponsable" => "36",
+                "numDocResponsable" => $storeTaxInfo->nit,
+                "nombreSolicita" => $customer->nombre,
+                "tipDocSolicita" => $customer->tipoDocumento ?? "36",
+                "numDocSolicita" => $customer->numDocumento ?? "00000000000000"
+
+            ]
+            ];
+    }
+    /**
+     * Crea el JSON para Anular Credito Fiscal(CF)
      */
 
     public function buildDTEJsonCF(Sale $sale, array $dteRelacionado = []): array
@@ -343,6 +411,144 @@ class DocumentService
         ];
     }
 
+    /**
+     * Construye el JSON para Anular Factura Electrónica (FE)
+     * 
+     */
+
+    public function buildDTEJsonVoidCF(Sale $sale): array 
+    {
+
+
+    }
+
+    /**
+     * Crea el JSON para Sujeto Excluido (SE)
+     */
+
+    public function buildDTEJsonSE(Sale $sale, array $dteRelacionado = []): array
+    {
+        $customer = $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+
+
+        // Cuerpo documento
+        $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
+            $subtotalConIVA = (float) $detail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+
+            return [
+                "numItem" => $index + 1,
+                "tipoItem" => 1,
+                "codigo" => $detail->productType->code ?? 'NA',
+                "descripcion" => $detail->productType->name,
+                "cantidad" => (float) $detail->quantity,
+                "uniMedida" => 59,
+                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
+                "montoDescu" => 0.00,
+                "compra" => round((float)$baseSinIVA, 2) ,
+            ];
+        })->toArray();
+
+        $totalGravada = $sale->details->sum(fn($d) => $d->subtotal / 1.13);
+        $totalIva = $sale->details->sum(fn($d) => ($d->subtotal / 1.13) * 0.13);
+
+        return [
+            "identificacion" => [
+                "version" => 1,
+                "ambiente" => "00",
+                "tipoDte" => "14",
+                "numeroControl" => $sale->numero_control,
+                "codigoGeneracion" => $sale->codigo_generacion,
+                "tipoModelo" => 1,
+                "tipoOperacion" => 1,
+                "fecEmi" => $sale->sale_date->format('Y-m-d'),
+                "horEmi" => now()->format('H:i:s'),
+                "tipoMoneda" => $sale->tipo_moneda,
+                "tipoContingencia" => null,
+                "motivoContin" => null
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "direccion" => [
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
+                ],
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+                "codEstableMH" => null,
+                "codEstable" => null,
+                "codPuntoVentaMH" => null,
+                "codPuntoVenta" => null
+            ],
+            "sujetoExcluido" => [
+                "tipoDocumento" =>$customer->tipoDocumento ?? "36",
+                "numDocumento" => $customer->numDocumento ?? "00000000000000",
+                "nombre" => $customer->nombre,
+                "codActividad" => $customer->codActividad ?? null,
+                "descActividad" => $customer->descActividad ?? null,
+                "direccion" => [
+                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $customer->direccion_complemento
+                ],
+                "telefono" => $customer->telefono ?? "00000000",
+                "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+            "cuerpoDocumento" => $cuerpoDocumento,
+            "resumen" => [
+                "totalCompra" => round($totalGravada, 2),
+                "descu" => 0.00,
+                "totalDescu" => 0.00,
+                "subTotal" => round($totalGravada, 2),
+                "ivaRete1" => 0.00,
+                "reteRenta" => 0.00,
+                "totalPagar" => round($totalGravada, 2),
+                "totalLetras" => $this->totalEnLetras($totalGravada),
+                "condicionOperacion" => 1,
+                "pagos" => [
+                    [
+                        "codigo" => "01",
+                        "montoPago" =>  round($totalGravada, 2),
+                        "referencia" => null,
+                        "plazo" => null,
+                        "periodo" => null
+                    ]
+                ],
+                "observaciones" => null
+            ],
+            "apendice" => [
+                [
+                    "campo" => "Caja",
+                    "etiqueta" => "Número de Caja",
+                    "valor" => "01"
+                ],
+                [
+                    "campo" => "Vendedor",
+                    "etiqueta" => "Nombre del Vendedor",
+                    "valor" => "Ana Torres"
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Construye el JSON para Anular Sujeto Excluido (SE)
+     * 
+     */
+
+    public function buildDTEJsonVoidSE(Sale $sale): array 
+    {
+
+
+    }
+
     /** Crea el Json para NC (Notas de credito) */
 
     public function buildDTEJsonNC(CreditNote $creditNote, Sale $sale): array
@@ -476,7 +682,142 @@ class DocumentService
         ];
     }
 
-    /** Crea el Json para NC (Notas de debito) */
+    /** Crea el Json para Anular NC (Notas de credito) */
+
+    public function buildDTEJsonVoidNC(DebitNote $debitNote, Sale $sale): array
+    {
+        $customer = $debitNote->customer ?? $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+
+        // USAR debitNoteDetails() con valores POSITIVOS
+        $cuerpoDocumento = $debitNote->debitNoteDetails->map(function ($debitNoteDetail, $index) use ($debitNote) {
+            $detail = $debitNoteDetail->saleDetail; // Detalle original de la venta
+            $subtotalConIVA = (float) $debitNoteDetail->subtotal;
+            $baseSinIVA = $subtotalConIVA / 1.13;
+            $ivaItem = $baseSinIVA * 0.13;
+
+            // Para nota de crédito, usamos valores POSITIVOS
+            $cantidad = (float) $debitNoteDetail->quantity; // POSITIVO
+            $precioUni = round((float) $debitNoteDetail->unit_price / 1.13, 2);
+            $ventaGravada = $precioUni * $cantidad; // POSITIVO
+
+            return [
+                "numItem" => $index + 1,
+                "tipoItem" => 1,
+                "numeroDocumento" => $debitNote->documento_relacionado,
+                "codigo" => $debitNoteDetail->productType->code ?? $detail->productType->code ?? 'NA',
+                "codTributo" => null,
+                "descripcion" => "NOTA DEBITO - " . ($debitNoteDetail->productType->name ?? $detail->productType->name),
+                "cantidad" => $cantidad, // POSITIVO
+                "uniMedida" => 59,
+                "precioUni" => $precioUni, // POSITIVO
+                "montoDescu" => 0.00,
+                "ventaNoSuj" => 0.00,
+                "ventaExenta" => 0.00,
+                "ventaGravada" => round($ventaGravada, 2), // POSITIVO
+                "tributos" => ["20"],
+            ];
+        })->toArray();
+        $now = now()->setTimezone('America/El_Salvador');
+
+        // Función interna para redondear con precisión a 2 decimales
+        $round2 = fn($value) => round((float)$value, 2, PHP_ROUND_HALF_UP);
+        // Cálculos redondeados para el resumen
+        $totalGravada = $round2($debitNote->subtotal);
+        $iva = $round2($debitNote->total_iva);
+        $montoTotal = $round2($debitNote->total_amount);
+        $subTotalVentas = $round2($totalGravada);
+        $totalDescu = 0.00;
+
+        return [
+            "identificacion" => [
+                "version" => 3,
+                "ambiente" => "00",
+                "tipoDte" => "06", // ← Esto indica que es Nota de Crédito
+                "numeroControl" => $debitNote->numero_control,
+                "codigoGeneracion" => $debitNote->codigo_generacion,
+                "tipoModelo" => 1,
+                "tipoOperacion" => 1,
+                "fecEmi" => $debitNote->debit_note_date,
+                "horEmi" => now()->format('H:i:s'),
+                "tipoMoneda" => "USD",
+                "tipoContingencia" => null,
+                "motivoContin" => null
+            ],
+            "documentoRelacionado" => [
+                [
+                    "tipoDocumento" => str_pad((string) ($sale->tipoDte->codigo), 2, "0", STR_PAD_LEFT),
+                    "tipoGeneracion" => 2,
+                    "numeroDocumento" => $sale->codigo_generacion,
+                    "fechaEmision" => $sale->sale_date->format('Y-m-d')
+                ]
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nrc" => $storeTaxInfo->nrc,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "codActividad" => $storeTaxInfo->codActividad,
+                "descActividad" => $storeTaxInfo->razon_social,
+                "nombreComercial" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01",
+                "direccion" => [
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $storeTaxInfo->direccion_fiscal,
+                ],
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+            ],
+            "receptor" => [
+                "nit" => $customer->numDocumento ?? "00000000000000",
+                "nrc" => $customer->nrc ?? null,
+                "nombre" => $customer->nombre,
+                "nombreComercial" => $customer->nombreComercial,
+                "codActividad" => $customer->codActividad ?? null,
+                "descActividad" => $customer->descActividad ?? null,
+                "direccion" => [
+                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "complemento" => $customer->direccion_complemento
+                ],
+                "telefono" => $customer->telefono ?? "00000000",
+                "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+            "ventaTercero" => null,
+            "cuerpoDocumento" => $cuerpoDocumento,
+            "resumen" => [
+                "totalNoSuj" => 0.00,
+                "totalExenta" => 0.00,
+                "totalGravada" => $debitNote->total_gravada,
+                "subTotalVentas" => $debitNote->total_gravada,
+                "descuNoSuj" => 0.00,
+                "descuExenta" => 0.00,
+                "descuGravada" => 0.00,
+                "totalDescu" => $totalDescu,
+                "tributos" => [
+                    [
+                        "codigo" => "20",
+                        "descripcion" => "IVA",
+                        "valor" => $iva
+                    ]
+                ],
+                "subTotal" => $round2($debitNote->total_gravada - $totalDescu),
+                "ivaPerci1" => 0.00,
+                "ivaRete1" => 0.00,
+                "reteRenta" => 0.00,
+                "montoTotalOperacion" => $montoTotal,
+                "totalLetras" => $this->totalEnLetras($montoTotal),
+                "condicionOperacion" => 1, // contado
+                "numPagoElectronico" => null
+            ],
+
+            "extension" => null,
+            "apendice" => null
+        ];
+    }
+
+
+    /** Crea el Json para ND (Notas de debito) */
 
     public function buildDTEJsonND(DebitNote $debitNote, Sale $sale): array
     {
@@ -610,6 +951,17 @@ class DocumentService
         ];
     }
 
+    /**
+     * Construye el JSON para Anular ND (Notas de debito)
+     * 
+     */
+
+    public function buildDTEJsonVoidND(Sale $sale): array 
+    {
+
+
+    }
+ 
 
     /**
      * Firma el documento usando el firmador local
