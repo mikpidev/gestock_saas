@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CreditNote extends Model
 {
     //fillable
+
+    use SoftDeletes, HasFactory;
+
 
     protected $fillable = [
         'store_id',
@@ -44,6 +49,8 @@ class CreditNote extends Model
     // Casting de fechas
     protected $casts = [
         'sale_date' => 'datetime',
+        'credit_note_date' => 'datetime',
+
     ];
 
     // Relación con la tienda
@@ -82,4 +89,17 @@ class CreditNote extends Model
     {
         return $this->hasMany(CreditNoteDetail::class);
     }
+
+    //relacion con dteResponse
+    public function dteResponses()
+    {
+        return $this->hasMany(DteResponseNC::class);
+    }
+
+    public function voids()
+    {
+        return $this->hasMany(VoidNC::class);
+    }
+    
+
 }

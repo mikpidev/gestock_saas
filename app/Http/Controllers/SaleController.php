@@ -39,6 +39,7 @@ class SaleController extends Controller
     public function index(Store $store)
     {
         $sales = $store->sales()->with(['customer', 'details.productType'])->get();
+        
         return view('sales.index', compact('store', 'sales'));
     }
 
@@ -210,10 +211,33 @@ class SaleController extends Controller
     public function destroy(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-        if ($sale->store_id != $store->id) abort(403, 'No puedes eliminar una venta de otra tienda.');
-
-        $sale->delete();
-        return redirect()->route('stores.sales.index', $store->id)
-            ->with('success', 'Venta eliminada correctamente.');
+    
+        if ($sale->store_id != $store->id) {
+            abort(403, 'No puedes eliminar una venta de otra tienda.');
+        }
+    
+        try {
+            // Llamar al VoidDTEController para generar la anulación
+            $voidController = app(\App\Http\Controllers\VoidDTEController::class);
+            $response = $voidController->voidDTE($sale);
+    
+            if (($response->getData()->estado ?? '') !== 'PROCESADO') {
+                return redirect()->back()->withErrors('Hacienda no confirmó la anulación.');
+            }
+    
+            // Soft delete solo si Hacienda respondió correctamente
+            $sale->delete();
+    
+            return redirect()->route('stores.sales.index', $store->id)
+                ->with('success', 'Venta anulada correctamente.');
+    
+        } catch (\Throwable $th) {
+            \Log::error('Error anulando venta: ' . $th->getMessage(), [
+                'sale_id' => $sale->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+    
+            return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
+        }
     }
 }

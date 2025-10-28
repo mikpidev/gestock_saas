@@ -1,81 +1,186 @@
 @extends('layouts.admin')
 
 @section('content')
+<style>
+    .gestok-table-card {
+        background: #fff;
+        color: #000;
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        margin: 2rem auto;
+        max-width: 1000px;
+    }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>{{ $store->store_name }} - Ventas</h2>
-    <a href="{{ route('stores.sales.create', $store->id) }}" class="btn btn-add">
-        <i class="bi bi-plus-circle"></i>
-        Nueva Venta
-    </a>
+    .gestok-table-header {
+        background: #000;
+        color: #fff;
+        padding: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .gestok-table-header h1 {
+        font-size: 1.4rem;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .gestok-table-header a.btn {
+        background: #fff;
+        color: #000;
+        padding: 0.6rem 1.2rem;
+        border-radius: 5px;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .gestok-table-header a.btn:hover {
+        background: #ddd;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    th, td {
+        padding: 0.8rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    th {
+        background: #f8f8f8;
+        font-weight: bold;
+    }
+
+    tr:hover {
+        background: #f3f3f3;
+    }
+
+    .actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-view {
+        background: #000;
+        color: #fff;
+        padding: 0.4rem 0.8rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .btn-view svg {
+        vertical-align: middle;
+    }
+
+    .btn-view:hover {
+        background: #333;
+    }
+
+    .btn-delete {
+        background: #dc3545;
+        color: #fff;
+        padding: 0.4rem 0.8rem;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .btn-delete svg {
+        vertical-align: middle;
+    }
+
+    .btn-delete:hover {
+        background: #b02a37;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 2rem;
+        font-style: italic;
+        color: #666;
+    }
+</style>
+
+<div class="gestok-table-card">
+    <div class="gestok-table-header">
+        <h1>{{ $store->store_name }} - Ventas</h1>
+        <a href="{{ route('stores.sales.create', $store->id) }}" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0-1A6 6 0 1 1 8 2a6 6 0 0 1 0 12z"/>
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+            Nueva Venta
+        </a>
+    </div>
+
+    @if (session('success'))
+        <div style="background: #d4edda; color: #155724; padding: 1rem; margin: 1rem; border-radius: 5px;">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="gestok-table-body">
+        @if($sales->isEmpty())
+            <p class="no-data">No hay ventas registradas para hoy.</p>
+        @else
+            <table>
+                <thead>
+                    <tr>
+                        <th># Código</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($sales as $sale)
+                        <tr>
+                            <td>{{ $sale->codigo_generacion ?? 'N/A' }}</td>
+                            <td>{{ $sale->customer->nombre ?? 'Sin cliente' }}</td>
+                            <td>${{ number_format($sale->net_amount, 2) }}</td>
+                            <td>{{ $sale->sale_date->format('d/m/Y H:i') }}</td>
+                            <td class="actions">
+                                <a href="{{ route('stores.sales.show', [$store->id, $sale->id]) }}" class="btn-view">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8z"/>
+                                        <path d="M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+                                    </svg>
+                                    Ver
+                                </a>
+
+                                <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta venta?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                            <path d="M5.5 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5zM8 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5zM10.5 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5z"/>
+                                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1h-1v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4h-1a1 1 0 0 1 0-2h3.5a.5.5 0 0 1 .5.5V3h3v-.5a.5.5 0 0 1 .5-.5H14a1 1 0 0 1 1 1z"/>
+                                        </svg>
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
 </div>
-
-<div class="container-fluid mt-4">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Codigo de Generacion #</th>
-                <th>Cliente</th>
-                <th>Total</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($sales as $sale)
-            <tr>
-                <td>{{ $sale->codigo_generacion ?? 'N/A' }}</td>
-                <td>{{ $sale->customer->nombre ?? '' }}</td>
-                <td>{{ number_format($sale->net_amount, 2) }}</td>
-                <td>{{ $sale->sale_date }}</td>
-                <td class="text-center">
-                    <div class="d-flex justify-content-center gap-1">
-                        <a href="{{ route('stores.sales.edit', [$store->id, $sale->id]) }}" class="btn btn-sm btn-edit" title="Editar">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
-                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
-                            </svg>
-                        </a>
-
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
-                                    <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c-.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z" />
-                                </svg>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ route('stores.sales.show', [$store->id, $sale->id]) }}">Ver detalles</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li>
-                                    <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar esta venta?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="dropdown-item text-danger">Eliminar</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="6" class="text-center">No hay ventas registradas en esta tienda.</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-
-<div class="mt-3">
-    <a href="{{ route('stores.index') }}" class="btn btn-secondary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4..." />
-        </svg>
-        Volver a Tiendas
-    </a>
-</div>
-
 @endsection

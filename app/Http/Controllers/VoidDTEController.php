@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Sale;
-use App\Services\DocumentService;
-use App\Services\HaciendaAuthService;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Models\VoidDTE;
+use App\Services\DocumentService;
+use App\Services\HaciendaAuthService;
 use App\Services\VoidService;
 
 class VoidDTEController extends Controller
 {
-    //
-
     protected DocumentService $documentService;
     protected HaciendaAuthService $authService;
     protected VoidService $voidService;
@@ -24,164 +22,148 @@ class VoidDTEController extends Controller
         DocumentService $documentService,
         HaciendaAuthService $authService,
         VoidService $voidService
-
     ) {
-
         $this->documentService = $documentService;
         $this->authService = $authService;
         $this->voidService = $voidService;
     }
 
-    public function voidDTE(Sale $sale)
-    {
+    /**
+     * Anulación de Factura Electrónica (FE)
+     */
+public function voidDTE(Sale $sale)
+{
+    try {
+        // Obtener tipo DTE desde la relación
+        $tipoDTE = $sale->tipoDte?->codigo;
 
-        try{
-
-            $tipoDTE = $sale->tipoDTE?->codigo;
-
-            
-            if (!$tipoDTE) {
-                throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta venta');
-            }
-
-            // Construir JSON del DTE según tipo
-
-            switch ($tipoDTE) {
-
-                case '01': // Factura Electronica
-                    $dteJson = $this->documentService->buildDTEJsonVoidFE($sale);
-                    break;
-                case '03': // Comprobante Fiscal
-                    $dteJson = $this->documentService->buildDTEJsonVoidCF($sale, []);
-                    break;
-                case '14': // Sujeto Excluido
-                    $dteJson = $this->documentService->buildDTEJsonVoidSE($sale, []);
-                    break;
-                default:
-                    throw new \Exception('Tipo de documento no soportado para DTE');
-            }
-
-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
-
-            //  Firmar documento
-            $signedData = $this->documentService->signDocument($dteJson);
-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
-
-            // Obtener token Hacienda
-            $token = $this->authService->generateNewToken();
-
-            //  Enviar a Hacienda
-            $haciendaResponse = $this->voidService->sendVoidToHacienda($sale, $signedData, $token);
-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
-
-            //  Guardar info del DTE en la venta
-            $sale->update([
-                'dte_codigo' => $sale->codigo_generacion,
-                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
-            ]);
-
-            return response()->json($haciendaResponse);
-        } catch (\Throwable $th) {
-            Log::error('Error generando DTE: ' . $th->getMessage(), [
-                'sale_id' => $sale->id,
-                'trace' => $th->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => 'Error generando DTE',
-                'message' => $th->getMessage()
-            ], 500);
+        if (!$tipoDTE) {
+            throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta venta');
         }
 
-    }
+        // Crear registro de VoidDTE
+        $void = $sale->voids()->create([
+            'codigo_generacion' => $sale->codigo_generacion,
+            'void_date' => now(),
+            'desc' => 'Anulación FE'
+        ]);
 
+        // Construir JSON del DTE según tipo
+        switch ($tipoDTE) {
+            case '01': // Factura Electrónica
+                $dteJson = $this->documentService->buildDTEJsonVoidFE($sale, $void);
+                break;
+            case '03': // Comprobante Fiscal
+                $dteJson = $this->documentService->buildDTEJsonVoidCF($sale, $void);
+                break;
+            case '14': // Sujeto Excluido
+                $dteJson = $this->documentService->buildDTEJsonVoidSE($sale, $void);
+                break;
+            default:
+                throw new \Exception('Tipo de documento no soportado para DTE de anulación');
+        }
+
+        Log::info("DTE void antes de firmar ({$tipoDTE})", ['sale_id' => $sale->id, 'dte' => $dteJson]);
+
+        // Firmar documento
+        $signedData = $this->documentService->signDocument($dteJson);
+        Log::info("Documento void firmado ({$tipoDTE})", ['sale_id' => $sale->id]);
+
+        // Obtener token Hacienda
+        $token = $this->authService->generateNewToken();
+
+        // Enviar a Hacienda
+        $haciendaResponse = $this->voidService->sendVoidToHacienda($sale, $void, $signedData, $token);
+        Log::info("Respuesta Hacienda void ({$tipoDTE})", [
+            'sale_id' => $sale->id,
+            'void_id' => $void->id,
+            'response' => $haciendaResponse
+        ]);
+
+        // Guardar info del DTE de anulación en la venta
+        $sale->update([
+            'dte_codigo' => $sale->codigo_generacion,
+            'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
+        ]);
+
+        return response()->json($haciendaResponse);
+
+    } catch (\Throwable $th) {
+        Log::error('Error anulando DTE', [
+            'sale_id' => $sale->id,
+            'error' => $th->getMessage(),
+            'trace' => $th->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Error anulando DTE',
+            'message' => $th->getMessage()
+        ], 500);
+    }
+}
+
+
+    /**
+     * Anulación de Nota de Crédito (NC)
+     */
     public function voidDTECreditNote(CreditNote $creditNote, Sale $sale)
     {
         try {
+            // Crear registro de VoidDTE
+            $void = $creditNote->voids()->create([
+                'codigo_generacion' => $creditNote->codigo_generacion,
+                'void_date' => now(),
+                'desc' => 'Anulación NC'
+            ]);
 
-            // Obtener tipo DTE desde la relación
-            $tipoDTE = "05"; // Código fijo para Nota de Crédito Electrónica
+            $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale, $void);
+            Log::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id]);
 
-            if (!$tipoDTE) {
-                throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta nota de crédito');
-            }
-
-            $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale);
-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
-
-            //  Firmar documento
             $signedData = $this->documentService->signDocument($dteJson);
-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
+            Log::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
 
-            // Obtener token Hacienda
             $token = $this->authService->generateNewToken();
 
-            //  Enviar a Hacienda
-            $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $signedData, $token);
-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
-
-            //  Guardar info del DTE en la nota de crédito
-            $creditNote->update([
-                'dte_codigo' => $creditNote->codigo_generacion,
-                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
-            ]);
+            $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $void, $signedData, $token);
+            Log::info("Respuesta Hacienda NC", ['credit_note_id' => $creditNote->id, 'void_id' => $void->id]);
 
             return response()->json($haciendaResponse);
-        } catch (\Throwable $th) {
-            Log::error('Error generando DTE: ' . $th->getMessage(), [
-                'sale_id' => $sale->id,
-                'trace' => $th->getTraceAsString()
-            ]);
 
-            return response()->json([
-                'error' => 'Error generando DTE',
-                'message' => $th->getMessage()
-            ], 500);
+        } catch (\Throwable $th) {
+            Log::error('Error anulando NC', ['credit_note_id' => $creditNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
+            return response()->json(['error' => 'Error anulando NC', 'message' => $th->getMessage()], 500);
         }
     }
 
-    public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+    /**
+     * Anulación de Nota de Débito (ND)
+     */
+    public function voidDTEDebitNote(DebitNote $debitNote, Sale $sale)
     {
         try {
+            // Crear registro de VoidDTE
+            $void = $debitNote->voids()->create([
+                'codigo_generacion' => $debitNote->codigo_generacion,
+                'void_date' => now(),
+                'desc' => 'Anulación ND'
+            ]);
 
-            // Obtener tipo DTE desde la relación
-            $tipoDTE = "06"; // Código fijo para Nota de Crédito Electrónica
+            $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale, $void);
+            Log::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id]);
 
-            if (!$tipoDTE) {
-                throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta nota de crédito');
-            }
-
-            $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale);
-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
-
-            //  Firmar documento
             $signedData = $this->documentService->signDocument($dteJson);
-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
+            Log::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
 
-            // Obtener token Hacienda
             $token = $this->authService->generateNewToken();
 
-            //  Enviar a Hacienda
-            $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $signedData, $token);
-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
-
-            //  Guardar info del DTE en la nota de crédito
-            $debitNote->update([
-                'dte_codigo' => $debitNote->codigo_generacion,
-                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
-            ]);
+            $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $void, $signedData, $token);
+            Log::info("Respuesta Hacienda ND", ['debit_note_id' => $debitNote->id, 'void_id' => $void->id]);
 
             return response()->json($haciendaResponse);
-        } catch (\Throwable $th) {
-            Log::error('Error generando DTE: ' . $th->getMessage(), [
-                'sale_id' => $sale->id,
-                'trace' => $th->getTraceAsString()
-            ]);
 
-            return response()->json([
-                'error' => 'Error generando DTE',
-                'message' => $th->getMessage()
-            ], 500);
+        } catch (\Throwable $th) {
+            Log::error('Error anulando ND', ['debit_note_id' => $debitNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
+            return response()->json(['error' => 'Error anulando ND', 'message' => $th->getMessage()], 500);
         }
     }
 }

@@ -47,7 +47,7 @@ class CreditNoteController extends Controller
     public function index(Store $store)
     {
         //solicitar lista de notas de crédito
-        $creditNotes = $store->creditNotes()->with(['customer', 'sale', 'user'])->orderByDesc('sale_date')->get();
+        $creditNotes = $store->creditNotes()->with(['customer', 'sale', 'user'])->orderBy('created_at', 'desc')->get();
 
         return view('creditnotes.index', compact('store', 'creditNotes'));
     }
@@ -61,11 +61,9 @@ class CreditNoteController extends Controller
         $this->validateStoreAccess($store);
         //mostrar ventas
 
-        $sales = $store->sales()
-            ->with(['customer', 'details.productType'])
-            ->orderByDesc('sale_date')
-            ->get();
-
+        $sales = Sale::where('store_id', $store->id)
+        ->orderBy('created_at', 'desc') // 👈 Ordena por fecha descendente
+        ->get();
 
         return view('creditnotes.create', compact('store', 'sales'));
     }
@@ -253,16 +251,38 @@ class CreditNoteController extends Controller
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Store $store, CreditNote $creditNote)
     {
         $this->validateStoreAccess($store);
-        if ($creditNote->store_id != $store->id) abort(403, 'No puedes eliminar una NC de otra tienda.');
-
-        $creditNote->delete();
-        return redirect()->route('stores.sales.index', $store->id)
-            ->with('success', 'Nota de crédito eliminada correctamente.');
+    
+        if ($creditNote->store_id != $store->id) {
+            abort(403, 'No puedes eliminar una NC de otra tienda.');
+        }
+    
+        try {
+            // Llamar al VoidDTEController para generar la anulación de la NC
+            $voidController = app(\App\Http\Controllers\VoidNCController::class);
+            $response = $voidController->voidNC($creditNote, $creditNote->sale);
+    
+            // Verificar que Hacienda haya confirmado la anulación
+            if (($response->getData()->estado ?? '') !== 'PROCESADO') {
+                return redirect()->back()->withErrors('Hacienda no confirmó la anulación de la NC.');
+            }
+    
+            // Soft delete solo si Hacienda respondió correctamente
+            $creditNote->delete();
+    
+            return redirect()->route('stores.sales.index', $store->id)
+                ->with('success', 'Nota de crédito anulada correctamente.');
+    
+        } catch (\Throwable $th) {
+            \Log::error('Error anulando NC: ' . $th->getMessage(), [
+                'credit_note_id' => $creditNote->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+    
+            return redirect()->back()->withErrors('Error generando la anulación de la NC: ' . $th->getMessage());
+        }
     }
+    
 }

@@ -132,7 +132,7 @@
                 <tbody>
                     @foreach($creditNotes as $note)
                         <tr>
-                            <td>{{ $note->invoice_number ?? '—' }}</td>
+                            <td>{{ $note->codigo_generacion ?? '—' }}</td>
                             <td>{{ $note->customer->nombre ?? 'Sin cliente' }}</td>
                             <td>{{ $note->sale->invoice_number ?? 'N/A' }}</td>
                             <td>{{ \Carbon\Carbon::parse($note->credit_note_date)->format('d/m/Y') }}</td>

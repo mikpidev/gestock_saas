@@ -77,4 +77,17 @@ class Sale extends Model
     {
         return $this->hasMany(CreditNote::class);
     }
-}   
+
+    //relacion con dteResponse
+    public function dteResponses()
+    {
+        return $this->hasMany(DteResponse::class);
+    }
+
+    //relacion anuladas
+    public function voids()
+    {
+        return $this->hasMany(VoidDTE::class);
+    }
+
+}
