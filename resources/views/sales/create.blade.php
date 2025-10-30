@@ -48,8 +48,6 @@
     .gestok-form-body input[type="text"],
     .gestok-form-body input[type="date"],
     .gestok-form-body input[type="number"],
-
-
     .gestok-form-body select {
         width: 100%;
         padding: 0.6rem;
@@ -58,9 +56,6 @@
         border-radius: 5px;
         font-size: 0.95rem;
         box-sizing: border-box;
-    }
-
-    .gestok-form-body select {
         background: #fff;
         cursor: pointer;
     }
@@ -101,13 +96,6 @@
         margin-bottom: 0.8rem;
     }
 
-    .gestok-form-body .form-text {
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: -0.8rem;
-        margin-bottom: 0.8rem;
-    }
-
     .gestok-form-actions {
         display: flex;
         gap: 0.5rem;
@@ -126,7 +114,6 @@
         }
     }
 </style>
-
 
 <div class="gestok-form-card">
     <div class="gestok-form-header">
@@ -148,7 +135,6 @@
                 @endforeach
             </select>
 
-
             <!-- Selección de cliente -->
             <label for="customers_id">Cliente</label>
             <select id="customers_id" name="customers_id" class="form-control">
@@ -160,7 +146,6 @@
                 </option>
                 @endforeach
             </select>
-
             @error('customers_id')
             <div class="text-danger">{{ $message }}</div>
             @enderror
@@ -197,17 +182,6 @@
                 @endforeach
             </div>
 
-            <!-- Totales y estado de pago -->
-            <label for="payment_status">Estado de pago</label>
-            <select id="payment_status" name="payment_status" required>
-                <option value="unpaid" {{ old('payment_status') == 'unpaid' ? 'selected' : '' }}>Pendiente</option>
-                <option value="paid" {{ old('payment_status') == 'paid' ? 'selected' : '' }}>Pagado</option>
-                <option value="partial" {{ old('payment_status') == 'partial' ? 'selected' : '' }}>Parcial</option>
-            </select>
-            @error('payment_status')
-            <div class="text-danger">{{ $message }}</div>
-            @enderror
-
             <div class="gestok-form-actions">
                 <button type="submit" class="btn">Crear Venta</button>
                 <a href="{{ route('stores.sales.index', $store->id) }}" class="btn btn-secondary">Cancelar</a>
@@ -225,6 +199,7 @@
     </ul>
 </div>
 @endif
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const wrapper = document.getElementById('products-wrapper');
@@ -232,9 +207,10 @@
         wrapper.addEventListener('change', function(e) {
             if (e.target.classList.contains('product-select')) {
                 const select = e.target;
-                const priceInput = select.closest('.product-row').querySelector('.product-price');
+                const priceInput = select.closest('.product-row').querySelector('input[type="hidden"]');
                 const selectedOption = select.options[select.selectedIndex];
                 priceInput.value = selectedOption.dataset.price ?? 0;
+                select.closest('.product-row').querySelector('span').textContent = parseFloat(selectedOption.dataset.price ?? 0).toFixed(2);
             }
         });
     });
@@ -245,4 +221,5 @@
         document.getElementById(`product-price-hidden-${index}`).value = price;
     }
 </script>
+
 @endsection

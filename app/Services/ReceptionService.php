@@ -184,12 +184,40 @@ class ReceptionService
                     'documento' => $signedData['body'] ?? null
                 ]);
 
+                $data = $response->json();
+
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
 
-            return $response->json();
+                        // Guardar en dte_responses_nc
+            try {
+                \App\Models\DteResponseND::create([
+                    'debit_note_id' => $debitNote->id,
+                    'version' => $data['version'] ?? null,
+                    'ambiente' => $data['ambiente'] ?? null,
+                    'versionApp' => $data['versionApp'] ?? null,
+                    'estado' => $data['estado'] ?? null,
+                    'codigo_generacion' => $data['codigoGeneracion'] ?? null,
+                    'sello_recibido' => $data['selloRecibido'] ?? null,
+                    'fh_procesamiento' => isset($data['fhProcesamiento'])
+                        ? \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $data['fhProcesamiento'])
+                        : null,
+                    'clasifica_msg' => $data['clasificaMsg'] ?? null,
+                    'codigo_msg' => $data['codigoMsg'] ?? null,
+                    'descripcion_msg' => $data['descripcionMsg'] ?? null,
+                    'observaciones' => $data['observaciones'] ?? [],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error guardando DteResponseNC al crear NC: ' . $e->getMessage());
+            }
+
+
+
+            return $data;
+
+
         } catch (\Throwable $th) {
             Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
                 'debit_note_id' => $debitNote->id,

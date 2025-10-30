@@ -11,7 +11,7 @@ use App\Models\CreditNote;
 use App\Models\DebitNote;
 use App\Models\VoidDTE;
 use App\Models\VoidNC;
-
+use App\Models\VoidND;
 
 class DocumentService
 {
@@ -898,7 +898,7 @@ class DocumentService
                 "codigoGeneracion" => $debitNote->codigo_generacion,
                 "tipoModelo" => 1,
                 "tipoOperacion" => 1,
-                "fecEmi" => $debitNote->debit_note_date,
+                "fecEmi" => $debitNote->debit_note_date->format('Y-m-d'),
                 "horEmi" => now()->format('H:i:s'),
                 "tipoMoneda" => "USD",
                 "tipoContingencia" => null,
@@ -981,8 +981,62 @@ class DocumentService
      * 
      */
 
-    public function buildDTEJsonVoidND(Sale $sale): array 
+    public function buildDTEJsonVoidND(DebitNote $debitNote, Sale $sale,  VoidND $void): array 
     {
+         $customer = $sale->customer;
+        $storeTaxInfo = $sale->store->taxInfo;
+    
+        // Tomar solo DTE procesados de la venta original
+        $selloRecibidoOriginal = $debitNote->dteResponses()
+            ->where('estado', 'PROCESADO') // solo DTE exitosos
+            ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
+            ->first()?->sello_recibido;
+    
+        return [
+            "identificacion" => [
+                "version" => 2,
+                "ambiente" => "00",
+                "codigoGeneracion" => $void->codigo_generacion,
+                "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
+                "horAnula" => now()->format('H:i:s'),
+            ],
+            "emisor" => [
+                "nit" => $storeTaxInfo->nit,
+                "nombre" => $storeTaxInfo->actividad_economica,
+                "nomEstablecimiento" => $storeTaxInfo->actividad_economica,
+                "tipoEstablecimiento" => "01",
+                "codEstableMH" => null,
+                "codEstable" => null,
+                "codPuntoVentaMH" => null,
+                "codPuntoVenta" => null,
+                "telefono" => $storeTaxInfo->telefono,
+                "correo" => $storeTaxInfo->email,
+            ],
+            "documento" => [
+                "tipoDte" => "06",
+                "codigoGeneracion" => $debitNote->codigo_generacion,
+                "selloRecibido" => $selloRecibidoOriginal,
+                "numeroControl" => $debitNote->numero_control,
+                "fecEmi" => $debitNote->debit_note_date->format('Y-m-d'),
+                "montoIva" => 0,
+                "codigoGeneracionR" => null,
+                "tipoDocumento" => $customer->tipoDocumento ?? "36",
+                "numDocumento" => $customer->numDocumento ?? "00000000000000",
+                "nombre" => $customer->nombre,
+                "telefono" => $customer->telefono ?? "00000000",
+                "correo" => $customer->correo ?? "cliente@prueba.com"
+            ],
+            "motivo" => [
+                "tipoAnulacion" => 2,
+                "motivoAnulacion" => $void->desc,
+                "nombreResponsable" => $storeTaxInfo->actividad_economica,
+                "tipDocResponsable" => "36",
+                "numDocResponsable" => $storeTaxInfo->nit,
+                "nombreSolicita" => $customer->nombre,
+                "tipDocSolicita" => $customer->tipoDocumento ?? "36",
+                "numDocSolicita" => $customer->numDocumento ?? "00000000000000"
+            ]
+        ];
         
     }
 

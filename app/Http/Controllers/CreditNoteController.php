@@ -12,6 +12,8 @@ use App\Models\ProductType;
 use App\Models\InvoiceNumber;
 use App\Models\Store;
 use App\Models\TipoDte;
+use App\Services\ConsultaService;
+use App\Services\HaciendaAuthService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -41,16 +43,26 @@ class CreditNoteController extends Controller
         }
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Store $store)
     {
-        //solicitar lista de notas de crédito
+        // Solicitar lista de notas de crédito
         $creditNotes = $store->creditNotes()->with(['customer', 'sale', 'user'])->orderBy('created_at', 'desc')->get();
+
 
         return view('creditnotes.index', compact('store', 'creditNotes'));
     }
+
+
+
+
+    public function refreshDTE(Store $store, CreditNote $creditNote, ConsultaService $consultaService)
+    {
+        $token = app(HaciendaAuthService::class)->getToken();
+        $consultaService->consultarNC($creditNote, $token);
+
+        return redirect()->back()->with('success', 'Estado DTE actualizado.');
+    }
+
 
     /**
      * Show the form for creating a new resource.
@@ -62,8 +74,8 @@ class CreditNoteController extends Controller
         //mostrar ventas
 
         $sales = Sale::where('store_id', $store->id)
-        ->orderBy('created_at', 'desc') // 👈 Ordena por fecha descendente
-        ->get();
+            ->orderBy('created_at', 'desc') // 👈 Ordena por fecha descendente
+            ->get();
 
         return view('creditnotes.create', compact('store', 'sales'));
     }
@@ -124,7 +136,7 @@ class CreditNoteController extends Controller
             'total_exenta' => 0.00,
             'total_gravada' => $totales['subtotal'], // Base sin IVA
             'total_iva' => $totales['tax_amount'],
-            'payment_status' => 'unpaid',
+            'dte_status'   => 'PENDIENTE', // Valor inicial por defecto
             'documento_relacionado' => $sale->codigo_generacion, // Referencia a la factura original
         ]);
 
@@ -160,6 +172,29 @@ class CreditNoteController extends Controller
             app(\App\Http\Controllers\DTEController::class)->generarDTECreditNote($creditNote, $sale);
         } catch (\Throwable $e) {
             \Log::error('Error generando DTE: ' . $e->getMessage());
+        }
+
+        try {
+            // Obtener token válido
+            $token = app(HaciendaAuthService::class)->getToken();
+
+            // Consultar DTE inmediatamente después de enviar
+            $consultaService = new ConsultaService();
+            $response = $consultaService->consultarNC($creditNote, $token);
+
+            // Actualizar estado de la venta con el estado real
+            $creditNote->dte_status = $response['estado'] ?? 'PENDIENTE';
+            $creditNote->save();
+
+            // Guardar response en sesión para mostrar en index
+            session()->flash('dte_response', $response);
+        } catch (\Throwable $e) {
+            \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
+                'credit_note_id' => $creditNote->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
 
 
@@ -254,35 +289,33 @@ class CreditNoteController extends Controller
     public function destroy(Store $store, CreditNote $creditNote)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($creditNote->store_id != $store->id) {
             abort(403, 'No puedes eliminar una NC de otra tienda.');
         }
-    
+
         try {
             // Llamar al VoidDTEController para generar la anulación de la NC
             $voidController = app(\App\Http\Controllers\VoidNCController::class);
             $response = $voidController->voidNC($creditNote, $creditNote->sale);
-    
+
             // Verificar que Hacienda haya confirmado la anulación
             if (($response->getData()->estado ?? '') !== 'PROCESADO') {
                 return redirect()->back()->withErrors('Hacienda no confirmó la anulación de la NC.');
             }
-    
+
             // Soft delete solo si Hacienda respondió correctamente
             $creditNote->delete();
-    
+
             return redirect()->route('stores.sales.index', $store->id)
                 ->with('success', 'Nota de crédito anulada correctamente.');
-    
         } catch (\Throwable $th) {
             \Log::error('Error anulando NC: ' . $th->getMessage(), [
                 'credit_note_id' => $creditNote->id,
                 'trace' => $th->getTraceAsString()
             ]);
-    
+
             return redirect()->back()->withErrors('Error generando la anulación de la NC: ' . $th->getMessage());
         }
     }
-    
 }

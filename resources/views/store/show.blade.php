@@ -1,81 +1,87 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="container mt-4">
 
-    <!-- Sub-card: Información Fiscal -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container-fluid mt-4">
 
-        @if($store->taxInfo)
-        <a href="{{ route('store_tax_info.show', $store->id) }}" class="btn btn-sm btn-primary">
-            <i class="bi bi-receipt"></i> Información Fiscal
-        </a>
-        @else
-        <a href="{{ route('store_tax_info.create', $store->id) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-plus-circle"></i> Agregar Información Fiscal
-        </a>
-        @endif
-    </div>
-
-    <!-- Main-card: Últimas 5 Ventas -->
-    <div class="gestok-form-card" style="max-width: 900px;">
-        <div class="gestok-form-header">
-            <h1>Últimas 5 Ventas</h1>
-            <p>Resumen de actividad reciente</p>
+    <!-- Accesos rápidos como tarjetas grandes -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm p-3 touch-card" onclick="location.href='{{ route('store_tax_info.show', $store->id) }}'">
+                <i class="bi bi-receipt display-4 mb-2"></i>
+                <h5>Info Fiscal</h5>
+            </div>
         </div>
-
-        <div class="gestok-form-body" style="overflow-x: auto;">
-            <table class="table table-striped" style="width: 100%; border-collapse: collapse;">
-                <thead style="background: #f5f5f5;">
-                    <tr>
-                        <th style="padding: 0.6rem;">Fecha</th>
-                        <th style="padding: 0.6rem;">Usuario</th>
-                        <th style="padding: 0.6rem;">Cliente</th>
-                        <th style="padding: 0.6rem; text-align: right;">Total</th>
-                        <th style="padding: 0.6rem;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($sales as $sale)
-                    <tr>
-                        <td style="padding: 0.6rem;" class="text-nowrap">
-                            {{ $sale->created_at->format('d/m/Y') }}
-                        </td>
-                        <td style="padding: 0.6rem;" class="text-nowrap">
-                            {{ $sale->user->name ?? 'Factura' }}
-                        </td>
-                        <td style="padding: 0.6rem;">
-                            {{ $sale->customer->nombre ?? 'Cliente desconocido' }}
-                        </td>
-                        <td style="padding: 0.6rem; text-align: right;">
-                            ${{ number_format($sale->total_amount ?? 0, 2) }}
-                        </td>
-                        <td style="padding: 0.6rem;">
-                            @if($sale->estado === 'emitida')
-                                <span class="badge bg-success">Emitida</span>
-                            @elseif($sale->estado === 'anulada')
-                                <span class="badge bg-danger">Anulada</span>
-                            @else
-                                <span class="badge bg-secondary">{{ ucfirst($sale->estado ?? 'N/A') }}</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" style="padding: 1rem; text-align: center; color: #999;">
-                            No hay ventas registradas aún.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-
-            <div class="gestok-form-actions mt-3">
-                <a href="{{ route('stores.sales.index', $store->id) }}" class="btn btn-primary">Ver todas las ventas</a>
-                <a href="{{ route('stores.index') }}" class="btn btn-secondary">Volver</a>
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm p-3 touch-card" onclick="location.href='{{ route('stores.sales.index', $store->id) }}'">
+                <i class="bi bi-cart-check display-4 mb-2"></i>
+                <h5>Todas las Ventas</h5>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm p-3 touch-card">
+                <h6>Total Hoy</h6>
+                <h3>${{ number_format($salesTodayTotal ?? 0, 2) }}</h3>
+                <small>{{ $salesTodayCount ?? 0 }} ventas</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm p-3 touch-card">
+                <h6>Total Semana</h6>
+                <h3>${{ number_format($salesWeekTotal ?? 0, 2) }}</h3>
+                <small>{{ $salesWeekCount ?? 0 }} ventas</small>
             </div>
         </div>
     </div>
 
+    <div class="card mb-4 p-3 shadow-sm" style="height: 300px; ">
+        <h5 class="mb-3">Ventas Última Semana</h5>
+        <canvas id="salesChart" style="height: 300px; width: 100%;" ></canvas>
+    </div>
+
+
+    <!-- Últimas 5 ventas grandes para touch -->
+    <div class="row g-3">
+        @forelse($sales as $sale)
+        <div class="col-12 col-md-6">
+            <div class="card touch-card p-3 shadow-sm" style="cursor: pointer;">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>{{ $sale->customer->nombre ?? 'Cliente desconocido' }}</strong><br>
+                        <small>{{ $sale->created_at->format('d/m/Y') }}</small>
+                    </div>
+                    <div class="text-end">
+                        <h5>${{ number_format($sale->total_amount ?? 0, 2) }}</h5>
+                        @if($sale->estado === 'emitida')
+                        <span class="badge bg-success">Emitida</span>
+                        @elseif($sale->estado === 'anulada')
+                        <span class="badge bg-danger">Anulada</span>
+                        @else
+                        <span class="badge bg-secondary">{{ ucfirst($sale->estado ?? 'N/A') }}</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        @empty
+        <div class="col-12">
+            <div class="card text-center p-3 text-muted">No hay ventas registradas aún.</div>
+        </div>
+        @endforelse
+    </div>
+
 </div>
+@endsection
+
+@section('scripts')
+<!-- Scripts con los datos -->
+<script id="weeklySalesLabels" type="application/json">
+    {!! json_encode($weeklySalesLabels, JSON_UNESCAPED_UNICODE) !!}
+</script>
+
+<script id="weeklySalesData" type="application/json">
+    {!! json_encode($weeklySalesData, JSON_UNESCAPED_UNICODE) !!}
+</script>
+
+
 @endsection

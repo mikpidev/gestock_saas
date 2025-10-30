@@ -169,6 +169,10 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::delete('stores/{store}/sales/{sale}', [SaleController::class, 'destroy'])
         ->name('stores.sales.destroy');
 
+    Route::post('stores/{store}/sales/{sale}/refresh-dte', [SaleController::class, 'refreshDTE'])
+        ->name('stores.sales.refreshDTE');
+
+
 
     //Imprimir recibo
 
@@ -194,6 +198,12 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::delete('stores/{store}/creditnotes/{creditNote}', [\App\Http\Controllers\CreditNoteController::class, 'destroy'])
         ->name('stores.creditnotes.destroy');
 
+
+    Route::post('stores/{store}/creditnotes/{creditNote}/refresh-dte', [CreditNoteController::class, 'refreshDTE'])
+        ->name('stores.creditnotes.refreshDTE');
+
+
+
     Route::get('/sales/{sale}/details', function (Sale $sale) {
         $details = $sale->details()->with('productType')->get();
 
@@ -203,7 +213,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     });
 
     Route::get('/stores/{store}/sales/{sale}/details', [CreditNoteController::class, 'getSaleDetails'])
-    ->name('stores.sales.details');
+        ->name('stores.sales.details');
 
     //ruta notas de debito
     Route::get('stores/{store}/debitnotes', [\App\Http\Controllers\DebitNoteController::class, 'index'])
@@ -212,12 +222,14 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('stores.debitnotes.create');
     Route::post('stores/{store}/debitnotes', [\App\Http\Controllers\DebitNoteController::class, 'store'])
         ->name('stores.debitnotes.store');
-    Route::get('stores/{store}/debitnotes/{creditNote}', [\App\Http\Controllers\DebitNoteController::class, 'show'])
+    Route::get('stores/{store}/debitnotes/{debitNote}', [\App\Http\Controllers\DebitNoteController::class, 'show'])
         ->name('stores.debitnotes.show');
-    Route::delete('stores/{store}/debitnotes/{creditNote}', [\App\Http\Controllers\DebitNoteController::class, 'destroy'])
-        ->name('stores.debitnotes.destroy');
-    
-    Route::get('/stores/{store}/sales/{sale}/details', [DebitNoteController::class, 'getSaleDetails'])
-    ->name('stores.sales.details');
 
+    Route::get('/stores/{store}/sales/{sale}/details', [DebitNoteController::class, 'getSaleDetails'])
+        ->name('stores.sales.details');
+    Route::delete('stores/{store}/debitnotes/{debitNote}', [\App\Http\Controllers\DebitNoteController::class, 'destroy'])
+        ->name('stores.debitnotes.destroy');
+
+    Route::post('stores/{store}/debitnotes/{debitNote}/refresh-dte', [DebitNoteController::class, 'refreshDTE'])
+        ->name('stores.debitnotes.refreshDTE');
 });

@@ -11,6 +11,11 @@ use App\Models\Store;
 use App\Models\TipoDte;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ConsultaService;
+use App\Services\HaciendaAuthService;
+
+
+
 
 class SaleController extends Controller
 {
@@ -39,9 +44,28 @@ class SaleController extends Controller
     public function index(Store $store)
     {
         $sales = $store->sales()->with(['customer', 'details.productType'])->get();
-        
-        return view('sales.index', compact('store', 'sales'));
+        $sales = Sale::with(['customer'])->orderByDesc('sale_date')->get();
+
+        $authService = app(HaciendaAuthService::class);
+        $token = $authService->getToken(); // obtiene un token válido
+        $consultaService = new ConsultaService();
+
+        foreach ($sales as $sale) {
+            if ($sale->dte_status === null || $sale->dte_status === 'PENDIENTE') {
+                $consultaService->consultarSale($sale, $token);
+            }
+            return view('sales.index', compact('store', 'sales'));
+        }
     }
+
+    public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
+    {
+        $token = app(HaciendaAuthService::class)->getToken();
+        $consultaService->consultarSale($sale, $token);
+
+        return redirect()->back()->with('success', 'Estado DTE actualizado.');
+    }
+
 
     public function create(Store $store)
     {
@@ -55,12 +79,11 @@ class SaleController extends Controller
     public function store(Request $request, Store $store)
     {
         $this->validateStoreAccess($store);
-    
+
         // Validar request
         $data = $request->validate([
             'customers_id' => 'nullable|exists:customers,id',
             'sale_date' => 'required|date',
-            'payment_status' => 'required|in:paid,unpaid,partial',
             'discount_amount' => 'nullable|numeric|min:0',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:product_types,id',
@@ -68,34 +91,34 @@ class SaleController extends Controller
             'products.*.price' => 'required|numeric|min:0',
             'tipo_documento_id' => 'required|exists:tipo_documento,id',
         ]);
-    
+
         // Calcular totales
         $discountAmount = $data['discount_amount'] ?? 0;
         $totalAmount = 0;
         $totalIva = 0;
         $totalGravada = 0;
-    
+
         foreach ($request->products as $p) {
             $product = ProductType::findOrFail($p['id']); // precio seguro
 
             $cantidad = $p['quantity'];
             $precioConIVA = $p['price'];
             $subtotalConIVA = $cantidad * $precioConIVA;
-    
+
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
-    
+
             $totalAmount += $subtotalConIVA;
             $totalGravada += $baseSinIVA;
             $totalIva += $ivaItem;
         }
-    
+
         $netAmount = $totalAmount - $discountAmount;
         $total_no_gravado = 0;
         $total_exenta = 0;
         $total_gravada = round($totalGravada, 2);
         $total_iva = round($totalIva, 2);
-        
+
         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
 
         // Generar next invoice y número de control
@@ -105,7 +128,7 @@ class SaleController extends Controller
         $sale = Sale::create([
             'customers_id' => $data['customers_id'] ?? null,
             'sale_date' => $data['sale_date'],
-            'payment_status' => $data['payment_status'],
+            'dte_status'   => 'PENDIENTE', // Valor inicial por defecto
             'total_amount' => round($totalAmount, 2),
             'net_amount' => round($netAmount, 2),
             'store_id' => $store->id,
@@ -122,14 +145,14 @@ class SaleController extends Controller
             'invoice_number' => $invoiceNumber->number,
             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
         ]);
-    
+
         // Crear detalles
         foreach ($request->products as $product) {
             $precioConIVA = $product['price'];
             $subtotalConIVA = $product['quantity'] * $precioConIVA;
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
-    
+
             $sale->details()->create([
                 'product_type_id' => $product['id'],
                 'quantity' => $product['quantity'],
@@ -138,19 +161,42 @@ class SaleController extends Controller
                 'iva_item' => round($ivaItem, 2),
             ]);
         }
-    
+
         // Generar DTE según tipo de documento
         try {
             app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
         } catch (\Throwable $e) {
             \Log::error('Error generando DTE: ' . $e->getMessage());
         }
-    
+        try {
+            // Obtener token válido
+            $token = app(HaciendaAuthService::class)->getToken();
+        
+            // Consultar DTE inmediatamente después de enviar
+            $consultaService = new ConsultaService();
+            $response = $consultaService->consultarSale($sale, $token);
+        
+            // Actualizar estado de la venta con el estado real
+            $sale->dte_status = $response['estado'] ?? 'PENDIENTE';
+            $sale->save();
+        
+            // Guardar response en sesión para mostrar en index
+            session()->flash('dte_response', $response);
+        
+        } catch (\Throwable $e) {
+            \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
+                'sale_id' => $sale->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        
+            session()->flash('dte_response', ['error' => $e->getMessage()]);
+        }
+
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente.');
     }
-    
-    
+
+
     public function show(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
@@ -211,32 +257,31 @@ class SaleController extends Controller
     public function destroy(Store $store, Sale $sale)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($sale->store_id != $store->id) {
             abort(403, 'No puedes eliminar una venta de otra tienda.');
         }
-    
+
         try {
             // Llamar al VoidDTEController para generar la anulación
             $voidController = app(\App\Http\Controllers\VoidDTEController::class);
             $response = $voidController->voidDTE($sale);
-    
+
             if (($response->getData()->estado ?? '') !== 'PROCESADO') {
                 return redirect()->back()->withErrors('Hacienda no confirmó la anulación.');
             }
-    
+
             // Soft delete solo si Hacienda respondió correctamente
             $sale->delete();
-    
+
             return redirect()->route('stores.sales.index', $store->id)
                 ->with('success', 'Venta anulada correctamente.');
-    
         } catch (\Throwable $th) {
             \Log::error('Error anulando venta: ' . $th->getMessage(), [
                 'sale_id' => $sale->id,
                 'trace' => $th->getTraceAsString()
             ]);
-    
+
             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
         }
     }

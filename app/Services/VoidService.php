@@ -107,6 +107,7 @@ class VoidService
         $tipoDTE = "05"; // Nota de Crédito Electrónica
     
         try {
+
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
@@ -164,47 +165,62 @@ class VoidService
     }
     
 
-    public function sendNDVoidToHacienda($debitNote, $signedData, $token): array
-    {
-
-        // Obtener código de DTE directamente de la relación
-        $tipoDTE = "06";
-
-
+    public function sendNDVoidToHacienda($debitNote, $void, $signedData, $token): array
+    { // Obtener código de DTE directamente de la relación
+        $tipoDTE = "06"; // Nota de Crédito Electrónica
+    
         try {
 
             $response = Http::withHeaders([
-
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
                 ->post('https://apitest.dtes.mh.gob.sv/fesv/anulardte', [
-
                     'ambiente' => '00',
                     'idEnvio' => 1,
                     'version' => 2,
-                    'tipoDte' => $tipoDTE,
                     'documento' => $signedData['body'] ?? null
-
                 ]);
-
+    
+            $data = $response->json();
+    
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
-
             ]);
-
-            return $response->json();
+    
+            // Guardar en dte_responses_nc
+            try {
+                \App\Models\DteResponseND::create([
+                    'debit_note_id' => $debitNote->id,
+                    'version' => $data['version'] ?? null,
+                    'ambiente' => $data['ambiente'] ?? null,
+                    'versionApp' => $data['versionApp'] ?? null,
+                    'estado' => $data['estado'] ?? null,
+                    'codigo_generacion' => $data['codigoGeneracion'] ?? null,
+                    'sello_recibido' => $data['selloRecibido'] ?? null,
+                    'fh_procesamiento' => isset($data['fhProcesamiento'])
+                        ? \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $data['fhProcesamiento'])
+                        : null,
+                    'clasifica_msg' => $data['clasificaMsg'] ?? null,
+                    'codigo_msg' => $data['codigoMsg'] ?? null,
+                    'descripcion_msg' => $data['descripcionMsg'] ?? null,
+                    'observaciones' => $data['observaciones'] ?? [],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error guardando DteResponseND: ' . $e->getMessage());
+            }
+    
+            return $data;
+    
         } catch (\Throwable $th) {
-
-            Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
+            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
                 'debit_note_id' => $debitNote->id,
                 'tipo_documento' => $debitNote->tipo_documento_id,
                 'trace' => $th->getTraceAsString()
             ]);
-
+    
             return [
-
                 'estado' => 'ERROR',
                 'mensaje' => $th->getMessage()
             ];

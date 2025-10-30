@@ -43,7 +43,7 @@ class CreditNote extends Model
         'total_gravada',
         'total_iva',
 
-        'payment_status',
+        'dte_status'
     ];
 
     // Casting de fechas

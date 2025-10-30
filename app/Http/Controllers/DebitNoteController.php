@@ -12,8 +12,11 @@ use App\Models\ProductType;
 use App\Models\InvoiceNumber;
 use App\Models\Store;
 use App\Models\TipoDte;
+use App\Services\ConsultaService;
+use App\Services\HaciendaAuthService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+
 
 
 class DebitNoteController extends Controller
@@ -50,6 +53,16 @@ class DebitNoteController extends Controller
         $debitNotes = $store->debitNotes()->with(['customer', 'sale', 'user'])->orderByDesc('sale_date')->get();
 
         return view('debitnotes.index', compact('store', 'debitNotes'));
+    }
+
+    
+    public function refreshDTE(Store $store, DebitNote $debitNote, ConsultaService $consultaService)
+    {
+        $token = app(HaciendaAuthService::class)->getToken();
+        $consultaService->consultarND($debitNote, $token);
+
+
+        return redirect()->back()->with('success', 'Estado DTE actualizado.');
     }
 
     /**
@@ -116,7 +129,6 @@ class DebitNoteController extends Controller
             'net_amount' => $totales['net_amount'],
             'numero_control' => $invoiceNumber?->numero_control ?? Str::upper(Str::random(8)),
             'codigo_generacion' => $invoiceNumber?->codigo_generacion ?? Str::uuid(),
-            'invoice_number' => $invoiceNumber?->number ?? 'NC-' . now()->timestamp,
             'reason' => $data['reason'] ?? null,
             'tipo_moneda' => 'USD',
             'tipo_operacion' => 1,
@@ -161,6 +173,30 @@ class DebitNoteController extends Controller
             app(\App\Http\Controllers\DTEController::class)->generarDTEDebitNote($debitNote, $sale);
         } catch (\Throwable $e) {
             \Log::error('Error generando DTE: ' . $e->getMessage());
+        }
+
+        //Consultar si DTE fue aceptado antes de redirigir
+        try {
+            // Obtener token válido
+            $token = app(HaciendaAuthService::class)->getToken();
+
+            // Consultar DTE inmediatamente después de enviar
+            $consultaService = new ConsultaService();
+            $response = $consultaService->consultarND($debitNote, $token);
+
+            // Actualizar estado de la venta con el estado real
+            $debitNote->dte_status = $response['estado'] ?? 'PENDIENTE';
+            $debitNote->save();
+
+            // Guardar response en sesión para mostrar en index
+            session()->flash('dte_response', $response);
+        } catch (\Throwable $e) {
+            \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
+                'debit_note_id' => $debitNote->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
 
 
@@ -258,10 +294,40 @@ class DebitNoteController extends Controller
     public function destroy(Store $store, DebitNote $debitNote)
     {
         $this->validateStoreAccess($store);
-        if ($debitNote->store_id != $store->id) abort(403, 'No puedes eliminar una ND de otra tienda.');
-
-        $debitNote->delete();
-        return redirect()->route('stores.debitnotes.index', $store->id)
-            ->with('success', 'Nota de crédito eliminada correctamente.');
+    
+        if ($debitNote->store_id != $store->id) {
+            \Log::info('Verificación de tienda en destroy ND', [
+                'store_id_param' => $store->id,
+                'store_id_nd' => $debitNote->store_id,
+                'user_id' => Auth::id(),
+            ]);
+            abort(403, 'No puedes eliminar una ND de otra tienda.');
+        }
+    
+        try {
+            // Llamar al VoidDTEController para generar la anulación de la ND
+            $voidController = app(\App\Http\Controllers\VoidNDController::class);
+            $response = $voidController->voidND($debitNote,$debitNote->sale);
+    
+            // Verificar que Hacienda haya confirmado la anulación
+            if (($response->getData()->estado ?? '') !== 'PROCESADO') {
+                return redirect()->back()->withErrors('Hacienda no confirmó la anulación de la ND.');
+            }
+    
+            // Soft delete solo si Hacienda respondió correctamente
+            $debitNote->delete();
+    
+            return redirect()->route('stores.sales.index', $store->id)
+                ->with('success', 'Nota de debito anulada correctamente.');
+    
+        } catch (\Throwable $th) {
+            \Log::error('Error anulando ND: ' . $th->getMessage(), [
+                'debit_note_id' => $debitNote->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+    
+            return redirect()->back()->withErrors('Error generando la anulación de la ND: ' . $th->getMessage());
+        }
     }
+
 }

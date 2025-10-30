@@ -25,7 +25,7 @@ class Sale extends Model
         'tax_amount',
         'discount_amount',
         'net_amount',
-        'payment_status',
+        'dte_status',
         'numero_control',      // número de control para DTE
         'codigo_generacion',   // UUID para DTE
         'tipo_moneda',
@@ -77,6 +77,13 @@ class Sale extends Model
     {
         return $this->hasMany(CreditNote::class);
     }
+
+    // Relación con las notas de crédito asociadas a esta venta
+    public function debitNotes()
+    {
+        return $this->hasMany(DebitNote::class);
+    }
+
 
     //relacion con dteResponse
     public function dteResponses()

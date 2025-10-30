@@ -7,6 +7,9 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
+use Carbon\Carbon;
+
+
 
 class StoreController extends Controller
 {
@@ -69,7 +72,6 @@ class StoreController extends Controller
 
     }
     
-
     public function show(Store $store)
     {
         $user = Auth::user();
@@ -91,15 +93,41 @@ class StoreController extends Controller
         // Cargar relaciones necesarias
         $store->load(['taxInfo', 'company']);
     
-        // Obtener las últimas 5 ventas de esta tienda
-        $sales = Sale::where('store_id', $store->id)
-                        ->latest('created_at')
-                        ->take(5)
-                        ->get();
+        // Base query para esta tienda
+        $baseQuery = Sale::where('store_id', $store->id);
     
-        // Enviar los datos a la vista
-        return view('store.show', compact('store', 'sales'));
+        // Últimas 5 ventas
+        $sales = $baseQuery->latest('created_at')->take(5)->get();
+    
+        // Totales y conteos
+        $salesTodayTotal = (clone $baseQuery)->whereDate('created_at', Carbon::today())->sum('total_amount');
+        $salesTodayCount = (clone $baseQuery)->whereDate('created_at', Carbon::today())->count();
+    
+        $salesWeekTotal = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->sum('total_amount');
+        $salesWeekCount = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count();
+    
+        // Ventas por día de la última semana para gráfico
+        $weeklySalesLabels = [];
+        $weeklySalesData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $weeklySalesLabels[] = $date->locale('es')->isoFormat('ddd'); // Lunes, Mar, etc.
+            $weeklySalesData[] = (clone $baseQuery)->whereDate('created_at', $date)->sum('total_amount');
+        }
+        
+
+        return view('store.show', compact(
+            'store',
+            'sales',
+            'salesTodayTotal',
+            'salesTodayCount',
+            'salesWeekTotal',
+            'salesWeekCount',
+            'weeklySalesLabels',
+            'weeklySalesData'
+        ));
     }
+    
     
 
     public function edit(Request $request, Store $store)

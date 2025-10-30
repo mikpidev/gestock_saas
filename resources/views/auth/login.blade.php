@@ -7,7 +7,7 @@
 <form method="POST" action="{{ route('login') }}">
     @csrf
 
-    <label for="email">Correo</label>
+    <label for="email">Usuario</label>
     <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
 
     <label for="password">Contraseña</label>
@@ -27,10 +27,5 @@
     @endif
 </form>
 
-@if (Route::has('register'))
-    <div class="register">
-        ¿No tienes cuenta?
-        <a href="{{ route('register') }}">Crear cuenta</a>
-    </div>
-@endif
+
 @endsection

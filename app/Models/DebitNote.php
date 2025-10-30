@@ -38,12 +38,13 @@ class DebitNote extends Model
         'total_gravada',
         'total_iva',
 
-        'payment_status',
+        'dte_status',
     ];
 
     // Casting de fechas
     protected $casts = [
         'sale_date' => 'datetime',
+        'debit_note_date' => 'datetime'
     ];
 
     // Relación con la tienda
@@ -81,6 +82,17 @@ class DebitNote extends Model
     public function debitNoteDetails()
     {
         return $this->hasMany(DebitNoteDetail::class);
+    }
+
+    //relacion con dteResponse
+    public function dteResponses()
+    {
+        return $this->hasMany(DteResponseND::class);
+    }
+
+    public function voids()
+    {
+        return $this->hasMany(VoidND::class);
     }
 
 }

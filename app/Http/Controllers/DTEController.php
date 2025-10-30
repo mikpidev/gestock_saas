@@ -10,6 +10,9 @@ use App\Services\HaciendaAuthService;
 use App\Services\ReceptionService;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Services\ConsultaService;
+
+
 
 
 class DTEController extends Controller
@@ -178,6 +181,117 @@ class DTEController extends Controller
 
             return response()->json([
                 'error' => 'Error generando DTE',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Consulta el estado del DTE en Hacienda para una venta específica
+     */
+    public function consultarDTE(Sale $sale, ConsultaService $consultaService)
+    {
+        try {
+            // Obtener token de Hacienda
+            $token = $this->authService->getToken(); // Usar getToken para reutilizar token válido
+
+            // Llamar al servicio de consulta
+            $data = $consultaService->consultarSale($sale, $token);
+
+            // Actualizar info en la venta
+            $sale->update([
+                'dte_estado' => $data['estado'] ?? 'PENDING'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'sale_id' => $sale->id,
+                'estado' => $sale->dte_estado,
+                'hacienda_response' => $data
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Error consultando DTE: ' . $th->getMessage(), [
+                'sale_id' => $sale->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    
+    /**
+     * Consulta el estado del DTE en Hacienda para una NC específica
+     */
+    public function consultarDTENC(CreditNote $creditNote, ConsultaService $consultaService)
+    {
+        try {
+            // Obtener token de Hacienda
+            $token = $this->authService->getToken(); // Usar getToken para reutilizar token válido
+
+            // Llamar al servicio de consulta
+            $data = $consultaService->consultarNC($creditNote, $token);
+
+            // Actualizar info en la venta
+            $creditNote->update([
+                'dte_estado' => $data['estado'] ?? 'PENDING'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'sale_id' => $creditNote->id,
+                'estado' => $creditNote->dte_estado,
+                'hacienda_response' => $data
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Error consultando DTE: ' . $th->getMessage(), [
+                'sale_id' => $creditNote->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Consulta el estado del DTE en Hacienda para una NC específica
+     */
+    public function consultarDTEND(DebitNote $debitNote, ConsultaService $consultaService)
+    {
+        try {
+            // Obtener token de Hacienda
+            $token = $this->authService->getToken(); // Usar getToken para reutilizar token válido
+
+            // Llamar al servicio de consulta
+            $data = $consultaService->consultarND($debitNote, $token);
+
+            // Actualizar info en la venta
+            $debitNote->update([
+                'dte_estado' => $data['estado'] ?? 'PENDING'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'sale_id' => $debitNote->id,
+                'estado' => $debitNote->dte_estado,
+                'hacienda_response' => $data
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Error consultando DTE: ' . $th->getMessage(), [
+                'sale_id' => $debitNote->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
                 'message' => $th->getMessage()
             ], 500);
         }
