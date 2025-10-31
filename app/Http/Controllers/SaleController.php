@@ -191,9 +191,15 @@ class SaleController extends Controller
         
             session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
-
-        return redirect()->route('stores.sales.index', $store->id)
-            ->with('success', 'Venta creada correctamente.');
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Venta creada y DTE enviado correctamente',
+            ]);
+        }
+        
+        return redirect()->route('stores.sales.create', $store->id)
+            ->with('success', 'Venta creada y DTE enviado correctamente');
     }
 
 

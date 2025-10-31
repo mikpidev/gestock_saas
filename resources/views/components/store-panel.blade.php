@@ -8,25 +8,34 @@
         --color-borde: #8e5928;
     }
 
+    /* ===== Contenedor general ===== */
     .gestok-container {
         display: flex;
         min-height: 100vh;
     }
 
-    /* Sidebar siempre expandido */
+    /* ===== Sidebar siempre expandido ===== */
     .gestok-panel {
         width: 220px;
         background: var(--color-fondo-panel);
-        border-right: 2px solid var(--color-borde);
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        padding: 1.5rem;
-        gap: 1rem;
+        padding: 0;
+        /* eliminamos padding global para alinear borde */
         min-height: 100vh;
     }
 
-    /* Botones del menú optimizados para touch */
+    .gestok-panel-inner {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    /* ===== Botones del menú optimizados para touch ===== */
     .gestok-panel a {
         display: flex;
         align-items: center;
@@ -39,13 +48,14 @@
         background: var(--color-fondo-panel);
         border-bottom: 2px solid var(--color-borde);
         transition: all 0.2s ease;
+        box-sizing: border-box;
     }
 
     .gestok-panel a:hover {
         color: var(--color-secundario);
         border-bottom-color: var(--color-primario);
         transform: translateX(3px);
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     /* Iconos dentro de los botones */
@@ -61,6 +71,19 @@
         flex: 1;
         padding: 2rem;
         background: #f2f2f2;
+    }
+
+    /* ===== Media Queries ===== */
+    @media (max-width: 992px) {
+        .gestok-container {
+            flex-direction: column;
+        }
+
+        .gestok-panel {
+            width: 100%;
+            border-right: none;
+            border-bottom: 2px solid var(--color-borde);
+        }
     }
 </style>
 
