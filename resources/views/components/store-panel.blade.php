@@ -1,4 +1,13 @@
 <style>
+    :root {
+        --color-primario: #ffb548;
+        --color-secundario: #ff6c37;
+        --color-acento: #8e5928;
+        --color-fondo-panel: #fff;
+        --color-texto: #000;
+        --color-borde: #8e5928;
+    }
+
     .gestok-container {
         display: flex;
         min-height: 100vh;
@@ -7,8 +16,8 @@
     /* Sidebar siempre expandido */
     .gestok-panel {
         width: 220px;
-        background: #fff;
-        border-right: 2px solid #000;
+        background: var(--color-fondo-panel);
+        border-right: 2px solid var(--color-borde);
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -26,14 +35,15 @@
         font-size: 1.1rem;
         font-weight: bold;
         text-decoration: none;
-        color: #000;
-        background: #fff;
-        border-bottom: 2px solid #8888888f;
+        color: var(--color-texto);
+        background: var(--color-fondo-panel);
+        border-bottom: 2px solid var(--color-borde);
         transition: all 0.2s ease;
     }
 
     .gestok-panel a:hover {
-        background: #f0f0f0;
+        color: var(--color-secundario);
+        border-bottom-color: var(--color-primario);
         transform: translateX(3px);
         box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
     }
@@ -43,6 +53,7 @@
         font-size: 1.4rem;
         min-width: 24px;
         text-align: center;
+        color: inherit;
     }
 
     /* Contenido principal */
@@ -52,6 +63,7 @@
         background: #f2f2f2;
     }
 </style>
+
 
 <div class="gestok-container">
     <!-- Sidebar -->

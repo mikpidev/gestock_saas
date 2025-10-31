@@ -19,7 +19,7 @@
                 <th>Nombre</th>
                 <th>Encaragado</th>
                 <th>Estado</th>
-                <th>Comentarios</th>
+                <th>Comentarios </th>
                 <th></th>
             </tr>
         </thead>

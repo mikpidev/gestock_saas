@@ -39,9 +39,9 @@ class CompanyController extends Controller
     {   
         $user = Auth::user();
         if (!$user) {
-            return redirect()->route('login');
+            return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
         }
-
+    
         $validated = $request->validate([
             'company_name' => 'required|max:200',
             'address' => 'required',
@@ -54,13 +54,22 @@ class CompanyController extends Controller
             'status' => 'required|in:activa,suspendida,inactiva',
             'comments' => 'nullable',
         ]);
-
+    
         $company = Company::create($validated);
+    
+        if($request->ajax()){
+            return response()->json([
+                'success' => true,
+                'message' => 'Compañía creada correctamente',
+                'redirect' => route('companies.index'), // podés usar esto para redirigir desde JS
 
-        return redirect()->route('stores.create', ['company' => $company->id])
-                         ->with('success', 'Compañía creada, ahora crea su primera tienda.');
+                'company' => $company
+            ]);
+        }
+        return redirect()->route('companies.index')->with('success', 'Compañía creada correctamente.');
 
     }
+    
 
     public function show(Company $company)
     {   
@@ -80,7 +89,7 @@ class CompanyController extends Controller
             return redirect()->route('login');
         }
 
-        return view('company.edit', compact('company'));
+        return redirect()->route('companies.index')->with('success', 'Compañía creada correctamente.');
     }
 
     public function update(Request $request, Company $company)
@@ -104,6 +113,14 @@ class CompanyController extends Controller
         ]);
 
         $company->update($validated);
+        if($request->ajax()){
+            return response()->json([
+                'success' => true,
+                'company' => $company,
+                'message' => 'Compañía actualizada exitosamente'
+            ]);
+        }
+        
 
         return redirect()->route('companies.index')->with('success', 'Compañía actualizada exitosamente.');
     }

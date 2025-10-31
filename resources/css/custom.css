@@ -1,87 +1,114 @@
 /* resources/css/app.css */
 
-/* href sin decoracion */
+/* ============================
+   ENLACES
+============================ */
+
+:root {
+    --color-primario: #ffb548;
+    --color-secundario: #ff6c37;
+    --color-acento: #8e5928;
+}
+
 a {
     text-decoration: none;
-    color: inherit; /* Hereda el color del texto padre */
+    color: var(--color-acento);
+    transition: color 0.2s ease;
 }
 
-/* href en hover sin decoracion */
 a:hover {
     text-decoration: none;
-    color: black; /* Hereda el color del texto padre */
-    font-weight: 500; /* Negrita en hover */
+    color: var(--color-secundario);
+    font-weight: 500;
 }
 
-/* Estilos boton engranaje */
+/* ============================
+   BOTÓN CONFIGURACIÓN (Engranaje)
+============================ */
 #config-btn {
+    border: 1px solid var(--color-acento);
+    background-color: transparent;
+    color: var(--color-acento);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
 
     svg {
-        vertical-align: middle; /* Alinea el icono SVG con el texto */
-        margin-right: 0.25rem; /* Espacio entre el icono y el texto */
-        height: 1.5em; /* Ajusta el tamaño del icono */
-        width: 1.5em; /* Ajusta el tamaño del icono */
+        vertical-align: middle;
+        margin-right: 0.25rem;
+        height: 1.5em;
+        width: 1.5em;
     }
-
-    border: 1px solid #6c757d; /* gris del borde */
-    background-color: transparent; /* fondo transparente */
-    color: #6c757d; /* gris del texto */
-    transition: all 0.2s ease-in-out;
 }
 
 #config-btn:hover {
-    background-color: white; /* azul en hover */
-    border-color: black;
-    color: black; /* texto blanco en hover */
-    font-weight: 500; /* Negrita en hover */
+    background-color: var(--color-primario);
+    border-color: var(--color-secundario);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* Estilos para el botón de editar */
+/* ============================
+   BOTÓN EDITAR
+============================ */
 .btn-edit {
-    svg {
-        vertical-align: middle; /* Alinea el icono SVG con el texto */
-        margin-right: 0.25rem; /* Espacio entre el icono y el texto */
-        height: 1.5em; /* Ajusta el tamaño del icono */
-        width: 1.5em; /* Ajusta el tamaño del icono */
-    }
-    color: #6c757d; /* gris del texto */
-    border: 1px solid #6c757d;
+    color: var(--color-secundario);
+    border: 1px solid var(--color-secundario);
     background-color: transparent;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
     transition: all 0.2s ease-in-out;
+
+    svg {
+        vertical-align: middle;
+        margin-right: 0.25rem;
+        height: 1.5em;
+        width: 1.5em;
+    }
 }
 
 .btn-edit:hover {
-    background-color: white; /* azul en hover */
-    border-color: black;
-    color: #5394FC; /* texto blanco en hover */
+    background-color: var(--color-secundario);
+    border-color: var(--color-acento);
+    color: #fff;
+    font-weight: 500;
 }
 
-/* Estilos para el botón de editar */
-
+/* ============================
+   BOTÓN AGREGAR
+============================ */
 .btn-add {
-    color: green; /* verde más sobrio */
+    color: var(--color-acento);
+    border: 1px solid var(--color-primario);
+    background-color: var(--color-primario);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
 
     svg {
-        vertical-align: middle; /* Alinea el icono SVG con el texto */
-        margin-right: 0.25rem; /* Espacio entre el icono y el texto */
-        height: 1.5em; /* Ajusta el tamaño del icono */
-        width: 1.5em; /* Ajusta el tamaño del icono */
+        vertical-align: middle;
+        margin-right: 0.25rem;
+        height: 1.5em;
+        width: 1.5em;
     }
-    
-    border: 1px solid white; /* verde más sobrio */
-    background-color: white; /* verde semi-transparente, más elegante */
-    border-radius: 4px; /* esquinas ligeramente redondeadas */
-    padding: 0.5rem 1rem;
-    transition: all 0.2s ease-in-out;
 }
 
 .btn-add:hover {
-    background-color: white; /* verde un poco más oscuro al pasar el mouse */
-    border-color: #1e7e34;
-    color: black; /* texto blanco en hover */
+    background-color: var(--color-secundario);
+    border-color: var(--color-acento);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
+/* ============================
+   DIVISOR
+============================ */
 .divider {
-    border-top: 2px solid #ccc;
+    border-top: 2px solid rgba(0,0,0,0.1);
     margin: 2rem 0;
 }

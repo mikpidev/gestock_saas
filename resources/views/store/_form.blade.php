@@ -25,3 +25,58 @@
 <label for="comments">Comentarios</label>
 <textarea name="comments" id="comments" class="form-control" rows="4">{{ old('comments', $store->comments ?? '') }}</textarea>
 <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+
+
+<button type="submit" class="btn btn-primary mt-3" data-redirect="{{ route('companies.index') }}">Guardar</button>
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('storeForm'); // ID del form de stores
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const responseDiv = document.getElementById('formResponse');
+        const actionUrl = form.action; // URL dinámica del form
+
+        fetch(actionUrl, {
+            method: 'POST', // Laravel acepta POST + @method('PUT') si es edición
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                responseDiv.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+
+                // Cerrar modal si existe
+                const modalEl = form.closest('.modal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+
+                // Limpiar formulario
+                form.reset();
+
+                // Opcional: actualizar tabla de stores
+                if (typeof refreshStoresList === 'function') {
+                    refreshStoresList(result.store);
+                }
+
+            } else {
+                responseDiv.innerHTML = `<div class="alert alert-danger">${result.message || 'Ocurrió un error'}</div>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            responseDiv.innerHTML = `<div class="alert alert-danger">Error al procesar la solicitud</div>`;
+        });
+    });
+});
+</script>

@@ -1,42 +1,121 @@
-<label for="company_name">Nombre de la Compañía</label>
-<input type="text" name="company_name" id="company_name" class="form-control" value= "{{ old('company_name', $company->company_name ?? '') }}" required>
+<!-- resources/views/company/_form.blade.php -->
 
-<label for="address">Dirección</label>
-<input type="text" name="address" id="address" class="form-control" value="{{ old('address', $company->address ?? '') }}" required>
+<div class="mb-3">
+    <label for="company_name" class="form-label">Nombre de la Compañía</label>
+    <input type="text" name="company_name" id="company_name" class="form-control" required>
+</div>
 
-<label for="phone">Teléfono</label>
-<input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone', $company->phone ?? '') }}" required>
+<div class="mb-3">
+    <label for="address" class="form-label">Dirección</label>
+    <input type="text" name="address" id="address" class="form-control" required>
+</div>
 
-<label for="owner">Dueño</label>
-<input type="text" name="owner" id="owner" class="form-control" value="{{ old('owner', $company->owner ?? '') }}" required>
+<div class="mb-3">
+    <label for="phone" class="form-label">Teléfono</label>
+    <input type="text" name="phone" id="phone" class="form-control" required>
+</div>
 
-<label for="email">Correo Electrónico</label>
-<input type="email" name="email" id="email" class="form-control" value="{{ old('email', $company->email ?? '')  }}" required>
+<div class="mb-3">
+    <label for="owner" class="form-label">Dueño</label>
+    <input type="text" name="owner" id="owner" class="form-control" required>
+</div>
 
-<label for="website">Sitio Web </label>
-<input type="url" name="website" id="website" class="form-control" value="{{ old('website', $company->website ?? '') }}">
+<div class="mb-3">
+    <label for="email" class="form-label">Correo Electrónico</label>
+    <input type="email" name="email" id="email" class="form-control" required>
+</div>
 
-<label for="plan">Plan</label>
-<select name="plan" id="plan" class="form-control" required>
-    <option value="free" {{ (old('plan', $company->plan ?? '') == 'free') ? 'selected' : '' }}>Free</option>
-    <option value="basic" {{ (old('plan', $company->plan ?? '') == 'basic') ? 'selected' : '' }}>Basic</option>
-    <option value="premium" {{ (old('plan', $company->plan ?? '') == 'premium') ? 'selected' : '' }}>Premium</option>
-</select>
+<div class="mb-3">
+    <label for="website" class="form-label">Sitio Web</label>
+    <input type="url" name="website" id="website" class="form-control">
+</div>
 
-<label for="deployment_type">Tipo de Despliegue</label>
-<select name="deployment_type" id="deployment_type" class="form-control" required>
-    <option value="saas" {{ (old('deployment_type', $company->deployment_type ?? '') == 'saas') ? 'selected' : '' }}>SaaS</option>
-    <option value="on_premise" {{ (old('deployment_type', $company->deployment_type ?? '') == 'on_premise') ? 'selected' : '' }}>On-Premise</option>
-</select>
+<div class="mb-3">
+    <label for="plan" class="form-label">Plan</label>
+    <select name="plan" id="plan" class="form-control" required>
+        <option value="free">Free</option>
+        <option value="basic">Basic</option>
+        <option value="premium">Premium</option>
+    </select>
+</div>
 
-<label for="status">Estado</label>
-<select name="status" id="status" class="form-control" required>
-    <option value="activa" {{ (old('status', $company->status ?? '') == 'activa') ? 'selected' : '' }}>Activa</option>
-    <option value="suspendida" {{ (old('status', $company->status ?? '') == 'suspendida') ? 'selected' : '' }}>Suspendida</option>
-    <option value="inactiva" {{ (old('status', $company->status ?? '') == 'inactiva') ? 'selected' : '' }}>Inactiva</option>          
-</select>
+<div class="mb-3">
+    <label for="deployment_type" class="form-label">Tipo de Despliegue</label>
+    <select name="deployment_type" id="deployment_type" class="form-control" required>
+        <option value="saas">SaaS</option>
+        <option value="on_premise">On-Premise</option>
+    </select>
+</div>
 
-<label for="comments">Comentarios</label>
-<textarea name="comments" id="comments" class="form-control" rows="4">{{ old('comments',  $company->comments ?? '') }}</textarea>
+<div class="mb-3">
+    <label for="status" class="form-label">Estado</label>
+    <select name="status" id="status" class="form-control" required>
+        <option value="activa">Activa</option>
+        <option value="suspendida">Suspendida</option>
+        <option value="inactiva">Inactiva</option>
+    </select>
+</div>
 
-<button type="submit" class="btn btn-primary mt-3">Guardar</button>
+<div class="mb-3">
+    <label for="comments" class="form-label">Comentarios</label>
+    <textarea name="comments" id="comments" class="form-control" rows="4"></textarea>
+</div>
+
+<button type="submit" class="btn btn-primary mt-3" data-redirect="{{ route('companies.index') }}">Guardar</button>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('companyForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const responseDiv = document.getElementById('formResponse');
+
+            fetch("{{ route('companies.store') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => {
+                    if (res.redirected) {
+                        window.location.href = res.url; // Sigue la redirección normal
+                    }
+                }).then(result => {
+                    if (result.success) {
+                        responseDiv.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+
+                        // Cerrar el modal
+                        const modalEl = form.closest('.modal');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+
+                        // Limpiar formulario
+                        form.reset();
+
+                        // Opcional: actualizar tabla si tienes función
+                        if (typeof refreshCompaniesList === 'function') {
+                            refreshCompaniesList(result.company);
+                        }
+
+                    } else {
+                        responseDiv.innerHTML = `<div class="alert alert-danger">${result.message || 'Ocurrió un error'}</div>`;
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    if (err instanceof Object) {
+                        responseDiv.innerHTML = `<pre>${JSON.stringify(err, null, 2)}</pre>`;
+                    } else {
+                        responseDiv.innerHTML = `<div class="alert alert-danger">Error al procesar la solicitud</div>`;
+                    }
+                });
+        });
+    });
+
+</script>
