@@ -191,6 +191,10 @@
                     <th>Fecha</th>
                     <th>Estado DTE</th>
                     <th>Acciones</th>
+                    <th><a href="{{ route('reportes.ventas') }}" class="btn btn-primary">
+                            Descargar reporte de ventas (PDF)
+                        </a>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -239,6 +243,7 @@
                                 Eliminar
                             </button>
                         </form>
+
                     </td>
                 </tr>
                 @endforeach

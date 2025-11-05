@@ -182,7 +182,7 @@
 <body>
     <div class="auth-card">
         <div class="auth-header">
-            <img src="{{ asset('logo.png') }}" alt="Logo Gestok" width="150">
+            <img src="{{ asset('Logo.png') }}" alt="Logo Gestok" width="150">
 
             <p>@yield('subtitle', 'Inicio de sesión')</p>
         </div>

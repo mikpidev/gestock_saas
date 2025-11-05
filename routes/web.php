@@ -19,6 +19,7 @@ use App\Http\Controllers\DTEController;
 use App\Models\Sale;
 use App\Http\Controllers\CreditNoteController;
 use App\Http\Controllers\DebitNoteController;
+use App\Http\Controllers\ReporteVentas;
 
 //Cache prevent back history
 Route::middleware([PreventBackHistory4::class])->group(function () {
@@ -234,4 +235,10 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     Route::post('stores/{store}/debitnotes/{debitNote}/refresh-dte', [DebitNoteController::class, 'refreshDTE'])
         ->name('stores.debitnotes.refreshDTE');
+
+
+
+    //Rutas reporte de ventas
+    Route::get('/reportes/ventas', [ReporteVentas::class, 'index'])
+    ->name('reportes.ventas');
 });
