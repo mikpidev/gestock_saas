@@ -234,4 +234,9 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     Route::post('stores/{store}/debitnotes/{debitNote}/refresh-dte', [DebitNoteController::class, 'refreshDTE'])
         ->name('stores.debitnotes.refreshDTE');
+
+    // routes/web.php
+Route::get('/logs', function() {
+    return nl2br(file_get_contents(storage_path('logs/laravel.log')));
+});
 });
