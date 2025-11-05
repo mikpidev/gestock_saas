@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: laravel-backend
+    env: php
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      php artisan key:generate
+      php artisan migrate --force
+    startCommand: heroku-php-apache2 public/
+    plan: free
