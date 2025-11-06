@@ -36,10 +36,16 @@ class SaleController extends Controller
             if ($store->company_id != $user->company_id) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
+        } elseif ($user->hasRole('user')) {
+                if ($store->company_id != $user->company_id) {
+                    abort(403, 'No tienes permiso para acceder a esta tienda.');
+                }
         } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
     }
+
+    
 
     public function index(Store $store)
     {
@@ -54,8 +60,10 @@ class SaleController extends Controller
             if ($sale->dte_status === null || $sale->dte_status === 'PENDIENTE') {
                 $consultaService->consultarSale($sale, $token);
             }
-            return view('sales.index', compact('store', 'sales'));
+           
         }
+
+        return view('sales.index', compact('store', 'sales'));
     }
 
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)

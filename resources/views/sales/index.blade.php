@@ -243,6 +243,16 @@
                                 Eliminar
                             </button>
                         </form>
+                        <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')">
+                            🖨️ Imprimir ticket
+                        </button>
+
+                        <button onclick="mostrarModalImpresion('{{ route('ticket.reprint', [$store->id, $sale->id]) }}')">
+                            ♻️ Reimprimir ticket
+                        </button>
+
+
+
 
                     </td>
                 </tr>
@@ -252,4 +262,17 @@
         @endif
     </div>
 </div>
+
+<script>
+    function mostrarModalImpresion(url) {
+        // abrir modal o ventana para imprimir
+        const win = window.open(url, '_blank', 'width=400,height=800');
+
+        // auto imprimir cuando cargue
+        win.onload = function() {
+            win.print();
+        };
+    }
+</script>
+
 @endsection

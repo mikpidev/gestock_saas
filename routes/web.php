@@ -46,17 +46,25 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //rutas para compañias
     Route::resource('companies', CompanyController::class);
     Route::put('companies/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
-    ->name('companies.update');
+        ->name('companies.update');
 
     //rutas para tax info
     Route::resource('stores', StoreController::class);
 
     //rutas para tiendas
+
     Route::get('stores', [StoreController::class, 'index'])->name('stores.index');
 
-    Route::get('stores/create/{company}', [StoreController::class, 'create'])->name('store.create');
-
+    Route::get('stores/create/{company}', [StoreController::class, 'create'])->name('stores.create');
     Route::post('stores/{company}', [StoreController::class, 'store'])->name('store.store');
+
+    //Route::resource('stores', StoreController::class);
+
+
+
+
+
+
 
 
     //rutas para tax info
@@ -68,6 +76,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     Route::get('/stores/{store}/tax-info', [StoreTaxInfoController::class, 'show'])
         ->name('store_tax_info.show');
+
 
 
     //rutas para usuarios
@@ -177,10 +186,12 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
 
 
-    //Imprimir recibo
+    Route::get('/stores/{store}/sales/{sale}/print', [ReciboController::class, 'print'])
+        ->name('ticket.print');
 
-    Route::get('/stores/{store}/recibos/{sale}', [ReciboController::class, 'mostrar'])
-        ->name('stores.recibos.mostrar');
+    Route::get('/stores/{store}/sales/{sale}/reprint', [ReciboController::class, 'reprint'])
+        ->name('ticket.reprint');
+
 
 
     Route::get('/catalogos/tipo-documento', [TipoDocumentoController::class, 'index'])->name('tipo_documento.index');
@@ -237,8 +248,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('stores.debitnotes.refreshDTE');
 
 
-
     //Rutas reporte de ventas
     Route::get('/reportes/ventas', [ReporteVentas::class, 'index'])
-    ->name('reportes.ventas');
+        ->name('reportes.ventas');
 });

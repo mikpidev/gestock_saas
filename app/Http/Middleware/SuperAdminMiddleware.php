@@ -1,31 +1,29 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
 class SuperAdminMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = Auth::user();
 
-        $user=Auth::user();
-
-        //solo SuperAdmin puede acceder a compañias
+        // Solo SuperAdmin puede acceder a compañías
         if (!$user || !$user->hasRole('SuperAdmin')) {
-            // Si el usuario no es SuperAdmin, redirigir o mostrar un error
             abort(403, 'Acceso no autorizado.');
         }
-        dd("AdminMiddleware ejecutado.");
+
+        // Inicializar la sesión con la compañía seleccionada si no existe
+        if (!$request->session()->has('selected_company_id')) {
+            $firstCompanyId = $user->companies->first()->id ?? null;
+            if ($firstCompanyId) {
+                $request->session()->put('selected_company_id', $firstCompanyId);
+            }
+        }
 
         return $next($request);
     }

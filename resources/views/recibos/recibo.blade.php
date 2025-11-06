@@ -1,56 +1,115 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Recibo</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
+            font-size: 10px;
             margin: 0;
             padding: 0;
         }
+
         .recibo {
             width: 100%;
             text-align: center;
         }
+
         .linea {
             border-top: 1px dashed #000;
             margin: 5px 0;
         }
-        .totales {
+
+        .totales, .info {
             text-align: right;
-            margin-top: 10px;
+            margin-top: 5px;
         }
+
         .item {
             text-align: left;
         }
+
+        .small {
+            font-size: 9px;
+        }
     </style>
 </head>
+
 <body>
     <div class="recibo">
+
+        <!-- ENCABEZADO -->
         <h3>{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
-        <p><strong>Fecha:</strong> {{ $venta->sale_date->format('d/m/Y H:i') }}</p>
-        <p><strong>Cliente:</strong> {{ $venta->customer->name ?? 'Consumidor Final' }}</p>
+        <p class="small">
+            {{ $venta->store->address ?? '' }}<br>
+            Tel: {{ $venta->store->phone ?? '' }}<br>
+            NIT: {{ $venta->store->nit ?? '' }} | NRC: {{ $venta->store->nrc ?? '' }}
+        </p>
 
         <div class="linea"></div>
 
-        {{-- Productos --}}
-        @foreach ($venta->saleDetails as $item)
-            <p class="item">
-                {{ $item->productType->name }} x{{ $item->quantity }}
-                <span style="float:right;">${{ number_format($item->subtotal, 2) }}</span>
-            </p>
+        <!-- DATOS DTE -->
+        <p class="small">
+            <strong>Tipo DTE:</strong> {{ $venta->tipoDte->nombre ?? 'TICKET' }}<br>
+            <strong>No. Control:</strong> {{ $venta->numero_control ?? 'N/A' }}<br>
+            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}<br>
+        </p>
+
+        <div class="linea"></div>
+
+        <!-- INFO VENTA -->
+        <p class="small">
+            <strong>Fecha:</strong> {{ $venta->sale_date->format('d/m/Y H:i') }}<br>
+            <strong>Atendió:</strong> {{ $venta->user->name ?? 'Cajero' }}<br>
+        </p>
+
+        <div class="linea"></div>
+
+        <!-- CLIENTE -->
+        <p class="small">
+            <strong>Cliente:</strong> {{ $venta->customer->name ?? 'Consumidor Final' }}<br>
+
+            @if($venta->customer && $venta->customer->numDocumento)
+                <strong>Doc:</strong> {{ $venta->customer->numDocumento }}<br>
+            @endif
+
+            @if($venta->customer && $venta->customer->nrc)
+                <strong>NRC:</strong> {{ $venta->customer->nrc }}<br>
+            @endif
+        </p>
+
+        <div class="linea"></div>
+
+        <!-- DETALLE PRODUCTOS -->
+        @foreach ($venta->details as $item)
+        <p class="item">
+            {{ $item->productType->name }} x{{ $item->quantity }}
+            <span style="float:right;">${{ number_format($item->subtotal, 2) }}</span>
+        </p>
         @endforeach
 
         <div class="linea"></div>
 
-        {{-- Totales --}}
-        <p class="totales"><strong>Total: ${{ number_format($venta->total_amount, 2) }}</strong></p>
+        <!-- TOTALES -->
+        @if ($venta->total_exenta > 0)
+            <p class="totales">Exento: ${{ number_format($venta->total_exenta, 2) }}</p>
+        @endif
+
+        @if ($venta->total_no_gravado > 0)
+            <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
+        @endif
+
+        @if ($venta->total_gravada > 0)
+            <p class="totales">Gravado: ${{ number_format($venta->total_gravada, 2) }}</p>
+        @endif
 
         @if ($venta->tax_amount > 0)
-            <p class="totales">IVA: ${{ number_format($venta->tax_amount, 2) }}</p>
+            <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
         @endif
+
+        <p class="totales"><strong>Total a pagar: ${{ number_format($venta->total_amount, 2) }}</strong></p>
 
         @if ($venta->discount_amount > 0)
             <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
@@ -58,7 +117,36 @@
 
         <div class="linea"></div>
 
-        <p>¡Gracias por su compra!</p>
+        <!-- QR OPCIONAL (si manejas DTE, después lo puedes llenar con base64) -->
+        {{-- <img src="data:image/png;base64, {{ $qr }}" width="120"> --}}
+
+        <!-- FOOTER -->
+        <p class="small">
+            Documento generado electrónicamente<br>
+            Representación impresa sin validez fiscal<br>
+            ¡Gracias por su compra!
+        </p>
+
     </div>
+
+    <script>
+        let urlRecibo = '';
+
+        function mostrarModalImpresion(url) {
+            urlRecibo = url;
+            document.getElementById('modalImprimir').style.display = 'flex';
+        }
+
+        function abrirRecibo() {
+            window.open(urlRecibo, '_blank');
+            cerrarModal();
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalImprimir').style.display = 'none';
+        }
+    </script>
+
 </body>
+
 </html>

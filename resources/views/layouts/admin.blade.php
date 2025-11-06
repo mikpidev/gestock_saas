@@ -153,7 +153,7 @@
     <!-- Header -->
     <header class="d-flex align-items-center justify-content-between mb-4">
         <a class="d-flex align-items-center" href="{{ route('home') }}">
-            <img src="{{ asset('logo.png') }}" alt="Logo Gestok"
+            <img src="{{ asset('Logo.png') }}" alt="Logo Gestok"
                 style="width: 100px; height: auto; filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.3));">
         </a>
 

@@ -42,9 +42,8 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }  
-          
-        
-        // Lógica para mostrar el formulario de creación de tienda ya inclye la compania previamente creada   
+
+        // Lógica para mostrar el formulario de creación de tienda ya incluye la compañia previamente creada
         return view('store.create', compact('company'));
     }
 
@@ -56,6 +55,7 @@ class StoreController extends Controller
         }
         
         $validated = $request->validate([
+            'company_id' => 'required|exists:companies,id',
             'store_name' => 'required|max:200',
             'address'    => 'required',
             'phone'      => 'required|size:8',
@@ -64,10 +64,11 @@ class StoreController extends Controller
             'status'     => 'required|in:activa,suspendida,inactiva',
             'comments'   => 'nullable',
         ]);
-    
+
+        $company = Company::findOrFail($validated['company_id']);
         $store = $company->stores()->create($validated);
-    
-        return redirect()->route('stores_tax_info.create', ['store' => $store->id])
+
+        return redirect()->route('store_tax_info.create', ['store' => $store->id])
         ->with('success', 'Tienda creada, ahora crea la información fiscal de la tienda.');
 
     }

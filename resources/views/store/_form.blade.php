@@ -1,5 +1,6 @@
 <!--Formulario para crear o editar una tienda-->
-<input type="hidden" name="company_id" id="company_id" class="form-control" value="{{ old('company_id', $store->company_id ?? '') }}" required>
+
+<input type="hidden" name="company_id" value="{{ old('company_id', $company->id ?? '') }}">
 
 <label for="store_name">Nombre de la Tienda</label>
 <input type="text" name="store_name" id="store_name" class="form-control" value="{{ old('store_name', $store->store_name ?? '') }}" required>
@@ -24,7 +25,6 @@
 </select>
 <label for="comments">Comentarios</label>
 <textarea name="comments" id="comments" class="form-control" rows="4">{{ old('comments', $store->comments ?? '') }}</textarea>
-<button type="submit" class="btn btn-primary mt-3">Guardar</button>
 
 
 <button type="submit" class="btn btn-primary mt-3" data-redirect="{{ route('companies.index') }}">Guardar</button>
