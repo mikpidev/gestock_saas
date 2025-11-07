@@ -13,9 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ConsultaService;
 use App\Services\HaciendaAuthService;
-
-
-
+use Carbon\Carbon;
 
 class SaleController extends Controller
 {
@@ -37,35 +35,40 @@ class SaleController extends Controller
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
         } elseif ($user->hasRole('user')) {
-                if ($store->company_id != $user->company_id) {
-                    abort(403, 'No tienes permiso para acceder a esta tienda.');
-                }
+            if ($store->company_id != $user->company_id) {
+                abort(403, 'No tienes permiso para acceder a esta tienda.');
+            }
         } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
     }
 
-    
 
-    public function index(Store $store)
+    public function index(Request $request, Store $store)
     {
-        $sales = $store->sales()->with(['customer', 'details.productType'])->get();
-        $sales = Sale::with(['customer'])->orderByDesc('sale_date')->get();
-
         $authService = app(HaciendaAuthService::class);
-        $token = $authService->getToken(); // obtiene un token válido
+        $token = $authService->getToken();
         $consultaService = new ConsultaService();
 
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
+        $fecha = $request->fecha ?? Carbon::today()->toDateString();
+
+        // Filtramos ventas de ESTA tienda y de ESA fecha
+        $sales = Sale::with('customer')
+            ->where('store_id', $store->id)
+            ->whereDate('created_at', $fecha)
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Consultar DTE solo a las ventas filtradas
         foreach ($sales as $sale) {
             if ($sale->dte_status === null || $sale->dte_status === 'PENDIENTE') {
                 $consultaService->consultarSale($sale, $token);
             }
-           
         }
 
-        return view('sales.index', compact('store', 'sales'));
+        return view('sales.index', compact('store', 'sales', 'fecha'));
     }
-
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
     {
         $token = app(HaciendaAuthService::class)->getToken();
@@ -179,33 +182,34 @@ class SaleController extends Controller
         try {
             // Obtener token válido
             $token = app(HaciendaAuthService::class)->getToken();
-        
+
             // Consultar DTE inmediatamente después de enviar
             $consultaService = new ConsultaService();
             $response = $consultaService->consultarSale($sale, $token);
-        
+
             // Actualizar estado de la venta con el estado real
             $sale->dte_status = $response['estado'] ?? 'PENDIENTE';
             $sale->save();
-        
+
             // Guardar response en sesión para mostrar en index
             session()->flash('dte_response', $response);
-        
         } catch (\Throwable $e) {
             \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
                 'sale_id' => $sale->id,
                 'trace' => $e->getTraceAsString()
             ]);
-        
+
             session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
         if ($request->ajax()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Venta creada y DTE enviado correctamente',
+                'success'     => true,
+                'message'     => 'Venta creada y DTE enviado correctamente',
+                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
+                'dte_status'  => $sale->dte_status
             ]);
         }
-        
+
         return redirect()->route('stores.sales.create', $store->id)
             ->with('success', 'Venta creada y DTE enviado correctamente');
     }

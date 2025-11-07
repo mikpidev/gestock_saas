@@ -34,7 +34,7 @@ class ConsultaService
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
                 ->post('https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
-                'nitEmisor' => env('HACIENDA_USER'),
+                'nitEmisor' =>  $sale->store->taxInfo->nit,
                 'tdte' => $tipoDTE,
                 'codigoGeneracion' => $sale->codigo_generacion
             ]);

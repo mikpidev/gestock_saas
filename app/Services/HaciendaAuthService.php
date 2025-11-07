@@ -15,8 +15,8 @@ class HaciendaAuthService
 
     public function __construct()
     {
-        $this->user = env('HACIENDA_USER');
-        $this->pass = env('HACIENDA_PASS');
+        $this->user = config('services.hacienda.user');
+        $this->pass = config('services.hacienda.pass');
     }
 
     /**
@@ -37,13 +37,14 @@ class HaciendaAuthService
      * Genera un nuevo token y lo guarda en base de datos.
      */
     public function generateNewToken()
-    {
+    {   
+
         try {
             $response = Http::asForm()
                 ->withOptions(['verify' => false])
                 ->post($this->url, [
                     'user' => $this->user,
-                    'pwd' => $this->pass,
+                    'pwd' =>  $this->pass,
                 ]);
         } catch (\Exception $e) {
             throw new \Exception('Error de conexión con Hacienda: ' . $e->getMessage());

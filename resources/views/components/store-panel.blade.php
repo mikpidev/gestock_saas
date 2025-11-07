@@ -92,12 +92,16 @@
     <!-- Sidebar -->
     <div class="gestok-panel">
         @hasrole('superadmin|admin')
+        <a href="{{ route('stores.show', $store->id) }}">
+            <i class="fas fa-box-open"></i> Dashboard
+        </a>
         <a href="{{ route('stores.users.index', $store->id) }}">
             <i class="fas fa-users"></i> Usuarios
         </a>
         <a href="{{ route('stores.product_types.index', $store->id) }}">
             <i class="fas fa-box-open"></i> Productos
         </a>
+
         @endhasrole
 
         @hasrole('superadmin|admin|user')

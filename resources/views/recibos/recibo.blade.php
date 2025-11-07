@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+@php use SimpleSoftwareIO\QrCode\Facades\QrCode; @endphp
 
 <head>
     <meta charset="utf-8">
@@ -14,7 +15,7 @@
 
         .recibo {
             width: 100%;
-            text-align: center;
+            text-align: left;
         }
 
         .linea {
@@ -22,7 +23,8 @@
             margin: 5px 0;
         }
 
-        .totales, .info {
+        .totales,
+        .info {
             text-align: right;
             margin-top: 5px;
         }
@@ -41,11 +43,13 @@
     <div class="recibo">
 
         <!-- ENCABEZADO -->
+        <img src="{{ public_path('Logo.png') }}" width="150">
+
         <h3>{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
         <p class="small">
-            {{ $venta->store->address ?? '' }}<br>
-            Tel: {{ $venta->store->phone ?? '' }}<br>
-            NIT: {{ $venta->store->nit ?? '' }} | NRC: {{ $venta->store->nrc ?? '' }}
+            Dirección: {{ $venta->store->address ?? '' }}<br>
+            Tel: {{ $venta->store->taxInfo->telefono ?? '' }}<br>
+            NIT: {{ $venta->store->taxInfo->nit ?? '' }} | NRC: {{ $venta->store->taxInfo->nrc ?? '' }}
         </p>
 
         <div class="linea"></div>
@@ -72,11 +76,11 @@
             <strong>Cliente:</strong> {{ $venta->customer->name ?? 'Consumidor Final' }}<br>
 
             @if($venta->customer && $venta->customer->numDocumento)
-                <strong>Doc:</strong> {{ $venta->customer->numDocumento }}<br>
+            <strong>Doc:</strong> {{ $venta->customer->numDocumento }}<br>
             @endif
 
             @if($venta->customer && $venta->customer->nrc)
-                <strong>NRC:</strong> {{ $venta->customer->nrc }}<br>
+            <strong>NRC:</strong> {{ $venta->customer->nrc }}<br>
             @endif
         </p>
 
@@ -94,38 +98,39 @@
 
         <!-- TOTALES -->
         @if ($venta->total_exenta > 0)
-            <p class="totales">Exento: ${{ number_format($venta->total_exenta, 2) }}</p>
+        <p class="totales">Exento: ${{ number_format($venta->total_exenta, 2) }}</p>
         @endif
 
         @if ($venta->total_no_gravado > 0)
-            <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
+        <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
         @endif
 
         @if ($venta->total_gravada > 0)
-            <p class="totales">Gravado: ${{ number_format($venta->total_gravada, 2) }}</p>
+        <p class="totales">Gravado: ${{ number_format($venta->total_gravada, 2) }}</p>
         @endif
 
         @if ($venta->tax_amount > 0)
-            <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
+        <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
         @endif
 
         <p class="totales"><strong>Total a pagar: ${{ number_format($venta->total_amount, 2) }}</strong></p>
 
         @if ($venta->discount_amount > 0)
-            <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
+        <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
         @endif
 
         <div class="linea"></div>
 
         <!-- QR OPCIONAL (si manejas DTE, después lo puedes llenar con base64) -->
-        {{-- <img src="data:image/png;base64, {{ $qr }}" width="120"> --}}
-
+        <img src="data:image/png;base64,{{ $qrImage }}">
         <!-- FOOTER -->
         <p class="small">
             Documento generado electrónicamente<br>
             Representación impresa sin validez fiscal<br>
             ¡Gracias por su compra!
         </p>
+
+        <p>QR</p>
 
     </div>
 

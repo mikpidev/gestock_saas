@@ -1,21 +1,21 @@
 @extends('layouts.admin')
 
 @section('content')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    .gestok-table-card {
+    .card-table {
         background: #fff;
-        color: #000;
         width: 100%;
-        border-radius: 10px;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
         overflow: hidden;
         margin: 2rem auto;
-        max-width: 1000px;
+        max-width: 1100px;
     }
 
-    .gestok-table-header {
-        background: #374151;
-        /* gris azulado suave */
+    .card-header-custom {
+        background: #1f2937;
         color: #fff;
         padding: 1.2rem;
         display: flex;
@@ -23,25 +23,26 @@
         align-items: center;
     }
 
-    .gestok-table-header h1 {
+    .card-header-custom h2 {
         font-size: 1.4rem;
-        font-weight: bold;
         margin: 0;
+        font-weight: 600;
     }
 
-    .gestok-table-header a.btn {
-        background: #60a5fa;
-        /* azul suave */
-        color: #fff;
-        padding: 0.6rem 1.2rem;
-        border-radius: 5px;
-        font-weight: bold;
-        text-decoration: none;
-        transition: 0.2s;
-    }
-
-    .gestok-table-header a.btn:hover {
+    .btn-new {
         background: #3b82f6;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .btn-new:hover {
+        background: #2563eb;
     }
 
     table {
@@ -50,229 +51,183 @@
         font-size: 0.95rem;
     }
 
-    th,
-    td {
-        padding: 0.8rem;
-        text-align: left;
+    th {
+        background: #f3f4f6;
+        font-weight: 600;
+    }
+
+    th, td {
+        padding: 12px;
         border-bottom: 1px solid #e5e7eb;
     }
 
-    th {
-        background: #f3f4f6;
-        /* gris muy claro */
-        font-weight: bold;
-    }
-
     tr:hover {
-        background: #f9fafb;
+        background: #fafafa;
     }
 
     .actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 6px;
     }
 
-    .btn-view {
-        background: #60a5fa;
-        /* azul suave */
-        color: #fff;
-        padding: 0.4rem 0.8rem;
-        border-radius: 5px;
-        font-size: 0.85rem;
+    .btn {
         display: flex;
         align-items: center;
-        gap: 0.2rem;
-        text-decoration: none;
-        transition: 0.2s;
-    }
-
-    .btn-view:hover {
-        background: #3b82f6;
-    }
-
-    .btn-delete {
-        background: #f87171;
-        /* rojo suave */
+        justify-content: center;
+        gap: 5px;
+        border-radius: 6px;
+        font-size: 13px;
+        padding: 6px 10px;
         color: #fff;
-        padding: 0.4rem 0.8rem;
-        border-radius: 5px;
         border: none;
         cursor: pointer;
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 0.2rem;
         transition: 0.2s;
     }
 
-    .btn-delete:hover {
-        background: #ef4444;
-    }
+    .btn-info { background: #3b82f6; }
+    .btn-info:hover { background: #2563eb; }
 
-    .btn-dte-refresh {
-        background: #fbbf24;
-        /* amarillo/café suave */
-        color: #fff;
-        padding: 0.3rem 0.6rem;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 0.2rem;
-        transition: 0.2s;
-    }
+    .btn-print { background: #10b981; }
+    .btn-print:hover { background: #059669; }
 
-    .btn-dte-refresh:hover {
-        background: #f59e0b;
-    }
+    .btn-delete { background: #ef4444; }
+    .btn-delete:hover { background: #dc2626; }
 
-    /* Estados DTE */
-    .dte-status {
-        padding: 0.2rem 0.6rem;
-        border-radius: 5px;
-        color: #fff;
+    .badge {
+        padding: 5px 8px;
+        font-size: 11px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 0.8rem;
+        color: #fff;
     }
 
-    .dte-status.procesado {
-        background: #10b981;
-        /* verde */
-    }
-
-    .dte-status.rechazado {
-        background: #ef4444;
-        /* rojo */
-    }
-
-    .dte-status.pendiente {
-        background: #a16207;
-        /* café */
-    }
+    .badge-procesado { background:#10b981; }
+    .badge-rechazado { background:#ef4444; }
+    .badge-pendiente { background:#ca8a04; }
 
     .no-data {
         text-align: center;
         padding: 2rem;
-        font-style: italic;
         color: #6b7280;
+        font-style: italic;
+    }
+
+    .filter-bar {
+        background:#f9fafb;
+        padding: 12px;
+        display:flex;
+        gap:8px;
+        align-items:center;
+        border-bottom:1px solid #e5e7eb;
+    }
+
+    .filter-bar input {
+        border:1px solid #d1d5db;
+        border-radius:6px;
+        padding:6px;
     }
 </style>
 
-<div class="gestok-table-card">
-    <div class="gestok-table-header">
-        <h1>{{ $store->store_name }} - Ventas</h1>
-        <a href="{{ route('stores.sales.create', $store->id) }}" class="btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
-                <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0-1A6 6 0 1 1 8 2a6 6 0 0 1 0 12z" />
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-            </svg>
-            Nueva Venta
+<div class="card-table">
+
+    <div class="card-header-custom">
+        <h2>{{ $store->store_name }} — Ventas</h2>
+        <a href="{{ route('stores.sales.create', $store->id) }}" class="btn-new">
+            <i class="bi bi-plus-circle"></i> Nueva venta
         </a>
     </div>
 
-    @if (session('success'))
-    <div style="background: #d1fae5; color: #065f46; padding: 1rem; margin: 1rem; border-radius: 5px;">
+    @if(session('success'))
+    <div style="background:#d1fae5;color:#065f46;padding:10px;margin:12px;border-radius:6px;">
         {{ session('success') }}
     </div>
     @endif
 
-    <div class="gestok-table-body">
-        @if($sales->isEmpty())
-        <p class="no-data">No hay ventas registradas.</p>
-        @else
-        <table>
-            <thead>
-                <tr>
-                    <th># Código</th>
-                    <th>Cliente</th>
-                    <th>Total</th>
-                    <th>Fecha</th>
-                    <th>Estado DTE</th>
-                    <th>Acciones</th>
-                    <th><a href="{{ route('reportes.ventas') }}" class="btn btn-primary">
-                            Descargar reporte de ventas (PDF)
-                        </a>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($sales as $sale)
-                <tr>
-                    <td>{{ $sale->codigo_generacion ?? 'N/A' }}</td>
-                    <td>{{ $sale->customer->nombre ?? 'Sin cliente' }}</td>
-                    <td>${{ number_format($sale->net_amount, 2) }}</td>
-                    <td>{{ $sale->sale_date->format('d/m/Y H:i') }}</td>
-                    <td>
-                        @php
-                        $statusClass = 'pendiente';
-                        if($sale->dte_status === 'PROCESADO') $statusClass = 'procesado';
-                        if($sale->dte_status === 'RECHAZADO') $statusClass = 'rechazado';
-                        @endphp
+    <form method="GET" class="filter-bar">
+        <label><b>Fecha:</b></label>
+        <input type="date" name="fecha" value="{{ $fecha }}">
+        <button class="btn btn-info">Filtrar</button>
+        <a href="?fecha={{ now()->toDateString() }}" class="btn btn-print">
+            <i class="bi bi-calendar-check"></i> Hoy
+        </a>
+        <a href="{{ route('reportes.ventas') }}" class="btn btn-print">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+        </a>
+    </form>
 
-                        @if($sale->dte_status === null || $sale->dte_status === 'PENDIENTE')
-                        <form action="{{ route('stores.sales.refreshDTE', [$store->id, $sale->id]) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <button type="submit" class="btn-dte-refresh {{ $statusClass }}" title="Actualizar estado DTE">
-                                {{ $sale->dte_status ?? 'PENDIENTE' }}
-                            </button>
-                        </form>
-                        @else
-                        <span class="dte-status {{ $statusClass }}">{{ $sale->dte_status }}</span>
-                        @endif
-                    </td>
+    @if($sales->isEmpty())
+    <div class="no-data">No hay ventas para <b>{{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}</b></div>
+    @else
 
-                    <td class="actions">
-                        <a href="{{ route('stores.sales.show', [$store->id, $sale->id]) }}" class="btn-view">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
-                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8z" />
-                                <path d="M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
-                            </svg>
-                            Ver
-                        </a>
+    <table>
+        <thead>
+            <tr>
+                <th># Código</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Fecha</th>
+                <th>DTE</th>
+                <th width="200">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
 
-                        <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta venta?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-delete">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                                    <path d="M5.5 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5zM8 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5zM10.5 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0v-6a.5.5 0 0 1 .5-.5z" />
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1h-1v9.5A1.5 1.5 0 0 1 11 15H5a1.5 1.5 0 0 1-1.5-1.5V4h-1a1 1 0 0 1 0-2h3.5a.5.5 0 0 1 .5.5V3h3v-.5a.5.5 0 0 1 .5-.5H14a1 1 0 0 1 1 1z" />
-                                </svg>
-                                Eliminar
-                            </button>
-                        </form>
-                        <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')">
-                            🖨️ Imprimir ticket
+        @foreach($sales as $sale)
+            <tr>
+                <td>{{ $sale->codigo_generacion ?? '—' }}</td>
+                <td>{{ $sale->customer->nombre ?? 'Sin cliente' }}</td>
+                <td>${{ number_format($sale->net_amount, 2) }}</td>
+                <td>{{ $sale->sale_date->format('d/m/Y H:i') }}</td>
+
+                <td>
+                    @php
+                        $cls = 'badge-pendiente';
+                        if($sale->dte_status === 'PROCESADO') $cls = 'badge-procesado';
+                        if($sale->dte_status === 'RECHAZADO') $cls = 'badge-rechazado';
+                    @endphp
+
+                    @if(!$sale->dte_status || $sale->dte_status === 'PENDIENTE')
+                    <form action="{{ route('stores.sales.refreshDTE', [$store->id, $sale->id]) }}" method="POST">
+                        @csrf
+                        <button class="badge {{ $cls }}" title="Actualizar DTE">
+                            {{ $sale->dte_status ?? 'PENDIENTE' }}
                         </button>
+                    </form>
+                    @else
+                        <span class="badge {{ $cls }}">{{ $sale->dte_status }}</span>
+                    @endif
+                </td>
 
-                        <button onclick="mostrarModalImpresion('{{ route('ticket.reprint', [$store->id, $sale->id]) }}')">
-                            ♻️ Reimprimir ticket
+                <td class="actions">
+                    <a href="{{ route('stores.sales.show', [$store->id, $sale->id]) }}" class="btn btn-info">
+                        <i class="bi bi-eye"></i> Ver
+                    </a>
+
+                    <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')" class="btn btn-print">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+
+                    <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}" method="POST" onsubmit="return confirm('¿Eliminar venta?');">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-delete">
+                            <i class="bi bi-trash"></i>
                         </button>
+                    </form>
+                </td>
+            </tr>
+        @endforeach
 
+        </tbody>
+    </table>
 
+    @endif
 
-
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        @endif
-    </div>
 </div>
 
 <script>
-    function mostrarModalImpresion(url) {
-        // abrir modal o ventana para imprimir
-        const win = window.open(url, '_blank', 'width=400,height=800');
-
-        // auto imprimir cuando cargue
-        win.onload = function() {
-            win.print();
-        };
-    }
+function mostrarModalImpresion(url) {
+    const w = window.open(url, '_blank', 'width=400,height=800');
+    w.onload = () => w.print();
+}
 </script>
-
 @endsection

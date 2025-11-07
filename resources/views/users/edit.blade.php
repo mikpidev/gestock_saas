@@ -5,7 +5,7 @@
     <!--     formulario para la creacion de un usuario -->
     <form action="{{ route('stores.users.store', $store->id) }}" method="POST">
     @csrf
-        @include('sal._form')
+        @include('users._form')
     </form>
     
     @if ($errors->any())
