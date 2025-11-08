@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Store;
 use App\Models\StoreTaxInfo;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class StoreTaxInfoController extends Controller
      */
     public function create(Store $store)
     {
-        $actividades = \App\Models\CodActividad::all(); 
+        $actividades = \App\Models\CodActividad::all();
         $departamentos = \App\Models\Departamento::all();
         $municipios = \App\Models\Municipio::all();
 
@@ -58,7 +59,7 @@ class StoreTaxInfoController extends Controller
         $store->taxInfo()->create($validated);
 
         return redirect()->route('stores.show', $store->id)
-                         ->with('success', 'Información fiscal registrada correctamente.');
+            ->with('success', 'Información fiscal registrada correctamente.');
     }
 
     /**
@@ -70,7 +71,7 @@ class StoreTaxInfoController extends Controller
 
         if (!$storeTaxInfo) {
             return redirect()->route('store_tax_info.create', $store->id)
-                             ->with('info', 'Esta tienda aún no tiene información fiscal.');
+                ->with('info', 'Esta tienda aún no tiene información fiscal.');
         }
 
         $storeTaxInfo->load('store.company');
@@ -84,6 +85,11 @@ class StoreTaxInfoController extends Controller
     public function edit(StoreTaxInfo $storeTaxInfo)
     {
         $store = $storeTaxInfo->store;
+
+        if (!$store) {
+            return redirect()->back()->with('error', 'La tienda asociada no existe.');
+        }
+
         $company = $store->company;
 
         $actividades = \App\Models\CodActividad::all();
@@ -96,8 +102,11 @@ class StoreTaxInfoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, StoreTaxInfo $storeTaxInfo)
+    public function update(Request $request, StoreTaxInfo $storeTaxInfo, Company $company)
     {
+        $store = $storeTaxInfo->store;
+        $company = $store->company;
+
         $validated = $request->validate([
             'nit' => 'required|max:20|unique:store_tax_infos,nit,' . $storeTaxInfo->id,
             'nrc' => 'required|max:20|unique:store_tax_infos,nrc,' . $storeTaxInfo->id,
@@ -114,11 +123,16 @@ class StoreTaxInfoController extends Controller
             'comentarios' => 'nullable|max:500',
         ]);
 
+        // Asignar company automáticamente
+        $validated['company_id'] = $company->id;
+
         $storeTaxInfo->update($validated);
 
-        return redirect()->route('stores.show', $storeTaxInfo->store_id)
-                         ->with('success', 'Información fiscal actualizada correctamente.');
+        return redirect()
+            ->route('stores.show', $storeTaxInfo->store_id)
+            ->with('success', 'Información fiscal actualizada correctamente.');
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -128,6 +142,6 @@ class StoreTaxInfoController extends Controller
         $storeTaxInfo->delete();
 
         return redirect()->route('stores.show', $storeTaxInfo->store_id)
-                         ->with('success', 'Información fiscal eliminada correctamente.');
+            ->with('success', 'Información fiscal eliminada correctamente.');
     }
 }
