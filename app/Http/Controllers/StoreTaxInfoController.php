@@ -37,8 +37,8 @@ class StoreTaxInfoController extends Controller
     public function store(Request $request, Store $store)
     {
         $validated = $request->validate([
-            'nit' => 'required|max:20|unique:store_tax_infos,nit',
-            'nrc' => 'required|max:20|unique:store_tax_infos,nrc',
+            'nit' => 'required|max:20',
+            'nrc' => 'required|max:20',
             'razon_social' => 'required|max:200',
             'actividad_economica' => 'required|max:200',
             'direccion_fiscal' => 'required|max:200',
