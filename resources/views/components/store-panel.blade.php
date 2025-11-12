@@ -111,6 +111,9 @@
         <a href="{{ route('stores.sales.index', $store->id) }}">
             <i class="fas fa-cash-register"></i> Ventas
         </a>
+        <a href="{{ route('stores.cash.closures.index', $store->id) }}">
+            <i class="fas fa-box-open"></i> Corte de Caja
+        </a>
         <a href="{{ route('stores.creditnotes.index', $store->id) }}">
             <i class="fas fa-file-invoice"></i> Notas de Crédito
         </a>

@@ -18,6 +18,15 @@
             text-align: left;
         }
 
+        .recibo img.qr {
+            display: block;
+            margin: 0 auto;
+            width: 100px;
+            height: 100px;
+        }
+        
+
+
         .linea {
             border-top: 1px dashed #000;
             margin: 5px 0;
@@ -40,25 +49,27 @@
 </head>
 
 <body>
+
     <div class="recibo">
 
-        <!-- ENCABEZADO -->
-        <img src="{{ public_path('Logo.png') }}" width="150">
 
-        <h3>{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
-        <p class="small">
+        <!-- ENCABEZADO -->
+        <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
+            <img src="{{ public_path('Logo.svg') }}" style="width:100%; height:auto; display:inline-block;">
+        </div>
+        <h3 style="margin:0; padding:0;">{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
+        <p class="small" style="margin:0; padding:0;">
             Dirección: {{ $venta->store->address ?? '' }}<br>
             Tel: {{ $venta->store->taxInfo->telefono ?? '' }}<br>
             NIT: {{ $venta->store->taxInfo->nit ?? '' }} | NRC: {{ $venta->store->taxInfo->nrc ?? '' }}
         </p>
 
-        <div class="linea"></div>
 
         <!-- DATOS DTE -->
         <p class="small">
             <strong>Tipo DTE:</strong> {{ $venta->tipoDte->nombre ?? 'TICKET' }}<br>
             <strong>No. Control:</strong> {{ $venta->numero_control ?? 'N/A' }}<br>
-            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}<br>
+            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}
         </p>
 
         <div class="linea"></div>
@@ -66,7 +77,7 @@
         <!-- INFO VENTA -->
         <p class="small">
             <strong>Fecha:</strong> {{ $venta->sale_date->format('d/m/Y H:i') }}<br>
-            <strong>Atendió:</strong> {{ $venta->user->name ?? 'Cajero' }}<br>
+            <strong>Atendió:</strong> {{ $venta->user->name ?? 'Cajero' }}
         </p>
 
         <div class="linea"></div>
@@ -74,13 +85,13 @@
         <!-- CLIENTE -->
         <p class="small">
             <strong>Cliente:</strong> {{ $venta->customer->name ?? 'Consumidor Final' }}<br>
-
-            @if($venta->customer && $venta->customer->numDocumento)
+            @if($venta->customer)
+            @if($venta->customer->numDocumento)
             <strong>Doc:</strong> {{ $venta->customer->numDocumento }}<br>
             @endif
-
-            @if($venta->customer && $venta->customer->nrc)
+            @if($venta->customer->nrc)
             <strong>NRC:</strong> {{ $venta->customer->nrc }}<br>
+            @endif
             @endif
         </p>
 
@@ -100,37 +111,33 @@
         @if ($venta->total_exenta > 0)
         <p class="totales">Exento: ${{ number_format($venta->total_exenta, 2) }}</p>
         @endif
-
         @if ($venta->total_no_gravado > 0)
         <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
         @endif
-
         @if ($venta->total_gravada > 0)
         <p class="totales">Gravado: ${{ number_format($venta->total_gravada, 2) }}</p>
         @endif
-
         @if ($venta->tax_amount > 0)
         <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
         @endif
-
-        <p class="totales"><strong>Total a pagar: ${{ number_format($venta->total_amount, 2) }}</strong></p>
-
+        <p class="totales">Total: ${{ number_format($venta->total_amount, 2) }}</p>
         @if ($venta->discount_amount > 0)
         <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
         @endif
 
         <div class="linea"></div>
 
-        <!-- QR OPCIONAL (si manejas DTE, después lo puedes llenar con base64) -->
-        <img src="data:image/png;base64,{{ $qrImage }}">
+        <!-- QR -->
+        <div>
+        <img src="data:image/png;base64,{{ $qrImage }}" class="qr">
+
+        </div>
         <!-- FOOTER -->
-        <p class="small">
+        <p class="small" style="text-align:center;">
             Documento generado electrónicamente<br>
             Representación impresa sin validez fiscal<br>
             ¡Gracias por su compra!
         </p>
-
-        <p>QR</p>
 
     </div>
 

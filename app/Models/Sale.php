@@ -97,4 +97,8 @@ class Sale extends Model
         return $this->hasMany(VoidDTE::class);
     }
 
+    public function cashClosure()
+    {
+        return $this->belongsTo(CashClosure::class, 'id', 'to_sale_id');
+    }
 }

@@ -13,6 +13,7 @@ use App\Http\Middleware\PreventBackHistory4;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\ActividadEconomicaController;
+use App\Http\Controllers\CashClosureController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\DTEController;
@@ -77,7 +78,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::post('stores_tax_info/{store}', [StoreTaxInfoController::class, 'store'])
         ->name('stores_tax_info.store');
 
-    Route::put('stores_tax_info/{storeTaxInfo}/company/{company}',[StoreTaxInfoController::class, 'update'])
+    Route::put('stores_tax_info/{storeTaxInfo}/company/{company}', [StoreTaxInfoController::class, 'update'])
         ->name('stores_tax_info.update');
 
     Route::get('/stores/{store}/tax-info', [StoreTaxInfoController::class, 'show'])
@@ -255,6 +256,14 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
 
     //Rutas reporte de ventas
-    Route::get('/reportes/ventas', [ReporteVentas::class, 'index'])
+    Route::get('/reportes/ventas/pdf', [ReporteVentas::class, 'index'])
+        ->name('reportes.ventas.pdf');
+    Route::get('/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
         ->name('reportes.ventas');
+
+    Route::prefix('stores/{store}')->group(function () {
+        Route::get('/cash-closures',  [CashClosureController::class, 'index'])->name('stores.cash.closures.index');
+        Route::post('/cash-closures/close', [CashClosureController::class, 'closeCash'])->name('cash.closures.close');
+        Route::get('/cash-closures/{id}/print', [CashClosureController::class, 'print'])->name('cash.closures.print');
+    });
 });

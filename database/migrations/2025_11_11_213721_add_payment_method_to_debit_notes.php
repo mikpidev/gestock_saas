@@ -12,10 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('debit_notes', function (Blueprint $table) {
-            if (!Schema::hasColumn('debit_notes', 'dte_status')) {
-                $table->string('dte_status', 50)->default('PENDIENTE')->after('total_iva');
-            }
+            $table->string('payment_method')->nullable()->after('condicion_operacion');
         });
+        
     }
 
     /**
@@ -24,10 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('debit_notes', function (Blueprint $table) {
-            $table->dropColumn('dte_status');
-
-            // Si habías renombrado payment_status, aquí lo puedes revertir
-            // $table->renameColumn('old_payment_status', 'payment_status');
+            //
         });
     }
 };
