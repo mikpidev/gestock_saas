@@ -14,6 +14,7 @@ use App\Models\Store;
 use App\Models\TipoDte;
 use App\Services\ConsultaService;
 use App\Services\HaciendaAuthService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -47,12 +48,19 @@ class DebitNoteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Store $store)
+    public function index(Request $request, Store $store)
     {
-        //solicitar lista de notas de debito
-        $debitNotes = $store->debitNotes()->with(['customer', 'sale', 'user'])->orderByDesc('sale_date')->get();
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
+        $fecha = $request->fecha ?? Carbon::today()->toDateString();
 
-        return view('debitnotes.index', compact('store', 'debitNotes'));
+        // Filtramos ventas de ESTA tienda y de ESA fecha
+        $debitNotes = DebitNote::with('customer')
+            ->where('store_id', $store->id)
+            ->whereDate('created_at', $fecha)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('debitnotes.index', compact('store', 'debitNotes', 'fecha'));
     }
 
     
@@ -302,6 +310,11 @@ class DebitNoteController extends Controller
                 'user_id' => Auth::id(),
             ]);
             abort(403, 'No puedes eliminar una ND de otra tienda.');
+        }
+
+        // Si ya pasaron más de 24 horas, no se puede anular
+        if ($debitNote->created_at->lessThan(now()->subHours(24))) {
+            return redirect()->back()->withErrors('No se puede anular una venta con más de 24 horas de antigüedad.');
         }
     
         try {

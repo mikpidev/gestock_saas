@@ -7,13 +7,21 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-
-
-
-
+use App\Http\Controllers\DTEController;
+use App\Services\DocumentService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ReporteVentas extends Controller
 {
+
+    protected $dteService;
+
+    public function __construct(DocumentService $dteService)
+    {
+        $this->dteService = $dteService;
+    }
+
     //Reporte verntas
 
     public function index()
@@ -32,161 +40,105 @@ class ReporteVentas extends Controller
 
     public function dteReporte()
     {
-
-        ini_set('memory_limit', '512M');
-
-        $sales = Sale::with(([
-
-            'store.taxInfo',
-            'customer',
-            'creditNotes.creditNoteDetails.productType',
-            'debitNotes.debitNoteDetails.productType',
-        ]))->get();
+        ini_set('memory_limit', '1024M');
 
         $path = storage_path("app/dte_reportes/");
-        if (!file_exists($path)) {
-            mkdir($path, 0777, true);
-        }
+        if (!file_exists($path)) mkdir($path, 0777, true);
 
-        foreach ($sales as $sale) {
+        $query = Sale::with([
+            'store.taxInfo',
+            'customer',
+            'details.productType',
+            'creditNotes.creditNoteDetails.productType',
+            'debitNotes.debitNoteDetails.productType',
+            'tipoDte'
+        ])
+            ->where('dte_status', 'PROCESADO')
+            ->whereDate('sale_date', '>=', now()->subDays(16));
 
-            $baseFile = $sale->codigo_generacion ?? '';
-            $tipo = strtolower($sale->tipoDte->codigo ?? '');
+        $query->chunk(110, function ($sales) use ($path) {
 
-            //Procesar doc basado en DTE
+            foreach ($sales as $sale) {
 
-            switch ($tipo) {
+                // Cargar relaciones por cada venta (sin excluir ventas)
+                $sale->load([
+                    'store.taxInfo',
+                    'customer',
+                    'details.productType',
+                    'creditNotes.creditNoteDetails.productType',
+                    'debitNotes.debitNoteDetails.productType',
+                    'tipoDte'
+                ]);
 
-                case '01': //FE
-                    $json = $this->buildDTEJsonFE($sale);
-                    $pdf = Pdf::loadView('reportes.ventas', compact('sale'));
-                    break;
-                case '03': //CCF
-                    $json = $this->buildDTEJsonCCF($sale);
-                    $pdf = Pdf::loadView('reportes.ventas', compact('sale'));
-                    break;
-                case '14': //SE
-                    $json = $this->buildDTEJsonSE($sale);
-                    $pdf = Pdf::loadView('reportes.ventas', compact('sale'));
-                    break;
-                default:
-                    $json = null;
-                    $pdf = null;
-                    break;
+                $tipo = strtolower($sale->tipoDte->codigo ?? '');
+
+                switch ($tipo) {
+                    case '01':
+                        $json = $this->dteService->buildDTEJsonFE($sale);
+                        break;
+
+                    case '03':
+                        $json = $this->dteService->buildDTEJsonCF($sale);
+                        break;
+
+                    case '14':
+                        $json = $this->dteService->buildDTEJsonSE($sale);
+                        break;
+
+                    default:
+                        Log::warning("Tipo DTE desconocido o faltante", [
+                            "sale_id" => $sale->id,
+                            "tipo" => $tipo
+                        ]);
+                        continue 2;
+                }
+
+                // Guardar cada JSON
+                $jsonFilename = "{$path}/dte_{$sale->codigo_generacion}.json";
+                file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
+
+                // Generar PDF
+                $pdf = Pdf::loadView('reportes.ventas', [
+                    'dte'      => $json,
+                    'emisor'   => $json['emisor'],
+                    'receptor' => $json['receptor'],
+                    'resumen'  => $json['resumen']
+                ]);
+                $pdf->save("{$path}/dte_{$sale->codigo_generacion}.pdf");
+
+                \Log::info("DTE generado correctamente", [
+                    "sale_id" => $sale->id,
+                    "path" => $jsonFilename
+                ]);
             }
-
-            //Guardamos archivos
-            if ($json && $pdf) {
-                file_put_contents("{$path}{$baseFile}.json", json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $pdf->save("{$path}{$baseFile}.pdf");
-            }
-
-            //Notas de Credito (NC)
-
-            foreach ($sale->creditNotes as $nc) {
-
-                $jsonNC = $this->buildDTEJsonNC($nc, $sale);
-                $pdfNC = Pdf::loadView('reportes.dte.nc', ['sale' => $sale, 'note' => $nc]);
-
-                $name = $nc->codigo_generacion ?? ($baseFile . "_NC_" . $nc->id);
-                file_put_contents("{$path}{$name}.json", json_encode($jsonNC, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $pdfNC->save("{$path}{$name}.pdf");
-            }
-
-            foreach ($sale->debitNotes as $nd) {
-                $jsonND = $this->buildDTEJsonND($nd, $sale);
-                $pdfND  = Pdf::loadView('reportes.dte.nd', ['sale' => $sale, 'note' => $nd]);
-
-                $name = $nd->codigo_generacion ?? ($baseFile . "_ND_" . $nd->id);
-                file_put_contents("{$path}{$name}.json", json_encode($jsonND, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $pdfND->save("{$path}{$name}.pdf");
-            }
-        }
-
+        });
 
         return response()->json([
-            "message" => "Todos los DTE, NC, ND y Anulaciones generados correctamente",
+            "message" => "Reportes generados correctamente",
             "path" => $path
         ]);
     }
 
-    private function buildDTEJsonFE($sale)
+
+    private function processNC($nc, $sale, $path)
     {
-        return [
-            "codigoGeneracion" => $sale->codigo_generacion,
-            "tipoDte"  => "FE",
-            "fecha"    => $sale->created_at->format('Y-m-d H:i:s'),
-            "cliente"  => $sale->customer->nombre ?? null,
-            "total"    => $sale->total_amount,
-            "items"    => $sale->details->map(function ($d) {
-                return [
-                    "descripcion" => $d->productType->name ?? null,
-                    "cantidad"    => $d->qty,
-                    "precio"      => $d->price,
-                    "subtotal"    => $d->qty * $d->price
-                ];
-            }),
-        ];
+        $json = $this->dteService->buildDTEJsonNC($nc, $sale);
+        $file = $nc->codigo_generacion ?? "{$sale->codigo_generacion}_NC_{$nc->id}";
+
+        file_put_contents("{$path}{$file}.json", json_encode($json, JSON_PRETTY_PRINT));
+
+        $pdf = Pdf::loadView('reportes.dte.nc', ['sale' => $sale, 'note' => $nc]);
+        $pdf->save("{$path}{$file}.pdf");
     }
 
-    private function buildDTEJsonCCF($sale)
+    private function processND($nd, $sale, $path)
     {
-        return [
-            "codigoGeneracion" => $sale->codigo_generacion,
-            "tipoDte"  => "CCF",
-            "fecha"    => $sale->created_at->format('Y-m-d H:i:s'),
-            "cliente"  => $sale->customer->nombre ?? null,
-            "total"    => $sale->total_amount,
-            "iva"      => $sale->total_iva,
-        ];
-    }
+        $json = $this->dteService->buildDTEJsonND($nd, $sale);
+        $file = $nd->codigo_generacion ?? "{$sale->codigo_generacion}_ND_{$nd->id}";
 
-    private function buildDTEJsonSE($sale)
-    {
-        return [
-            "codigoGeneracion" => $sale->codigo_generacion,
-            "tipoDte"  => "SE",
-            "fecha"    => $sale->created_at->format('Y-m-d H:i:s'),
-            "cliente"  => $sale->customer->nombre ?? null,
-            "total"    => $sale->total_amount,
-        ];
-    }
+        file_put_contents("{$path}{$file}.json", json_encode($json, JSON_PRETTY_PRINT));
 
-    private function buildDTEJsonNC($note, $sale)
-    {
-        return [
-            "codigoGeneracion" => $note->codigo_generacion,
-            "tipoDte"   => "NC",
-            "referencia" => $sale->codigo_generacion,
-            "fecha"     => $note->created_at->format('Y-m-d H:i:s'),
-            "motivo"    => $note->motivo ?? null,
-            "total"     => $note->total_amount ?? 0,
-            "items"     => $note->creditNoteDetails->map(function ($d) {
-                return [
-                    "descripcion" => $d->productType->name ?? null,
-                    "cantidad"    => $d->qty,
-                    "precio"      => $d->price,
-                ];
-            }),
-        ];
-    }
-
-    private function buildDTEJsonND($note, $sale)
-    {
-        return [
-            "codigoGeneracion" => $note->codigo_generacion,
-            "tipoDte"   => "ND",
-            "referencia" => $sale->codigo_generacion,
-            "fecha"     => $note->created_at->format('Y-m-d H:i:s'),
-            "motivo"    => $note->motivo ?? null,
-            "total"     => $note->total_amount ?? 0,
-            "items"     => $note->debitNoteDetails->map(function ($d) {
-                return [
-                    "descripcion" => $d->productType->name ?? null,
-                    "cantidad"    => $d->qty,
-                    "precio"      => $d->price,
-                ];
-            }),
-        ];
+        $pdf = Pdf::loadView('reportes.dte.nd', ['sale' => $sale, 'note' => $nd]);
+        $pdf->save("{$path}{$file}.pdf");
     }
 }

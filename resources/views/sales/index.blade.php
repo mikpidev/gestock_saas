@@ -56,7 +56,8 @@
         font-weight: 600;
     }
 
-    th, td {
+    th,
+    td {
         padding: 12px;
         border-bottom: 1px solid #e5e7eb;
     }
@@ -84,14 +85,29 @@
         transition: 0.2s;
     }
 
-    .btn-info { background: #3b82f6; }
-    .btn-info:hover { background: #2563eb; }
+    .btn-info {
+        background: #3b82f6;
+    }
 
-    .btn-print { background: #10b981; }
-    .btn-print:hover { background: #059669; }
+    .btn-info:hover {
+        background: #2563eb;
+    }
 
-    .btn-delete { background: #ef4444; }
-    .btn-delete:hover { background: #dc2626; }
+    .btn-print {
+        background: #10b981;
+    }
+
+    .btn-print:hover {
+        background: #059669;
+    }
+
+    .btn-delete {
+        background: #ef4444;
+    }
+
+    .btn-delete:hover {
+        background: #dc2626;
+    }
 
     .badge {
         padding: 5px 8px;
@@ -101,9 +117,17 @@
         color: #fff;
     }
 
-    .badge-procesado { background:#10b981; }
-    .badge-rechazado { background:#ef4444; }
-    .badge-pendiente { background:#ca8a04; }
+    .badge-procesado {
+        background: #10b981;
+    }
+
+    .badge-rechazado {
+        background: #ef4444;
+    }
+
+    .badge-pendiente {
+        background: #ca8a04;
+    }
 
     .no-data {
         text-align: center;
@@ -113,18 +137,18 @@
     }
 
     .filter-bar {
-        background:#f9fafb;
+        background: #f9fafb;
         padding: 12px;
-        display:flex;
-        gap:8px;
-        align-items:center;
-        border-bottom:1px solid #e5e7eb;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .filter-bar input {
-        border:1px solid #d1d5db;
-        border-radius:6px;
-        padding:6px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px;
     }
 </style>
 
@@ -172,7 +196,7 @@
         </thead>
         <tbody>
 
-        @foreach($sales as $sale)
+            @foreach($sales as $sale)
             <tr>
                 <td>{{ $sale->codigo_generacion ?? '—' }}</td>
                 <td>{{ $sale->customer->nombre ?? 'Sin cliente' }}</td>
@@ -181,9 +205,9 @@
 
                 <td>
                     @php
-                        $cls = 'badge-pendiente';
-                        if($sale->dte_status === 'PROCESADO') $cls = 'badge-procesado';
-                        if($sale->dte_status === 'RECHAZADO') $cls = 'badge-rechazado';
+                    $cls = 'badge-pendiente';
+                    if($sale->dte_status === 'PROCESADO') $cls = 'badge-procesado';
+                    if($sale->dte_status === 'RECHAZADO') $cls = 'badge-rechazado';
                     @endphp
 
                     @if(!$sale->dte_status || $sale->dte_status === 'PENDIENTE')
@@ -194,7 +218,7 @@
                         </button>
                     </form>
                     @else
-                        <span class="badge {{ $cls }}">{{ $sale->dte_status }}</span>
+                    <span class="badge {{ $cls }}">{{ $sale->dte_status }}</span>
                     @endif
                 </td>
 
@@ -206,16 +230,34 @@
                     <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')" class="btn btn-print">
                         <i class="bi bi-printer"></i> Imprimir
                     </button>
+                    @php
+                    $canDelete = $sale->created_at->greaterThan(now()->subHours(24));
+                    @endphp
 
-                    <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}" method="POST" onsubmit="return confirm('¿Eliminar venta?');">
-                        @csrf @method('DELETE')
+                    @if ($canDelete)
+                    <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}"
+                        method="POST"
+                        onsubmit="return confirm('¿Eliminar venta?');">
+                        @csrf
+                        @method('DELETE')
                         <button class="btn btn-delete">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
+                    @else
+                    <span data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="No se puede eliminar ventas con más de 24 horas">
+                        <button class="btn btn-delete" disabled>
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </span>
+
+
+                    @endif
+
                 </td>
             </tr>
-        @endforeach
+            @endforeach
 
         </tbody>
     </table>
@@ -225,9 +267,15 @@
 </div>
 
 <script>
-function mostrarModalImpresion(url) {
-    const w = window.open(url, '_blank', 'width=400,height=800');
-    w.onload = () => w.print();
-}
+    function mostrarModalImpresion(url) {
+        const w = window.open(url, '_blank', 'width=400,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
 </script>
 @endsection

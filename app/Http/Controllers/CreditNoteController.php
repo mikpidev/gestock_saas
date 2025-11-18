@@ -14,6 +14,7 @@ use App\Models\Store;
 use App\Models\TipoDte;
 use App\Services\ConsultaService;
 use App\Services\HaciendaAuthService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -43,13 +44,22 @@ class CreditNoteController extends Controller
         }
     }
 
-    public function index(Store $store)
+    public function index(Request $request, Store $store)
     {
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
+        $fecha = $request->fecha ?? Carbon::today()->toDateString();
+
+        // Filtramos ventas de ESTA tienda y de ESA fecha
+        $creditNotes = CreditNote::with('customer')
+            ->where('store_id', $store->id)
+            ->whereDate('created_at', $fecha)
+            ->orderByDesc('created_at')
+            ->get();
+
         // Solicitar lista de notas de crédito
-        $creditNotes = $store->creditNotes()->with(['customer', 'sale', 'user'])->orderBy('created_at', 'desc')->get();
 
 
-        return view('creditnotes.index', compact('store', 'creditNotes'));
+        return view('creditnotes.index', compact('store', 'creditNotes', 'fecha'));
     }
 
 
@@ -293,6 +303,13 @@ class CreditNoteController extends Controller
         if ($creditNote->store_id != $store->id) {
             abort(403, 'No puedes eliminar una NC de otra tienda.');
         }
+
+        // Si ya pasaron más de 24 horas, no se puede anular
+        if ($creditNote->created_at->lessThan(now()->subHours(24))) {
+            return redirect()->back()->withErrors('No se puede anular una venta con más de 24 horas de antigüedad.');
+        }
+
+
 
         try {
             // Llamar al VoidDTEController para generar la anulación de la NC

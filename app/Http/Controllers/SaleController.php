@@ -280,6 +280,11 @@ class SaleController extends Controller
             abort(403, 'No puedes eliminar una venta de otra tienda.');
         }
 
+        // Si ya pasaron más de 24 horas, no se puede anular
+        if ($sale->created_at->lessThan(now()->subHours(24))) {
+            return redirect()->back()->withErrors('No se puede anular una venta con más de 24 horas de antigüedad.');
+        }
+
         try {
             // Llamar al VoidDTEController para generar la anulación
             $voidController = app(\App\Http\Controllers\VoidDTEController::class);

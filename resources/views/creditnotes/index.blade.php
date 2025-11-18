@@ -1,20 +1,21 @@
 @extends('layouts.admin')
 
 @section('content')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    .gestok-table-card {
+    .card-table {
         background: #fff;
-        color: #000;
         width: 100%;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
         overflow: hidden;
         margin: 2rem auto;
-        max-width: 1000px;
+        max-width: 1100px;
     }
 
-    .gestok-table-header {
-        background: #000;
+    .card-header-custom {
+        background: #1f2937;
         color: #fff;
         padding: 1.2rem;
         display: flex;
@@ -22,24 +23,26 @@
         align-items: center;
     }
 
-    .gestok-table-header h1 {
+    .card-header-custom h2 {
         font-size: 1.4rem;
-        font-weight: bold;
         margin: 0;
+        font-weight: 600;
     }
 
-    .gestok-table-header a.btn {
-        background: #fff;
-        color: #000;
-        padding: 0.6rem 1.2rem;
-        border-radius: 5px;
-        font-weight: bold;
+    .btn-new {
+        background: #3b82f6;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
         text-decoration: none;
-        transition: background 0.2s;
+        display: flex;
+        gap: 6px;
+        align-items: center;
     }
 
-    .gestok-table-header a.btn:hover {
-        background: #e6e6e6;
+    .btn-new:hover {
+        background: #2563eb;
     }
 
     table {
@@ -48,162 +51,224 @@
         font-size: 0.95rem;
     }
 
-    th,
-    td {
-        padding: 0.8rem;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
+    th {
+        background: #f3f4f6;
+        font-weight: 600;
     }
 
-    th {
-        background: #f8f8f8;
-        font-weight: bold;
+    th,
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     tr:hover {
-        background: #f9f9f9;
+        background: #fafafa;
     }
 
     .actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 6px;
     }
 
-    .btn-view {
-        background: #007bff;
+    .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border-radius: 6px;
+        font-size: 13px;
+        padding: 6px 10px;
         color: #fff;
-        padding: 0.4rem 0.8rem;
-        border-radius: 5px;
-        text-decoration: none;
-        font-size: 0.85rem;
-        transition: background 0.2s;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
     }
 
-    .btn-view:hover {
-        background: #0056b3;
+    .btn-info {
+        background: #3b82f6;
+    }
+
+    .btn-info:hover {
+        background: #2563eb;
+    }
+
+    .btn-print {
+        background: #10b981;
+    }
+
+    .btn-print:hover {
+        background: #059669;
     }
 
     .btn-delete {
-        background: #dc3545;
-        color: #fff;
-        padding: 0.4rem 0.8rem;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: background 0.2s;
+        background: #ef4444;
     }
 
     .btn-delete:hover {
-        background: #b02a37;
+        background: #dc2626;
     }
 
-    /* Estados DTE */
-    .dte-status {
+    .badge {
+        padding: 5px 8px;
+        font-size: 11px;
+        border-radius: 6px;
         font-weight: bold;
-        border-radius: 4px;
-        padding: 0.3rem 0.6rem;
-        text-align: center;
-        display: inline-block;
-        min-width: 100px;
+        color: #fff;
     }
 
-    .dte-status.procesado {
-        background: #d4edda;
-        color: #155724;
+    .badge-procesado {
+        background: #10b981;
     }
 
-    .dte-status.rechazado {
-        background: #f8d7da;
-        color: #721c24;
+    .badge-rechazado {
+        background: #ef4444;
     }
 
-    .dte-status.pendiente {
-        background: #f3e5ab;
-        color: #5c3d00;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .dte-status.pendiente:hover {
-        background: #e8d890;
+    .badge-pendiente {
+        background: #ca8a04;
     }
 
     .no-data {
         text-align: center;
         padding: 2rem;
+        color: #6b7280;
         font-style: italic;
-        color: #666;
+    }
+
+    .filter-bar {
+        background: #f9fafb;
+        padding: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-bar input {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px;
     }
 </style>
 
-<div class="gestok-table-card">
-    <div class="gestok-table-header">
-        <h1>Notas de Crédito</h1>
-        <a href="{{ route('stores.creditnotes.create', $store->id) }}" class="btn">Nueva Nota</a>
+<div class="card-table">
+    <div class="card-header-custom">
+        <h2>Notas de Crédito</h2>
+        <a href="{{ route('stores.creditnotes.create', $store->id) }}" class="btn-new">Nueva Nota</a>
     </div>
 
     @if(session('success'))
-        <div style="background: #d1fae5; color: #065f46; padding: 1rem; margin: 1rem; border-radius: 5px;">
-            {{ session('success') }}
-        </div>
+    <div style="background:#d1fae5;color:#065f46;padding:10px;margin:12px;border-radius:6px;">
+        {{ session('success') }}
+    </div>
     @endif
-
+    <form method="GET" class="filter-bar">
+        <label><b>Fecha:</b></label>
+        <input type="date" name="fecha" value="{{ $fecha }}">
+        <button class="btn btn-info">Filtrar</button>
+        <a href="?fecha={{ now()->toDateString() }}" class="btn btn-print">
+            <i class="bi bi-calendar-check"></i> Hoy
+        </a>
+        <a href="{{ route('reportes.ventas') }}" class="btn btn-print">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+        </a>
+    </form>
     <div class="gestok-table-body">
         @if($creditNotes->isEmpty())
-            <p class="no-data">No hay notas de crédito registradas.</p>
+        <p class="no-data">No hay notas de crédito registradas.</p>
         @else
-            <table>
-                <thead>
-                    <tr>
-                        <th>Codigo Generacion
-                        <th>Cliente</th>
-                        <th>Venta Relacionada</th>
-                        <th>Fecha</th>
-                        <th>Total</th>
-                        <th>Estado DTE</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($creditNotes as $creditNote)
-                        <tr>
-                            <td>{{ $creditNote->codigo_generacion ?? '—' }}</td>
-                            <td>{{ $creditNote->customer->nombre ?? 'Sin cliente' }}</td>
-                            <td>{{ $creditNote->sale->invoice_number ?? 'N/A' }}</td>
-                            <td>{{ \Carbon\Carbon::parse($creditNote->credit_note_date)->format('d/m/Y') }}</td>
-                            <td>${{ number_format($creditNote->total_amount, 2) }}</td>
-                            <td>
-                                @php
-                                    $statusClass = 'pendiente';
-                                    if($creditNote->dte_status === 'PROCESADO') $statusClass = 'procesado';
-                                    if($creditNote->dte_status === 'RECHAZADO') $statusClass = 'rechazado';
-                                @endphp
+        <table>
+            <thead>
+                <tr>
+                    <th>Código Generación</th>
+                    <th>Cliente</th>
+                    <th>Venta Relacionada</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado DTE</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
 
-                                @if($creditNote->dte_status === null || $creditNote->dte_status === 'PENDIENTE')
-                                    <form action="{{ route('stores.creditnotes.refreshDTE', [$store->id, $creditNote->id]) }}" method="POST" style="display:inline;">
-                                        @csrf
-                                        <button type="submit" class="btn-dte-refresh dte-status {{ $statusClass }}" title="Actualizar estado DTE">
-                                            {{ $creditNote->dte_status ?? 'PENDIENTE' }}
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="dte-status {{ $statusClass }}">{{ $creditNote->dte_status }}</span>
-                                @endif
-                            </td>
-                            <td class="actions">
-                                <a href="{{ route('stores.creditnotes.show', [$store->id, $creditNote->id]) }}" class="btn-view">Ver</a>
-                                <form action="{{ route('stores.creditnotes.destroy', [$store->id, $creditNote->id]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta nota de crédito?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-delete">Eliminar</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            <tbody>
+                @foreach($creditNotes as $creditNote)
+                <tr>
+                    <td>{{ $creditNote->codigo_generacion ?? '—' }}</td>
+                    <td>{{ $creditNote->customer->nombre ?? 'Sin cliente' }}</td>
+                    <td>{{ $creditNote->sale->invoice_number ?? 'N/A' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($creditNote->credit_note_date)->format('d/m/Y') }}</td>
+                    <td>${{ number_format($creditNote->total_amount, 2) }}</td>
+
+                    <!-- Estado DTE -->
+                    <td>
+                        @php
+                        $statusClass = 'badge-pendiente';
+                        if ($creditNote->dte_status === 'PROCESADO') $statusClass = 'badge-procesado';
+                        if ($creditNote->dte_status === 'RECHAZADO') $statusClass = 'badge-rechazado';
+                        @endphp
+
+                        @if($creditNote->dte_status === null || $creditNote->dte_status === 'PENDIENTE')
+                        <form action="{{ route('stores.creditnotes.refreshDTE', [$store->id, $creditNote->id]) }}"
+                            method="POST" style="display:inline;">
+                            @csrf
+                            <button class="badge {{ $statusClass }}" title="Actualizar DTE">
+                                {{ $creditNote->dte_status ?? 'PENDIENTE' }}
+                            </button>
+                        </form>
+                        @else
+                        <span class="badge {{ $statusClass }}">
+                            {{ $creditNote->dte_status }}
+                        </span>
+                        @endif
+                    </td>
+
+                    <!-- Acciones -->
+                    <td class="actions">
+                        <a href="{{ route('stores.creditnotes.show', [$store->id, $creditNote->id]) }}"
+                            class="btn btn-info">
+                            Ver
+                        </a>
+
+                        @php
+                        $canDelete = $creditNote->created_at->greaterThan(now()->subHours(24));
+                        @endphp
+
+                        @if ($canDelete)
+                        <form action="{{ route('stores.creditnotes.destroy', [$store->id, $creditNote->id]) }}"
+                            method="POST"
+                            onsubmit="return confirm('¿Eliminar nota de crédito?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        @else
+                        <span data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="No se puede eliminar notas de crédito con más de 24 horas">
+                            <button class="btn btn-delete" disabled style="opacity:0.6; cursor:not-allowed;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
         @endif
     </div>
 </div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+</script>
 @endsection
