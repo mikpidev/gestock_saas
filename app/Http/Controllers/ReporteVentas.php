@@ -11,6 +11,10 @@ use App\Http\Controllers\DTEController;
 use App\Services\DocumentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 class ReporteVentas extends Controller
 {
@@ -93,16 +97,34 @@ class ReporteVentas extends Controller
                         continue 2;
                 }
 
+               
+
                 // Guardar cada JSON
                 $jsonFilename = "{$path}/dte_{$sale->codigo_generacion}.json";
                 file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
 
+                //Generar QR (AQUÍ se agrega)
+                $urlQR =
+                    "https://admin.factura.gob.sv/consultaPublica"
+                    . "?ambiente=00"
+                    . "&codGen={$json['identificacion']['codigoGeneracion']}"
+                    . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+                $renderer = new ImageRenderer(
+                    new RendererStyle(150),
+                    new SvgImageBackEnd()
+                );
+
+                $writer = new Writer($renderer);
+                $qrImage = base64_encode($writer->writeString($urlQR));
+                
                 // Generar PDF
                 $pdf = Pdf::loadView('reportes.ventas', [
                     'dte'      => $json,
                     'emisor'   => $json['emisor'],
                     'receptor' => $json['receptor'],
-                    'resumen'  => $json['resumen']
+                    'resumen'  => $json['resumen'],
+                    'qrImage'  => $qrImage
                 ]);
                 $pdf->save("{$path}/dte_{$sale->codigo_generacion}.pdf");
 

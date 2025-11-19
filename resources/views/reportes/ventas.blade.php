@@ -1,192 +1,345 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="utf-8">
-<title>DTE {{ $dte['identificacion']['numeroControl'] ?? '' }}</title>
 
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        font-size: 11px;
-        margin: 15px;
-    }
-    .title {
-        font-size: 15px;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 8px;
-    }
-    .section-title {
-        font-weight: bold;
-        background: #e5e5e5;
-        padding: 4px;
-        font-size: 11px;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 6px;
-    }
-    td, th {
-        padding: 4px;
-        border: 1px solid #000;
-    }
-    .no-border td {
-        border: none;
-        padding: 2px 0;
-    }
-    .totales td {
-        font-weight: bold;
-    }
-</style>
+<head>
+    <meta charset="UTF-8">
+    <title>DTE {{ $dte['identificacion']['numeroControl'] ?? '' }}</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .documento {
+            width: 740px;
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 11px;
+        }
+
+        /* Encabezado */
+        .encabezado {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .encabezado h1 {
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .encabezado h2 {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Superior - DOMPDF-compatible */
+        .contenedor-superior {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .contenedor-superior td {
+            vertical-align: top;
+            padding: 4px;
+        }
+
+        .info-dte,
+        .info-empresa {
+            width: 100%;
+        }
+
+        .tabla-info {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabla-info .etiqueta {
+            font-weight: bold;
+            width: 38%;
+        }
+
+        .tabla-info td {
+            padding: 1px 0;
+            font-size: 10.5px;
+        }
+
+        /* QR */
+        .qr {
+            text-align: center;
+        }
+
+        .qr img {
+            width: 120px;
+            height: 120px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Receptor */
+        .receptor {
+            background: #f4f4f4;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 10.5px;
+        }
+
+        .receptor h3 {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .receptor .datos {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .receptor .columna {
+            width: 50%;
+            margin-bottom: 5px;
+        }
+
+        .receptor .etiqueta {
+            font-weight: bold;
+        }
+
+        /* Factura */
+        .detalles-factura {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        /* Tabla productos */
+        .tabla-productos {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .tabla-productos th {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+        }
+
+        .tabla-productos td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+        }
+
+        /* Totales */
+        .totales {
+            width: 260px;
+            margin-left: auto;
+            font-size: 11px;
+        }
+
+        .fila-total {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .divisor {
+            border-top: 1px solid #ccc;
+            margin: 10px 0;
+        }
+
+        /* Pie */
+        .pie {
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        @page {
+            margin: 20px 25px;
+        }
+
+        .documento {
+            page-break-inside: avoid;
+        }
+    </style>
 </head>
 
 <body>
+    <div class="documento">
 
-{{-- --------------------- ENCABEZADO ------------------------- --}}
-<div class="title">DOCUMENTO TRIBUTARIO ELECTRÓNICO</div>
+        <!-- ENCABEZADO -->
+        <div class="encabezado">
+            <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
+                <img src="{{ public_path('Logo.svg') }}" style="width:100%; height:auto; display:inline-block;">
+            </div>
 
-<table class="no-border">
-    <tr>
-        <td><strong>CONSUMIDOR_FINAL</strong></td>
-        <td style="text-align:right;">
-            <strong>Código DTE:</strong> {{ $dte['identificacion']['codigoGeneracion'] }}
-        </td>
-    </tr>
-</table>
+            <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
+            <h2>{{ $dte['identificacion']['tipoDte'] }}</h2>
+        </div>
 
-<table>
-    <tr>
-        <td><strong>Número de Control:</strong><br>
-            {{ $dte['identificacion']['numeroControl'] }}
-        </td>
-        <td><strong>Sello DTE:</strong><br>
-            {{ $dte['sello'] ?? '---' }}
-        </td>
-    </tr>
-</table>
+        <!-- SUPERIOR -->
+        <table class="contenedor-superior">
+            <tr>
+                <!-- INFO DTE -->
+                <td style="width:42%;">
+                    <table class="tabla-info">
+                        <tr>
+                            <td class="etiqueta">Código DTE:</td>
+                            <td>{{ $dte['identificacion']['codigoGeneracion'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Número de Control:</td>
+                            <td>{{ $dte['identificacion']['numeroControl'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Sello DTE:</td>
+                            <td>{{ $dte['sello'] ?? '---' }}</td>
+                        </tr>
+                    </table>
+                </td>
 
-{{-- --------------------- EMISOR ------------------------- --}}
-<div class="section-title">DATOS DEL EMISOR</div>
+                <!-- QR -->
+                <td style="width:16%;" class="qr">
+                    @if(str_starts_with($qrImage ?? '', '<svg') || str_contains($qrImage ?? '' , '<svg' ))
+                        <img src="data:image/svg+xml;base64,{{ base64_encode($qrImage) }}" alt="QR">
+                    @else
+                        <img src="data:image/png;base64,{{ $qrImage ?? '' }}" alt="QR">
+                    @endif
+                </td>
 
-<table>
-    <tr>
-        <td><strong>Nombre o Razón Social:</strong><br>
-            {{ $emisor['nombre'] }}
-        </td>
+                <!-- INFO EMPRESA -->
+                <td style="width:42%;">
+                    <table class="tabla-info">
+                        <tr>
+                            <td class="etiqueta">Razón Social:</td>
+                            <td>{{ $emisor['nombre'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">NIT:</td>
+                            <td>{{ $emisor['nit'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">NRC:</td>
+                            <td>{{ $emisor['nrc'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Actividad:</td>
+                            <td>{{ $emisor['nombreComercial'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Dirección:</td>
+                            <td>{{ $emisor['direccion']['complemento'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Teléfono:</td>
+                            <td>{{ $emisor['telefono'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="etiqueta">Correo:</td>
+                            <td>{{ $emisor['correo'] }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
-        <td><strong>NIT:</strong><br>
-            {{ $emisor['nit'] }}
-        </td>
+        <div class="divisor"></div>
 
-        <td><strong>NRC:</strong><br>
-            {{ $emisor['nrc'] }}
-        </td>
-    </tr>
+        <!-- RECEPTOR -->
+        <div class="receptor">
+            <h3>RECEPTOR</h3>
+            <div class="datos">
+                <div class="columna">
+                    <div class="etiqueta">Nombre:</div>
+                    <div>{{ $receptor['nombre'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Documento:</div>
+                    <div>{{ $receptor['numDocumento'] ?? 'N/A' }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">NRC:</div>
+                    <div>{{ $receptor['nrc'] ?? 'N/A' }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Dirección:</div>
+                    <div>{{ $receptor['direccion']['complemento'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Departamento:</div>
+                    <div>{{ $receptor['direccion']['departamento'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Email:</div>
+                    <div>{{ $receptor['correo'] }}</div>
+                </div>
+            </div>
+        </div>
 
-    <tr>
-        <td><strong>Actividad:</strong><br>{{ $emisor['nombreComercial'] }}</td>
-        <td colspan="2">
-            <strong>Dirección:</strong><br>
-            {{ $emisor['direccion']['complemento'] }}
-        </td>
-    </tr>
+        <!-- DETALLES -->
+        <div class="detalles-factura">
+            <div><strong>Fecha:</strong> {{ $dte['identificacion']['fecEmi'] }}</div>
+            <div><strong>N° Factura:</strong> {{ $dte['numeroFactura'] ?? '' }}</div>
+        </div>
 
-    <tr>
-        <td><strong>Teléfono:</strong><br> {{ $emisor['telefono'] }}</td>
-        <td colspan="2"><strong>Correo:</strong><br>{{ $emisor['correo'] }}</td>
-    </tr>
-</table>
+        <!-- PRODUCTOS -->
+        <table class="tabla-productos">
+            <thead>
+                <tr>
+                    <th>Cant.</th>
+                    <th style="text-align:left;">Descripción</th>
+                    <th>P.Unit</th>
+                    <th>NoSuj.</th>
+                    <th>Exenta</th>
+                    <th>Gravada</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($dte['cuerpoDocumento'] as $item)
+                <tr>
+                    <td>{{ number_format($item['cantidad'], 2) }}</td>
+                    <td style="text-align:left;">{{ $item['descripcion'] }}</td>
+                    <td>${{ number_format($item['precioUni'], 2) }}</td>
+                    <td>$0.00</td>
+                    <td>$0.00</td>
+                    <td>${{ number_format($item['ventaGravada'], 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-{{-- --------------------- RECEPTOR ------------------------- --}}
-<div class="section-title">DATOS DEL CLIENTE</div>
+        <!-- TOTALES -->
+        <div class="totales">
+            <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'], 2) }}</span></div>
+            <div class="fila-total"><span>IVA:</span><span>${{ number_format($resumen['totalIva'] ?? 0, 2) }}</span></div>
+            <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'], 2) }}</span></div>
+            <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'], 2) }}</strong></div>
+        </div>
 
-<table>
-    <tr>
-        <td><strong>Nombre:</strong><br>{{ $receptor['nombre'] }}</td>
-        <td><strong>Documento:</strong><br>{{ $receptor['numDocumento'] ?? 'N/A' }}</td>
-        <td><strong>NRC:</strong><br>{{ $receptor['nrc'] ?? 'N/A' }}</td>
-    </tr>
+        <p><strong>SON:</strong> {{ strtoupper($resumen['totalLetras']) }}</p>
 
-    <tr>
-        <td colspan="3">
-            <strong>Dirección:</strong><br>
-            {{ $receptor['direccion']['complemento'] }}
-        </td>
-    </tr>
+        <div class="divisor"></div>
 
-    <tr>
-        <td><strong>Departamento:</strong> {{ $receptor['direccion']['departamento'] }}</td>
-        <td><strong>Municipio:</strong> {{ $receptor['direccion']['municipio'] }}</td>
-        <td><strong>Teléfono:</strong> {{ $receptor['telefono'] }}</td>
-    </tr>
+        <div class="pie">
+            {{ $emisor['nombre'] }} - {{ $emisor['direccion']['complemento'] }} <br>
+            Email: {{ $emisor['correo'] }}
+        </div>
 
-    <tr>
-        <td colspan="3"><strong>Email:</strong> {{ $receptor['correo'] }}</td>
-    </tr>
-</table>
-
-{{-- --------------------- INFO DTE ------------------------- --}}
-<table>
-    <tr>
-        <td><strong>Fecha:</strong><br>{{ $dte['identificacion']['fecEmi'] }}</td>
-        <td><strong>Tipo de DTE:</strong><br>{{ $dte['identificacion']['tipoDte'] }}</td>
-        <td><strong>N° Factura:</strong><br>{{ $dte['numeroFactura'] ?? '' }}</td>
-    </tr>
-</table>
-
-{{-- --------------------- CUERPO DOCUMENTO ------------------------- --}}
-<div class="section-title">DETALLE</div>
-
-<table>
-    <thead>
-        <tr>
-            <th>Cant.</th>
-            <th>Descripción</th>
-            <th>P. Unitario</th>
-            <th>No Suj.</th>
-            <th>Exenta</th>
-            <th>Gravadas</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @foreach ($dte['cuerpoDocumento'] as $item)
-        <tr>
-            <td>{{ number_format($item['cantidad'], 2) }}</td>
-            <td>{{ $item['descripcion'] }}</td>
-            <td>${{ number_format($item['precioUni'], 2) }}</td>
-            <td>$0.00</td>
-            <td>$0.00</td>
-            <td>${{ number_format($item['ventaGravada'], 2) }}</td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
-
-{{-- --------------------- RESUMEN ------------------------- --}}
-<div class="section-title">TOTALES</div>
-
-<table class="totales">
-    <tr>
-        <td>SUMAS:</td>
-        <td>${{ number_format($resumen['subTotalVentas'], 2) }}</td>
-    </tr>
-    <tr>
-        <td>IVA:</td>
-        <td>${{ number_format($resumen['totalIva'], 2) }}</td>
-    </tr>
-    <tr>
-        <td>SUB-TOTAL:</td>
-        <td>${{ number_format($resumen['subTotal'], 2) }}</td>
-    </tr>
-    <tr>
-        <td>TOTAL A PAGAR:</td>
-        <td>${{ number_format($resumen['totalPagar'], 2) }}</td>
-    </tr>
-</table>
-
-<p><strong>SON:</strong> {{ strtoupper($resumen['totalLetras']) }}</p>
-
+    </div>
 </body>
+
 </html>
