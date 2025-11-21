@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\ConsultaService;
 use App\Services\HaciendaAuthService;
 use Carbon\Carbon;
+use App\Services\DocumentService;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 class SaleController extends Controller
 {
@@ -41,6 +46,13 @@ class SaleController extends Controller
         } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
+    }
+
+    protected $dteService;
+
+    public function __construct(DocumentService $dteService)
+    {
+        $this->dteService = $dteService;
     }
 
 
@@ -83,8 +95,11 @@ class SaleController extends Controller
         $this->validateStoreAccess($store);
         $customers = Customer::where('store_id', $store->id)->get();
         $products = ProductType::where('store_id', $store->id)->get();
+        $categories = $products->groupBy('category');
         $tipoDocumentos = TipoDte::all();
-        return view('sales.create', compact('store', 'tipoDocumentos', 'customers', 'products'));
+
+
+        return view('sales.create', compact('store', 'tipoDocumentos', 'customers', 'products', 'categories'));
     }
 
     public function store(Request $request, Store $store)
@@ -215,14 +230,69 @@ class SaleController extends Controller
     }
 
 
-    public function show(Store $store, Sale $sale)
+    public function show(string $codigo)
     {
-        $this->validateStoreAccess($store);
-        if ($sale->store_id != $store->id) abort(403, 'No puedes ver una venta de otra tienda.');
-
-        $sale->load('customer', 'user', 'details.productType');
-        return view('sales.show', compact('sale', 'store'));
+        $sale = Sale::with([
+            'store.taxInfo',
+            'customer',
+            'details.productType',
+            'creditNotes.creditNoteDetails.productType',
+            'debitNotes.debitNoteDetails.productType',
+            'tipoDte'
+        ])->where('codigo_generacion', $codigo)->firstOrFail();
+    
+        // Mapeo de descripciones
+        $tipoDteDescripcion = [
+            '01' => 'Factura',
+            '03' => 'Crédito Fiscal',
+            '14' => 'Factura Sujeto Excluido',
+            // agregar los necesarios
+        ];
+    
+        $tipo = $sale->tipoDte->codigo ?? null;
+    
+        // Construcción del JSON
+        switch ($tipo) {
+            case '01':
+                $json = $this->dteService->buildDTEJsonFE($sale);
+                break;
+            case '03':
+                $json = $this->dteService->buildDTEJsonCF($sale);
+                break;
+            case '14':
+                $json = $this->dteService->buildDTEJsonSE($sale);
+                break;
+            default:
+                abort(404, "Tipo DTE desconocido.");
+        }
+    
+        // QR
+        $urlQR =
+            "https://admin.factura.gob.sv/consultaPublica"
+            . "?ambiente=00"
+            . "&codGen={$json['identificacion']['codigoGeneracion']}"
+            . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+    
+        $renderer = new ImageRenderer(
+            new RendererStyle(150),
+            new SvgImageBackEnd()
+        );
+    
+        $writer = new Writer($renderer);
+        $qrImage = base64_encode($writer->writeString($urlQR));
+    
+        return view('sales.show', [
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'dte'      => $json,
+            'emisor'   => $json['emisor'],
+            'receptor' => $json['receptor'],
+            'resumen'  => $json['resumen'],
+            'qrImage'  => $qrImage
+        ]);
     }
+    
+
+
 
     public function edit(Store $store, Sale $sale)
     {

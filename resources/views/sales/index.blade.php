@@ -223,9 +223,13 @@
                 </td>
 
                 <td class="actions">
-                    <a href="{{ route('stores.sales.show', [$store->id, $sale->id]) }}" class="btn btn-info">
+
+
+                    <button onclick="mostrarDTE('{{ route('dte.public', $sale->codigo_generacion) }}')"
+                        class="btn btn-info">
                         <i class="bi bi-eye"></i> Ver
-                    </a>
+                    </button>
+
 
                     <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')" class="btn btn-print">
                         <i class="bi bi-printer"></i> Imprimir
@@ -266,9 +270,46 @@
 
 </div>
 
+<!-- MODAL PARA VER DTE -->
+<div class="modal fade" id="modalDTE" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:900px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Vista del Documento Tributario Electrónico</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" style="height:80vh; overflow:auto; padding:0;">
+                <iframe id="iframeDTE"
+                    style="width:100%; height:100%; border:0;">
+                </iframe>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
     function mostrarModalImpresion(url) {
         const w = window.open(url, '_blank', 'width=400,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function mostrarDTE(url) {
+        const w = window.open(url, '_blank', 'width=800,height=800');
         w.onload = () => w.print();
     }
     document.addEventListener("DOMContentLoaded", function() {

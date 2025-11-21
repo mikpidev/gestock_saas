@@ -180,9 +180,9 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::put('stores/{store}/sales/{sale}', [SaleController::class, 'update'])
         ->name('stores.sales.update');
 
-    // Mostrar detalles de una venta
-    Route::get('stores/{store}/sales/{sale}', [SaleController::class, 'show'])
-        ->name('stores.sales.show');
+    Route::get('/dte/{codigo}', [SaleController::class, 'show'])
+        ->name('dte.public');
+
 
     // Eliminar venta
     Route::delete('stores/{store}/sales/{sale}', [SaleController::class, 'destroy'])

@@ -39,7 +39,7 @@ class SaleDetail extends Model
      */
     public function productType()
     {
-        return $this->belongsTo(ProductType::class);
+        return $this->belongsTo(ProductType::class)->withTrashed();
     }
 
     /**

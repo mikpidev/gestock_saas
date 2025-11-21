@@ -45,10 +45,23 @@ class ReporteVentas extends Controller
     public function dteReporte()
     {
         ini_set('memory_limit', '1024M');
-
-        $path = storage_path("app/dte_reportes/");
-        if (!file_exists($path)) mkdir($path, 0777, true);
-
+        set_time_limit(120);
+    
+        $basePath = storage_path("app/dte_reportes/");
+        $tempPath = storage_path("app/dte_reportes/temp/");
+    
+        // Crear carpetas si no existen
+        if (!file_exists($basePath)) mkdir($basePath, 0777, true);
+        if (!file_exists($tempPath)) mkdir($tempPath, 0777, true);
+    
+        // Nombre ZIP PRINCIPAL
+        $zipPrincipalName = 'dtes_export_' . date('Y-m-d') . '.zip';
+        $zipPrincipalPath = $basePath . $zipPrincipalName;
+    
+        // Crear ZIP PRINCIPAL
+        $zipPrincipal = new \ZipArchive;
+        $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+    
         $query = Sale::with([
             'store.taxInfo',
             'customer',
@@ -59,12 +72,11 @@ class ReporteVentas extends Controller
         ])
             ->where('dte_status', 'PROCESADO')
             ->whereDate('sale_date', '>=', now()->subDays(16));
-
-        $query->chunk(110, function ($sales) use ($path) {
-
+    
+        $query->chunk(110, function ($sales) use ($basePath, $tempPath, $zipPrincipal) {
+    
             foreach ($sales as $sale) {
-
-                // Cargar relaciones por cada venta (sin excluir ventas)
+    
                 $sale->load([
                     'store.taxInfo',
                     'customer',
@@ -73,75 +85,111 @@ class ReporteVentas extends Controller
                     'debitNotes.debitNoteDetails.productType',
                     'tipoDte'
                 ]);
-
+    
+                // Mapeo de descripciones
+                $tipoDteDescripcion = [
+                    '01' => 'Factura',
+                    '03' => 'Crédito Fiscal',
+                    '14' => 'Factura Sujeto Excluido',
+                ];
+    
                 $tipo = strtolower($sale->tipoDte->codigo ?? '');
-
+    
                 switch ($tipo) {
                     case '01':
                         $json = $this->dteService->buildDTEJsonFE($sale);
                         break;
-
+    
                     case '03':
                         $json = $this->dteService->buildDTEJsonCF($sale);
                         break;
-
+    
                     case '14':
                         $json = $this->dteService->buildDTEJsonSE($sale);
                         break;
-
+    
                     default:
-                        Log::warning("Tipo DTE desconocido o faltante", [
+                        \Log::warning("Tipo DTE desconocido", [
                             "sale_id" => $sale->id,
                             "tipo" => $tipo
                         ]);
-                        continue 2;
+                        continue 2; // Saltar a la siguiente venta
                 }
-
-               
-
-                // Guardar cada JSON
-                $jsonFilename = "{$path}/dte_{$sale->codigo_generacion}.json";
+    
+                $codigoGen = $sale->codigo_generacion;
+    
+                // ---------------------------------------------------------------------
+                // 1️⃣ Guardar JSON
+                // ---------------------------------------------------------------------
+                $jsonFilename = "{$tempPath}/dte_{$codigoGen}.json";
                 file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
-
-                //Generar QR (AQUÍ se agrega)
-                $urlQR =
-                    "https://admin.factura.gob.sv/consultaPublica"
+    
+                // ---------------------------------------------------------------------
+                // 2️⃣ Generar QR
+                // ---------------------------------------------------------------------
+                $urlQR = "https://admin.factura.gob.sv/consultaPublica"
                     . "?ambiente=00"
                     . "&codGen={$json['identificacion']['codigoGeneracion']}"
                     . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
-
+    
                 $renderer = new ImageRenderer(
                     new RendererStyle(150),
                     new SvgImageBackEnd()
                 );
-
+    
                 $writer = new Writer($renderer);
                 $qrImage = base64_encode($writer->writeString($urlQR));
-                
-                // Generar PDF
+    
+                // ---------------------------------------------------------------------
+                // 3️⃣ Generar PDF
+                // ---------------------------------------------------------------------
                 $pdf = Pdf::loadView('reportes.ventas', [
+                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
                     'dte'      => $json,
                     'emisor'   => $json['emisor'],
                     'receptor' => $json['receptor'],
                     'resumen'  => $json['resumen'],
                     'qrImage'  => $qrImage
                 ]);
-                $pdf->save("{$path}/dte_{$sale->codigo_generacion}.pdf");
-
+    
+                $pdfFilename = "{$tempPath}/dte_{$codigoGen}.pdf";
+                $pdf->save($pdfFilename);
+    
+                // ---------------------------------------------------------------------
+                // 4️⃣ Crear ZIP individual del DTE
+                // ---------------------------------------------------------------------
+                $zipIndividualName = "DTE_{$codigoGen}.zip";
+                $zipIndividualPath = "{$tempPath}/{$zipIndividualName}";
+    
+                $zipIndividual = new \ZipArchive;
+                $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+    
+                $zipIndividual->addFile($jsonFilename, "dte_{$codigoGen}.json");
+                $zipIndividual->addFile($pdfFilename, "dte_{$codigoGen}.pdf");
+    
+                $zipIndividual->close();
+    
+                // Agregar ZIP indiv al ZIP principal
+                $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
+    
                 \Log::info("DTE generado correctamente", [
                     "sale_id" => $sale->id,
-                    "path" => $jsonFilename
+                    "zip" => $zipIndividualPath
                 ]);
             }
         });
-
-        return response()->json([
-            "message" => "Reportes generados correctamente",
-            "path" => $path
-        ]);
+    
+        // -------------------------------------------------------------------------
+        // 5️⃣ Cerrar ZIP principal
+        // -------------------------------------------------------------------------
+        $zipPrincipal->close();
+    
+        // -------------------------------------------------------------------------
+        // 6️⃣ Respuesta con link de descarga
+        // -------------------------------------------------------------------------
+        return response()->download($zipPrincipalPath)->deleteFileAfterSend(true);
     }
-
-
+    
     private function processNC($nc, $sale, $path)
     {
         $json = $this->dteService->buildDTEJsonNC($nc, $sale);

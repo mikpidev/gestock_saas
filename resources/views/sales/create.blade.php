@@ -186,18 +186,52 @@
 <h2 class="mb-3">Nueva Venta</h2>
 
 <div class="main-container">
-    <!-- Productos -->
-    <div class="products-grid">
-        @foreach($products as $p)
-        <div class="product-card card" data-id="{{ $p->id }}" data-name="{{ $p->name }}" data-price="{{ $p->price }}">
-            <img src="{{ $p->image_url ?? 'https://via.placeholder.com/150' }}" class="card-img-top" alt="{{ $p->name }}">
-            <div class="card-body">
-                <h6 class="card-title">{{ $p->name }}</h6>
-                <p class="card-text">${{ number_format($p->price,2) }}</p>
+
+    <!-- SECCIÓN DE PRODUCTOS -->
+    <div style="flex: 1; display: flex; flex-direction: column;">
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="productTabs">
+            @foreach($categories as $categoryName => $items)
+            <li class="nav-item">
+                <a class="nav-link {{ $loop->first ? 'active' : '' }}"
+                    data-bs-toggle="tab"
+                    href="#cat{{ Str::slug($categoryName) }}">
+                    {{ $categoryName }}
+                </a>
+            </li>
+            @endforeach
+        </ul>
+
+        <!-- Productos por categoría -->
+        <div class="tab-content mt-3">
+            @foreach($categories as $categoryName => $items)
+            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                id="cat{{ Str::slug($categoryName) }}">
+
+                <div class="products-grid">
+                    @foreach($items as $p)
+                    <div class="product-card card"
+                        data-id="{{ $p->id }}"
+                        data-name="{{ $p->name }}"
+                        data-price="{{ $p->price }}">
+
+                        <div class="card-body">
+                            <h6 class="card-title">{{ $p->name }}</h6>
+                            <p class="card-text">${{ number_format($p->price, 2) }}</p>
+                        </div>
+
+                    </div>
+                    @endforeach
+                </div>
+
             </div>
+            @endforeach
         </div>
-        @endforeach
+
     </div>
+
+
 
     <!-- Carrito -->
     <div class="cart-sidebar">

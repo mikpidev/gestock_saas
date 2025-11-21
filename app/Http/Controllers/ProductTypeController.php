@@ -42,7 +42,9 @@ class ProductTypeController extends Controller
 
         // Mostrar solo los tipos de productos de esta tienda
         $productTypes = ProductType::all();
-        return view('productType.index', compact('productTypes', 'store'));
+        $categories = $productTypes->groupBy('category');
+
+        return view('productType.index', compact('productTypes', 'categories','store'));
     }
 
     /**

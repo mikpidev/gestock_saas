@@ -26,7 +26,6 @@
             font-size: 11px;
         }
 
-        /* Encabezado */
         .encabezado {
             text-align: center;
             margin-bottom: 8px;
@@ -42,21 +41,16 @@
             font-weight: bold;
         }
 
-        /* Superior - DOMPDF-compatible */
         .contenedor-superior {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
+            padding: 0;
         }
 
         .contenedor-superior td {
             vertical-align: top;
             padding: 4px;
-        }
-
-        .info-dte,
-        .info-empresa {
-            width: 100%;
         }
 
         .tabla-info {
@@ -74,19 +68,13 @@
             font-size: 10.5px;
         }
 
-        /* QR */
-        .qr {
-            text-align: center;
-        }
-
         .qr img {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: auto;
             display: block;
             margin: 0 auto;
         }
 
-        /* Receptor */
         .receptor {
             background: #f4f4f4;
             padding: 8px;
@@ -114,7 +102,6 @@
             font-weight: bold;
         }
 
-        /* Factura */
         .detalles-factura {
             display: flex;
             justify-content: space-between;
@@ -122,7 +109,6 @@
             font-size: 11px;
         }
 
-        /* Tabla productos */
         .tabla-productos {
             width: 100%;
             border-collapse: collapse;
@@ -142,7 +128,6 @@
             font-size: 10px;
         }
 
-        /* Totales */
         .totales {
             width: 260px;
             margin-left: auto;
@@ -160,7 +145,6 @@
             margin: 10px 0;
         }
 
-        /* Pie */
         .pie {
             text-align: center;
             font-size: 10px;
@@ -171,10 +155,6 @@
         @page {
             margin: 20px 25px;
         }
-
-        .documento {
-            page-break-inside: avoid;
-        }
     </style>
 </head>
 
@@ -183,13 +163,17 @@
 
         <!-- ENCABEZADO -->
         <div class="encabezado">
-            <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
-                <img src="{{ public_path('Logo.svg') }}" style="width:100%; height:auto; display:inline-block;">
+            <div style="width:120px; height:120px; display:flex; justify-content:center; align-items:center; margin:0 auto;">
+                <img src="{{ public_path('Logo_recortado.png') }}"
+                    style="width:100%; height:100%; object-fit:contain;" />
             </div>
 
+
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
-            <h2>{{ $dte['identificacion']['tipoDte'] }}</h2>
+            <h2>{{ $tipoDteDescripcion }}</h2>
         </div>
+
+        <div class="divisor"></div>
 
         <!-- SUPERIOR -->
         <table class="contenedor-superior">
@@ -213,12 +197,15 @@
                 </td>
 
                 <!-- QR -->
-                <td style="width:16%;" class="qr">
-                    @if(str_starts_with($qrImage ?? '', '<svg') || str_contains($qrImage ?? '' , '<svg' ))
-                        <img src="data:image/svg+xml;base64,{{ base64_encode($qrImage) }}" alt="QR">
-                    @else
-                        <img src="data:image/png;base64,{{ $qrImage ?? '' }}" alt="QR">
-                    @endif
+                <td>
+                    <div style="text-align:center;">
+                        <div style="width:120px; height:120px; display:flex; justify-content:center; align-items:center; margin:0 auto;">
+                            @if ($qrImage)
+                            <img src="data:image/svg+xml;base64,{{ $qrImage }}"
+                                style="width:100%; height:100%; object-fit:contain;" />
+                            @endif
+                        </div>
+                    </div>
                 </td>
 
                 <!-- INFO EMPRESA -->
@@ -340,6 +327,7 @@
         </div>
 
     </div>
+
 </body>
 
 </html>
