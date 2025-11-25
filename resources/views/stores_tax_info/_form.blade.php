@@ -114,7 +114,7 @@
 
     <div class="gestok-form-body">
         <form action="{{ isset($storeTaxInfo) 
-            ? route('store_tax_info.update', $storeTaxInfo->id) 
+            ? route('stores_tax_info.update', $storeTaxInfo->id) 
             : route('stores_tax_info.store', $store->id) }}" method="POST">
             @csrf
             @if(isset($storeTaxInfo))

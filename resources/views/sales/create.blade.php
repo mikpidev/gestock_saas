@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 <style>
     :root {
         --color-primario: #ffb548;
@@ -251,7 +252,20 @@
             @endforeach
         </select>
 
+        <select id="payment_method" class="cart-select">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+        </select>
+
+
         <input type="date" id="sale_date" class="cart-date" value="{{ now()->format('Y-m-d') }}">
+
+
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="0.10" id="discount_amount">
+            <label class="form-check-label" for="discount_amount"> Aplicar 10% de Descuento </label>
+        </div>
 
         <div class="cart-scroll">
             <table class="table table-sm table-bordered cart-table">
@@ -269,9 +283,11 @@
                     </tr>
                 </tbody>
             </table>
-
-            <div id="total-wrapper">Total: $<span id="cart-total">0.00</span></div>
-
+            <div>
+                <strong>Subtotal:</strong> $<span id="cart-subtotal">0.00</span><br>
+                <strong>Descuento:</strong> <span id="cart-discount">$0.00</span><br>
+                <strong>Total con descuento:</strong> $<span id="cart-total">0.00</span>
+            </div>
             <div class="mt-3">
                 <button id="submit-sale" class="btn-create-sale">Crear Venta</button>
             </div>
@@ -293,22 +309,51 @@
             if (Object.keys(cart).length === 0) {
                 cartBody.innerHTML = '<tr id="cart-empty"><td colspan="4" class="text-center">Carrito vacío</td></tr>';
                 cartTotalEl.textContent = '0.00';
+                const subtotalEl = document.getElementById("cart-subtotal");
+                subtotalEl.textContent = '0.00';
+                const discountEl = document.getElementById("cart-discount");
+                discountEl.textContent = '$0.00';
                 return;
             }
 
+            // Calcular total sin descuento
             Object.values(cart).forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                <td>${item.name}</td>
-                <td><input type="number" min="1" value="${item.quantity}" class="form-control cart-qty" data-id="${item.id}" style="width:60px"></td>
-                <td>$${(item.price*item.quantity).toFixed(2)}</td>
-                <td><button class="btn btn-sm btn-danger remove-item" data-id="${item.id}">X</button></td>
-            `;
+            <td>${item.name}</td>
+            <td><input type="number" min="1" value="${item.quantity}" class="form-control cart-qty" data-id="${item.id}" style="width:60px"></td>
+            <td>$${(item.price * item.quantity).toFixed(2)}</td>
+            <td><button class="btn btn-sm btn-danger remove-item" data-id="${item.id}">X</button></td>
+        `;
                 cartBody.appendChild(row);
+
                 total += item.price * item.quantity;
             });
 
-            cartTotalEl.textContent = total.toFixed(2);
+            // Mostrar total sin descuento
+            const subtotalEl = document.getElementById("cart-subtotal");
+            subtotalEl.textContent = total.toFixed(2);
+
+            const discountCheckbox = document.getElementById("discount_amount");
+            let discountPercent = 0;
+
+            if (discountCheckbox.type === "checkbox" && discountCheckbox.checked === true) {
+                discountPercent = parseFloat(discountCheckbox.value);
+            }
+
+            // Calcular descuento
+            let discountAmount = total * discountPercent;
+
+            // Total con descuento
+            let totalWithDiscount = total - discountAmount;
+
+            // Mostrar descuento
+            const discountEl = document.getElementById("cart-discount");
+            discountEl.textContent = discountAmount > 0 ? `- $${discountAmount.toFixed(2)}` : '$0.00';
+
+            // Mostrar total final
+            const finalTotalEl = document.getElementById("cart-total");
+            finalTotalEl.textContent = totalWithDiscount.toFixed(2);
         }
 
         products.forEach(p => {
@@ -358,13 +403,17 @@
                 alert('Completa todos los campos requeridos');
                 return;
             }
+            const discountCheckbox = document.getElementById("discount_amount");
+            const discount_amount = discountCheckbox.checked ? parseFloat(discountCheckbox.value) : 0;
 
             const payload = {
                 tipo_documento_id,
                 customers_id,
+                discount_amount,
                 sale_date,
                 products: Object.values(cart)
             };
+
 
             fetch("{{ route('stores.sales.store', $store->id) }}", {
                 method: 'POST',

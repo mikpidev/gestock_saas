@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Store;
 use App\Models\StoreTaxInfo;
 use Illuminate\Http\Request;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Code;
 
 class StoreTaxInfoController extends Controller
 {
@@ -82,7 +83,7 @@ class StoreTaxInfoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(StoreTaxInfo $storeTaxInfo)
+    public function edit(Store $store, StoreTaxInfo $storeTaxInfo)
     {
         $store = $storeTaxInfo->store;
 
@@ -104,12 +105,13 @@ class StoreTaxInfoController extends Controller
      */
     public function update(Request $request, StoreTaxInfo $storeTaxInfo, Company $company)
     {
+
         $store = $storeTaxInfo->store;
-        $company = $store->company;
+
 
         $validated = $request->validate([
-            'nit' => 'required|max:20|unique:store_tax_infos,nit,' . $storeTaxInfo->id,
-            'nrc' => 'required|max:20|unique:store_tax_infos,nrc,' . $storeTaxInfo->id,
+            'nit' => 'required|max:20',
+            'nrc' => 'required|max:20',
             'razon_social' => 'required|max:200',
             'actividad_economica' => 'required|max:200',
             'direccion_fiscal' => 'required|max:200',
@@ -124,7 +126,6 @@ class StoreTaxInfoController extends Controller
         ]);
 
         // Asignar company automáticamente
-        $validated['company_id'] = $company->id;
 
         $storeTaxInfo->update($validated);
 

@@ -19,7 +19,8 @@
         }
 
         .recibo img.qr {
-            display: block;
+            display: inline-block;
+            text-align: center;
             margin: 0 auto;
             width: 100px;
             height: 100px;
@@ -55,7 +56,7 @@
 
         <!-- ENCABEZADO -->
         <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
-            <img src="{{ public_path('Logo.svg') }}" style="width:100%; height:auto; display:inline-block;">
+            <img src="{{ public_path('Logo_recortado.png') }}" style="width:100px; height:auto; display:inline-block;">
         </div>
         <h3 style="margin:0; padding:0;">{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
         <p class="small" style="margin:0; padding:0;">
@@ -69,7 +70,9 @@
         <p class="small">
             <strong>Tipo DTE:</strong> {{ $venta->tipoDte->nombre ?? 'TICKET' }}<br>
             <strong>No. Control:</strong> {{ $venta->numero_control ?? 'N/A' }}<br>
-            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}
+            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}<br>
+            <strong>Sello de Recibido:</strong> {{ $dteResponse->sello_recibido ?? 'N/A' }}
+
         </p>
 
         <div class="linea"></div>
@@ -114,23 +117,24 @@
         @if ($venta->total_no_gravado > 0)
         <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
         @endif
-        @if ($venta->total_gravada > 0)
-        <p class="totales">Gravado: ${{ number_format($venta->total_gravada, 2) }}</p>
+        @if ($venta->total_amount > 0)
+        <p class="totales">Subtotal: ${{ number_format($venta->total_amount, 2) }}</p>
         @endif
         @if ($venta->tax_amount > 0)
         <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
         @endif
-        <p class="totales">Total: ${{ number_format($venta->total_amount, 2) }}</p>
         @if ($venta->discount_amount > 0)
         <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
         @endif
+        <p class="totales">Total: ${{ number_format($venta->net_amount, 2) }}</p>
+ 
 
         <div class="linea"></div>
 
-        <!-- QR -->
-        <div>
-        <img src="data:image/png;base64,{{ $qrImage }}" class="qr">
+        <!-- QR Centrado-->
 
+        <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
+            <img src="data:image/png;base64,{{ $qrImage }}" style="width:100px; height:auto; display:inline-block;">
         </div>
         <!-- FOOTER -->
         <p class="small" style="text-align:center;">

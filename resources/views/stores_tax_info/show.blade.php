@@ -7,7 +7,8 @@
         <h2 class="fw-bold">Información Tributaria de la Tienda</h2>
 
         <!-- BOTÓN EDITAR -->
-        <a href="{{ route('store_tax_info.edit', $store->id) }}" class="btn btn-warning text-white">
+        <a href="{{ route('store_tax_info.edit', [$store->id, $storeTaxInfo->id]) }}"
+            class="btn btn-warning text-white">
             <i class="fas fa-edit"></i> Editar Información
         </a>
     </div>
@@ -69,9 +70,9 @@
                     <label class="form-label fw-semibold">Estado</label>
                     <div class="p-2 border rounded bg-light">
                         @if($storeTaxInfo->estado == 'ACTIVO')
-                            <span class="badge bg-success">ACTIVO</span>
+                        <span class="badge bg-success">ACTIVO</span>
                         @else
-                            <span class="badge bg-danger">{{ $storeTaxInfo->estado ?? '—' }}</span>
+                        <span class="badge bg-danger">{{ $storeTaxInfo->estado ?? '—' }}</span>
                         @endif
                     </div>
                 </div>

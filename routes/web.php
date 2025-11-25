@@ -71,18 +71,21 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //rutas para tax info
     Route::get('/stores/{store}/tax-info/create', [StoreTaxInfoController::class, 'create'])
         ->name('store_tax_info.create');
-    //rutas para tax info
-    Route::get('/stores/{store}/tax-info/edit', [StoreTaxInfoController::class, 'edit'])
+    // EDIT primero
+    Route::get('/stores/{store}/tax-info/{storeTaxInfo}/edit', [StoreTaxInfoController::class, 'edit'])
         ->name('store_tax_info.edit');
+
+    // SHOW después
+    Route::get('/stores/{store}/tax-info', [StoreTaxInfoController::class, 'show'])
+        ->name('store_tax_info.show');
+
 
     Route::post('stores_tax_info/{store}', [StoreTaxInfoController::class, 'store'])
         ->name('stores_tax_info.store');
 
-    Route::put('stores_tax_info/{storeTaxInfo}/company/{company}', [StoreTaxInfoController::class, 'update'])
+    Route::put('stores_tax_info/{storeTaxInfo}', [StoreTaxInfoController::class, 'update'])
         ->name('stores_tax_info.update');
 
-    Route::get('/stores/{store}/tax-info', [StoreTaxInfoController::class, 'show'])
-        ->name('store_tax_info.show');
 
 
 

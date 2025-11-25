@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DteResponse;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Sale;
@@ -28,9 +29,12 @@ class ReciboController extends Controller
             'store.taxInfo:id,store_id,nit,nrc,telefono',
             'details:id,sale_id,product_type_id,quantity,unit_price,subtotal',
             'details.productType:id,name'
+        
         ])
             ->where('store_id', $storeId)
             ->findOrFail($saleId);
+            // Traer respuesta DTE asociada
+        $dteResponse = DteResponse::where('sale_id', $venta->id)->first();
 
         // URL QR Hacienda
         $urlQR = "https://admin.factura.gob.sv/consultaPublica?ambiente=00"
@@ -49,7 +53,7 @@ class ReciboController extends Controller
         $total = $venta->details->sum(fn($d) => $d->quantity * $d->subtotal);
 
         // Generar PDF usando la vista optimizada
-        $pdf = Pdf::loadView('recibos.recibo', compact('venta', 'urlQR', 'qrImage', 'total'))
+        $pdf = Pdf::loadView('recibos.recibo', compact('venta','dteResponse' ,'urlQR', 'qrImage', 'total'))
             ->setPaper([0, 0, 226.77, 600], 'portrait');
 
         return $pdf->stream('recibo_' . $venta->id . '.pdf', ['Attachment' => false]);

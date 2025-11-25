@@ -119,7 +119,7 @@ class SaleController extends Controller
         ]);
 
         // Calcular totales
-        $discountAmount = $data['discount_amount'] ?? 0;
+        $discountPercent = $data['discount_amount'] ?? 0; // valor como 0.10 = 10%
         $totalAmount = 0;
         $totalIva = 0;
         $totalGravada = 0;
@@ -139,7 +139,12 @@ class SaleController extends Controller
             $totalIva += $ivaItem;
         }
 
+        // Aplicar porcentaje
+        $discountAmount = $totalAmount * $discountPercent;
+
+        // Neto después del descuento
         $netAmount = $totalAmount - $discountAmount;
+
         $total_no_gravado = 0;
         $total_exenta = 0;
         $total_gravada = round($totalGravada, 2);
@@ -155,6 +160,7 @@ class SaleController extends Controller
             'customers_id' => $data['customers_id'] ?? null,
             'sale_date' => $data['sale_date'],
             'dte_status'   => 'PENDIENTE', // Valor inicial por defecto
+            'discount_amount' => round($discountAmount, 2),
             'total_amount' => round($totalAmount, 2),
             'net_amount' => round($netAmount, 2),
             'store_id' => $store->id,
@@ -164,7 +170,7 @@ class SaleController extends Controller
             'condicion_operacion' => 1,
             'total_no_gravado' => $total_no_gravado,
             'total_exenta' => $total_exenta,
-            'total_gravada' => $total_gravada,
+            'total_gravada' => $netAmount,
             'total_iva' => $total_iva,
             'numero_control' => $invoiceNumber->numero_control,
             'codigo_generacion' => $invoiceNumber->codigo_generacion,
@@ -240,7 +246,7 @@ class SaleController extends Controller
             'debitNotes.debitNoteDetails.productType',
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
-    
+
         // Mapeo de descripciones
         $tipoDteDescripcion = [
             '01' => 'Factura',
@@ -248,9 +254,9 @@ class SaleController extends Controller
             '14' => 'Factura Sujeto Excluido',
             // agregar los necesarios
         ];
-    
+
         $tipo = $sale->tipoDte->codigo ?? null;
-    
+
         // Construcción del JSON
         switch ($tipo) {
             case '01':
@@ -265,22 +271,22 @@ class SaleController extends Controller
             default:
                 abort(404, "Tipo DTE desconocido.");
         }
-    
+
         // QR
         $urlQR =
             "https://admin.factura.gob.sv/consultaPublica"
             . "?ambiente=00"
             . "&codGen={$json['identificacion']['codigoGeneracion']}"
             . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
-    
+
         $renderer = new ImageRenderer(
             new RendererStyle(150),
             new SvgImageBackEnd()
         );
-    
+
         $writer = new Writer($renderer);
         $qrImage = base64_encode($writer->writeString($urlQR));
-    
+
         return view('sales.show', [
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
             'dte'      => $json,
@@ -290,7 +296,7 @@ class SaleController extends Controller
             'qrImage'  => $qrImage
         ]);
     }
-    
+
 
 
 

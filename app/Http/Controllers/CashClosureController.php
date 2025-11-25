@@ -47,8 +47,8 @@ class CashClosureController extends Controller
         // Cálculos
         $totalSalesCount = $sales->count();
         $amountSales     = $sales->sum('total_amount');
-        $totalCash = $sales->where('payment_method', 'EFECTIVO')->sum('total_amount');
-        $totalCard = $sales->where('payment_method', 'TARJETA')->sum('total_amount');
+        $totalCash = $sales->where('payment_method', 'Efectivo')->sum('total_amount');
+        $totalCard = $sales->where('payment_method', 'Tarjeta')->sum('total_amount');
 
         // Notas solo de ventas de esta tienda
         $creditNotes = CreditNote::whereHas('sale', function ($q) use ($storeId, $fromSaleId, $toSaleId) {

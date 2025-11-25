@@ -83,9 +83,10 @@ class DocumentService
         ];
 
         // Cuerpo documento
-        $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
-            $subtotalConIVA = (float) $detail->subtotal;
-            $baseSinIVA = $subtotalConIVA / 1.13;
+        $cuerpoDocumento = $sale->details->map(function ($detail, $index) use ($sale) {
+            $discount_amount = $sale->discount_amount ?? 0.00;
+            $subtotalConIVA = (float) $detail->subtotal - $discount_amount ;
+            $baseSinIVA = $subtotalConIVA / 1.13 ;
             $ivaItem = $baseSinIVA * 0.13;
 
             return [
@@ -98,7 +99,7 @@ class DocumentService
                 "cantidad" => (float) $detail->quantity,
                 "uniMedida" => 59,
                 "precioUni" => round((float) $detail->unit_price, 2),
-                "montoDescu" => 0,
+                "montoDescu" => $discount_amount,
                 "ventaNoSuj" => 0,
                 "ventaExenta" => 0,
                 "ventaGravada" => round($subtotalConIVA, 2),
