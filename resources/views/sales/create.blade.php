@@ -295,6 +295,31 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalVentaCreada" tabindex="-1">
+<div class="modal-dialog">
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h5 class="modal-title">Venta creada</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body text-center">
+            Ticket listo para imprimir.
+        </div>
+
+        <div class="modal-footer">
+            <button id="btnImprimirVenta" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Imprimir Ticket
+            </button>
+        </div>
+
+    </div>
+</div>
+</div>
+
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const products = document.querySelectorAll('.product-card');
@@ -424,10 +449,23 @@
                 body: JSON.stringify(payload)
             }).then(res => res.redirected ? window.location.href = res.url : res.json()).then(data => {
                 if (data && data.success) {
-                    alert('Venta creada con éxito!');
-                    window.location.href = "{{ route('stores.sales.create', $store->id) }}";
+
+                    // ABRIR MODAL
+                    let modal = new bootstrap.Modal(document.getElementById('modalVentaCreada'));
+                    modal.show();
+
+                    // PREPARAR BOTÓN DE IMPRIMIR
+                    document.getElementById('btnImprimirVenta').onclick = function() {
+                        const w = window.open(data.ticket_url, '_blank', 'width=400,height=800');
+                        w.onload = () => w.print();
+                    };
+
+                    // RESETEAR CARRITO
+                    cart = {};
+                    renderCart();
                 }
-            }).catch(err => {
+            })
+            .catch(err => {
                 console.error(err);
                 alert('Error al crear la venta');
             });

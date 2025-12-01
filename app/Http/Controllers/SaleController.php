@@ -231,8 +231,13 @@ class SaleController extends Controller
             ]);
         }
 
-        return redirect()->route('stores.sales.create', $store->id)
-            ->with('success', 'Venta creada y DTE enviado correctamente');
+        return response()->json([
+            'success' => true,
+            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
+            'sale_id' => $sale->id
+        ]);
+        
+        
     }
 
 
