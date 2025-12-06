@@ -269,4 +269,9 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         Route::post('/cash-closures/close', [CashClosureController::class, 'closeCash'])->name('cash.closures.close');
         Route::get('/cash-closures/{id}/print', [CashClosureController::class, 'print'])->name('cash.closures.print');
     });
+
+
+    //Bucket Test OCI
+    Route::get('/oci-test', [\App\Http\Controllers\OCIController::class, 'uploadTest']);
+
 });
