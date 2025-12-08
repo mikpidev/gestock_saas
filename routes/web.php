@@ -263,6 +263,10 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('reportes.ventas.pdf');
     Route::get('/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
         ->name('reportes.ventas');
+    Route::get('/reportes/notascredito', [ReporteVentas::class, 'dteReporteNC'])
+        ->name('reportes.notascredito');
+    Route::get('/reportes/notasdebito', [ReporteVentas::class, 'dteReporteND'])
+        ->name('reportes.notasdebito');
 
     Route::prefix('stores/{store}')->group(function () {
         Route::get('/cash-closures',  [CashClosureController::class, 'index'])->name('stores.cash.closures.index');
@@ -273,5 +277,4 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     //Bucket Test OCI
     Route::get('/oci-test', [\App\Http\Controllers\OCIController::class, 'uploadTest']);
-
 });

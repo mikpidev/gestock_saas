@@ -171,7 +171,7 @@
         <a href="?fecha={{ now()->toDateString() }}" class="btn btn-print">
             <i class="bi bi-calendar-check"></i> Hoy
         </a>
-        <a href="{{ route('reportes.ventas') }}" class="btn btn-print">
+        <a href="{{ route('reportes.notasdebito') }}" class="btn btn-print">
             <i class="bi bi-file-earmark-pdf"></i> PDF
         </a>
     </form>
