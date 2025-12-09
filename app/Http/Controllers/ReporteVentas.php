@@ -17,7 +17,7 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use App\Services\OciService;
+use App\Services\OCIService;
 
 
 class ReporteVentas extends Controller
