@@ -16,13 +16,13 @@ class OCIService
     {
 
         //Variables de entorno OCI
-        $namespace = env('OCI_NAMESPACE');
-        $bucket = env('OCI_BUCKET');
-        $region = env('OCI_REGION');
-        $userOcid = env('OCI_USER');
-        $tenancyOcid = env('OCI_TENANCY');
-        $fingerprint = env('OCI_FINGERPRINT');
-        $keyFile = env('OCI_KEY_FILE');
+        $namespace = config('services.oci.tenancy_id');
+        $bucket = config('services.oci.bucket');
+        $region = config('services.oci.region');
+        $userOcid = config('services.oci.user_id');
+        $tenancyOcid = config('services.oci.tenancy_id');
+        $fingerprint = config('services.oci.fingerprint');
+        $keyFile = config('services.oci.key_file');
 
       
         $url = "https://objectstorage.{$region}.oraclecloud.com/n/{$namespace}/b/{$bucket}/o/{$objectName}";

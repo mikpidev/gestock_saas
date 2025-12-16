@@ -44,6 +44,15 @@ return [
     'firma' => [
         'url' => env('FIRMA_API_URL'),
     ],
+
+    'oci' => [
+        'tenancy_id' => env('OCI_TENANCY_ID'),
+        'user_id' => env('OCI_USER_ID'),
+        'fingerprint' => env('OCI_FINGERPRINT'),
+        'region' => env('OCI_REGION'),
+        'key_file' => env('OCI_KEY_FILE'),
+        'bucket' => env('OCI_BUCKET'),
+    ],
     
 
 ];
