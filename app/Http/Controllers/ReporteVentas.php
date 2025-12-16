@@ -141,7 +141,8 @@ class ReporteVentas extends Controller
                     'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
                     'dte'      => $json,
                     'emisor'   => $json['emisor'],
-                    'receptor' => $json['receptor'],
+                    //validar si es SE - pass sujetoExcluido en lugar de receptor
+                    'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
                     'resumen'  => $json['resumen'],
                     'qrImage'  => $qrImage
                 ]);

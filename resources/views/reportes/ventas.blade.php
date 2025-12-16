@@ -225,7 +225,7 @@
                         </tr>
                         <tr>
                             <td class="etiqueta">Actividad:</td>
-                            <td>{{ $emisor['nombreComercial'] }}</td>
+                            <td>{{ $emisor['nombreComercial'] ?? ' ' }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Dirección:</td>
@@ -303,7 +303,7 @@
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
                     <td>$0.00</td>
                     <td>$0.00</td>
-                    <td>${{ number_format($item['ventaGravada'], 2) }}</td>
+                    <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -311,10 +311,10 @@
 
         <!-- TOTALES -->
         <div class="totales">
-            <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'], 2) }}</span></div>
+            <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'] ?? 0, 2) }}</span></div>
             <div class="fila-total"><span>IVA:</span><span>${{ number_format($resumen['totalIva'] ?? 0, 2) }}</span></div>
-            <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'], 2) }}</span></div>
-            <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'], 2) }}</strong></div>
+            <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }}</span></div>
+            <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'] ?? 0, 2) }}</strong></div>
         </div>
 
         <p><strong>SON:</strong> {{ strtoupper($resumen['totalLetras']) }}</p>
