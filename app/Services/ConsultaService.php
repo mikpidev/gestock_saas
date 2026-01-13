@@ -33,7 +33,7 @@ class ConsultaService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
                 'nitEmisor' =>  $sale->store->taxInfo->nit,
                 'tdte' => $tipoDTE,
                 'codigoGeneracion' => $sale->codigo_generacion
@@ -97,14 +97,15 @@ class ConsultaService
             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
         }
 
-        $tipoDTE = "01"; // Ajustar según tipo de venta
+        // 04 es el tipo de DTE para Nota de Crédito
+        $tipoDTE = "04"; // Ajustar según tipo de venta
 
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
                 'nitEmisor' => env('HACIENDA_USER'),
                 'tdte' => $tipoDTE,
                 'codigoGeneracion' => $creditNote->codigo_generacion
@@ -172,7 +173,7 @@ class ConsultaService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
                 'nitEmisor' => env('HACIENDA_USER'),
                 'tdte' => $tipoDTE,
                 'codigoGeneracion' => $debitNote->codigo_generacion

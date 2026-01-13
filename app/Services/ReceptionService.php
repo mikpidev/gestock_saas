@@ -45,8 +45,8 @@ class ReceptionService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => $version,
                     'tipoDte' => $tipoDTE,
@@ -106,8 +106,8 @@ class ReceptionService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => $version,
                     'tipoDte' => $tipoDTE,
@@ -175,8 +175,8 @@ class ReceptionService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => $version,
                     'tipoDte' => $tipoDTE,

@@ -3,9 +3,11 @@
 @section('content')
 
     <!--     formulario para la creacion de un usuario -->
-    <form action="{{ route('stores.users.store', $store->id) }}" method="POST">
+    <form action="{{ route('stores.users.update', [$store->id, $user->id]) }}" method="POST">
     @csrf
-        @include('users._form')
+    @method('PUT')
+    @include('users._form')
+
     </form>
     
     @if ($errors->any())

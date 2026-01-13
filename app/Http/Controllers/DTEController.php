@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contingencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Sale;
@@ -11,24 +12,25 @@ use App\Services\ReceptionService;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
 use App\Services\ConsultaService;
-
-
-
+use App\Services\ContingenciaService;
 
 class DTEController extends Controller
 {
     protected DocumentService $documentService;
     protected HaciendaAuthService $authService;
     protected ReceptionService $receptionService;
+    protected ContingenciaService $contingenciaService;
 
     public function __construct(
         DocumentService $documentService,
         HaciendaAuthService $authService,
-        ReceptionService $receptionService
+        ReceptionService $receptionService,
+        ContingenciaService $contingenciaService
     ) {
         $this->documentService = $documentService;
         $this->authService = $authService;
         $this->receptionService = $receptionService;
+        $this->contingenciaService = $contingenciaService;
     }
 
     /**
@@ -223,7 +225,7 @@ class DTEController extends Controller
         }
     }
 
-    
+
     /**
      * Consulta el estado del DTE en Hacienda para una NC específica
      */
@@ -297,5 +299,46 @@ class DTEController extends Controller
         }
     }
 
-    
+    public function generarDTEContingencia(Contingencia $contingencia)
+    {
+        try {
+            // Construir JSON de contingencia
+            $dteJson = $this->documentService->buildDTEJsonContingencia($contingencia);
+
+            Log::info('DTE Contingencia antes de firmar', $dteJson);
+
+            // Firmar documento
+            $signedData = $this->documentService->signDocument($dteJson);
+
+            Log::info('DTE Contingencia firmado', $signedData);
+
+            // Token
+            $token = $this->authService->generateNewToken();
+
+            // Enviar a Hacienda
+            $haciendaResponse = $this->contingenciaService
+                ->sendContingencia($contingencia, $signedData, $token);
+
+            // Guardar estado
+            $contingencia->update([
+                'estado' => 'ENVIADA'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'contingencia_id' => $contingencia->id,
+                'hacienda_response' => $haciendaResponse
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Error generando contingencia DTE: ' . $th->getMessage(), [
+                'contingencia_id' => $contingencia->id,
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
 }

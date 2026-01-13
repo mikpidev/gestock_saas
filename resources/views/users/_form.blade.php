@@ -109,7 +109,7 @@
         <p>{{ $store->store_name }}</p>
     </div>
     <div class="gestok-form-body">
-        <form action="{{ isset($user) ? route('stores.users.update', [$store->id, $user->id]) : route('stores.users.store', $store->id) }}" method="POST">
+        <form action="{{ isset($user) ? route('stores.users.update',[$store->id, $user->id]) : route('stores.users.store', $store->id) }}" method="POST">
             @csrf
             @if(isset($user))
                 @method('PUT')

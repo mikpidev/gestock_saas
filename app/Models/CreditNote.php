@@ -100,6 +100,9 @@ class CreditNote extends Model
     {
         return $this->hasMany(VoidNC::class);
     }
-    
 
+    public function contingencia()
+    {
+        return $this->belongsTo(Contingencia::class);
+    }
 }

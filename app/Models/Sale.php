@@ -26,6 +26,7 @@ class Sale extends Model
         'discount_amount',
         'net_amount',
         'dte_status',
+        'contingencia_id',
         'numero_control',      // número de control para DTE
         'codigo_generacion',   // UUID para DTE
         'tipo_moneda',
@@ -100,5 +101,11 @@ class Sale extends Model
     public function cashClosure()
     {
         return $this->belongsTo(CashClosure::class, 'id', 'to_sale_id');
+    }
+
+
+    public function contingencia()
+    {
+        return $this->belongsTo(Contingencia::class, 'contingencia_id');
     }
 }

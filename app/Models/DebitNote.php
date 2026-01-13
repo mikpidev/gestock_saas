@@ -95,4 +95,8 @@ class DebitNote extends Model
         return $this->hasMany(VoidND::class);
     }
 
+    public function contingencia()
+    {
+        return $this->belongsTo(Contingencia::class);
+    }
 }

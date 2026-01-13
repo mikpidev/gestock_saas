@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class HaciendaAuthService
 {
-    protected $url = 'https://apitest.dtes.mh.gob.sv/seguridad/auth';
+    protected $url = 'https://api.dtes.mh.gob.sv/seguridad/auth';
     protected $user;
     protected $pass;
 

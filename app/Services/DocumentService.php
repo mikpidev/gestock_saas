@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Contingencia;
 use App\Models\Sale;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,7 @@ use App\Models\DebitNote;
 use App\Models\VoidDTE;
 use App\Models\VoidNC;
 use App\Models\VoidND;
+
 
 class DocumentService
 {
@@ -85,8 +87,8 @@ class DocumentService
         // Cuerpo documento
         $cuerpoDocumento = $sale->details->map(function ($detail, $index) use ($sale) {
             $discount_amount = $sale->discount_amount ?? 0.00;
-            $subtotalConIVA = (float) $detail->subtotal - $discount_amount ;
-            $baseSinIVA = $subtotalConIVA / 1.13 ;
+            $subtotalConIVA = (float) $detail->subtotal - $discount_amount;
+            $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
 
             return [
@@ -120,7 +122,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 1,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "tipoDte" => "01",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
@@ -203,14 +205,14 @@ class DocumentService
         $storeTaxInfo = $sale->store->taxInfo;
         $sale->load('dteResponses');
         $selloRecibidoOriginal = $sale->dteResponses()
-        ->where('estado', 'PROCESADO') // solo DTE exitosos
-        ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
-        ->first()?->sello_recibido;
+            ->where('estado', 'PROCESADO') // solo DTE exitosos
+            ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
+            ->first()?->sello_recibido;
 
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -263,12 +265,36 @@ class DocumentService
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
 
+        $discount_amount = $sale->discount_amount ?? 0.00;
+        $totalGravada = 0.00;
+        $totalIva = 0.00;
 
-        // Cuerpo documento
-        $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
-            $subtotalConIVA = (float) $detail->subtotal;
-            $baseSinIVA = $subtotalConIVA / 1.13;
-            $ivaItem = $baseSinIVA * 0.13;
+        // ==============================
+        // CUERPO DOCUMENTO
+        // ==============================
+        $cuerpoDocumento = $sale->details->map(function ($detail, $index) use (&$totalGravada, &$totalIva, &$discount_amount) {
+
+            $cantidad = (float) $detail->quantity;
+
+            // Precio viene CON IVA
+            $precioConIva = round((float) $detail->unit_price, 4);
+
+            // Precio SIN IVA (MH exige esto)
+            $precioSinIva = round($precioConIva / 1.13, 4);
+
+            $descuento = round((float) ($discount_amount ?? 0), 2);
+
+            // Bruto SIN IVA
+            $brutoSinIva = round($cantidad * $precioSinIva, 2);
+
+            // Venta gravada neta
+            $ventaGravada = round($brutoSinIva - $discount_amount, 2);
+
+            // IVA del ítem
+            $ivaItem = round($ventaGravada * 0.13, 2);
+
+            $totalGravada += $ventaGravada;
+            $totalIva += $ivaItem;
 
             return [
                 "numItem" => $index + 1,
@@ -277,26 +303,25 @@ class DocumentService
                 "codigo" => $detail->productType->code ?? 'NA',
                 "codTributo" => null,
                 "descripcion" => $detail->productType->name,
-                "cantidad" => (float) $detail->quantity,
+                "cantidad" => $cantidad,
                 "uniMedida" => 59,
-                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
-                "montoDescu" => 0.00,
+                "precioUni" => round($precioSinIva, 2),
+                "montoDescu" => $descuento,
                 "ventaNoSuj" => 0.00,
                 "ventaExenta" => 0.00,
-                "ventaGravada" => round($baseSinIVA, 2),
-                "tributos" => ["20"], // solo código IVA
+                "ventaGravada" => round($ventaGravada, 2),
+                "tributos" => ["20"],
                 "psv" => 0.00,
                 "noGravado" => 0.00
             ];
         })->toArray();
 
-        $totalGravada = $sale->details->sum(fn($d) => $d->subtotal / 1.13);
-        $totalIva = $sale->details->sum(fn($d) => ($d->subtotal / 1.13) * 0.13);
+        $montoTotalOperacion = $totalGravada + $totalIva;
 
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "tipoDte" => "03",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
@@ -356,7 +381,8 @@ class DocumentService
                 "descuExenta" => 0.00,
                 "descuGravada" => 0.00,
                 "porcentajeDescuento" => 0.00,
-                "totalDescu" => 0.00,
+                "totalDescu" => round($discount_amount, 2),
+
                 "tributos" => [
                     [
                         "codigo" => "20",
@@ -364,20 +390,24 @@ class DocumentService
                         "valor" => round($totalIva, 2)
                     ]
                 ],
+
                 "subTotal" => round($totalGravada, 2),
                 "ivaPerci1" => 0.00,
                 "ivaRete1" => 0.00,
                 "reteRenta" => 0.00,
-                "montoTotalOperacion" => round($sale->net_amount, 2),
+
+                "montoTotalOperacion" => round($montoTotalOperacion, 2),
                 "totalNoGravado" => 0.00,
-                "totalPagar" => round($sale->net_amount, 2),
-                "totalLetras" => $this->totalEnLetras($sale->net_amount),
+                "totalPagar" => round($montoTotalOperacion, 2),
+
+                "totalLetras" => $this->totalEnLetras($montoTotalOperacion),
                 "saldoFavor" => 0.00,
                 "condicionOperacion" => 1,
+
                 "pagos" => [
                     [
                         "codigo" => "01",
-                        "montoPago" => round($sale->net_amount, 2),
+                        "montoPago" => round($montoTotalOperacion, 2),
                         "referencia" => null,
                         "plazo" => null,
                         "periodo" => null
@@ -413,20 +443,20 @@ class DocumentService
      * 
      */
 
-    public function buildDTEJsonVoidCF(Sale $sale, VoidDTE $void): array 
+    public function buildDTEJsonVoidCF(Sale $sale, VoidDTE $void): array
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
         $sale->load('dteResponses');
         $selloRecibidoOriginal = $sale->dteResponses()
-        ->where('estado', 'PROCESADO') // solo DTE exitosos
-        ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
-        ->first()?->sello_recibido;
+            ->where('estado', 'PROCESADO') // solo DTE exitosos
+            ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
+            ->first()?->sello_recibido;
 
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -468,7 +498,6 @@ class DocumentService
                 "numDocSolicita" => $customer->numDocumento ?? "00000000000000"
             ]
         ];
-
     }
 
     /**
@@ -482,8 +511,9 @@ class DocumentService
 
 
         // Cuerpo documento
-        $cuerpoDocumento = $sale->details->map(function ($detail, $index) {
-            $subtotalConIVA = (float) $detail->subtotal;
+        $cuerpoDocumento = $sale->details->map(function ($detail, $index) use ($sale) {
+            $discount_amount = $sale->discount_amount ?? 0.00;
+            $subtotalConIVA = (float) $detail->subtotal - $discount_amount;
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
 
@@ -495,7 +525,7 @@ class DocumentService
                 "cantidad" => (float) $detail->quantity,
                 "uniMedida" => 59,
                 "precioUni" => round((float) $detail->unit_price / 1.13, 2),
-                "montoDescu" => 0.00,
+                "montoDescu" => $discount_amount,
                 "compra" => round((float)$baseSinIVA, 2),
             ];
         })->toArray();
@@ -506,7 +536,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 1,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "tipoDte" => "14",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
@@ -592,20 +622,20 @@ class DocumentService
      * 
      */
 
-    public function buildDTEJsonVoidSE(Sale $sale, VoidDTE $void): array 
+    public function buildDTEJsonVoidSE(Sale $sale, VoidDTE $void): array
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
         $sale->load('dteResponses');
         $selloRecibidoOriginal = $sale->dteResponses()
-        ->where('estado', 'PROCESADO') // solo DTE exitosos
-        ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
-        ->first()?->sello_recibido;
+            ->where('estado', 'PROCESADO') // solo DTE exitosos
+            ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
+            ->first()?->sello_recibido;
 
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -699,7 +729,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "tipoDte" => "05", // ← Esto indica que es Nota de Crédito
                 "numeroControl" => $creditNote->numero_control,
                 "codigoGeneracion" => $creditNote->codigo_generacion,
@@ -787,17 +817,17 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
-    
+
         // Tomar solo DTE procesados de la venta original
         $selloRecibidoOriginal = $creditNote->dteResponses()
             ->where('estado', 'PROCESADO') // solo DTE exitosos
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
-    
+
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -840,7 +870,7 @@ class DocumentService
             ]
         ];
     }
-    
+
 
 
     /** Crea el Json para ND (Notas de debito) */
@@ -893,7 +923,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "tipoDte" => "06", // ← Esto indica que es Nota de Crédito
                 "numeroControl" => $debitNote->numero_control,
                 "codigoGeneracion" => $debitNote->codigo_generacion,
@@ -982,21 +1012,21 @@ class DocumentService
      * 
      */
 
-    public function buildDTEJsonVoidND(DebitNote $debitNote, Sale $sale,  VoidND $void): array 
+    public function buildDTEJsonVoidND(DebitNote $debitNote, Sale $sale,  VoidND $void): array
     {
-         $customer = $sale->customer;
+        $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
-    
+
         // Tomar solo DTE procesados de la venta original
         $selloRecibidoOriginal = $debitNote->dteResponses()
             ->where('estado', 'PROCESADO') // solo DTE exitosos
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
-    
+
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "00",
+                "ambiente" => "01",
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -1038,8 +1068,87 @@ class DocumentService
                 "numDocSolicita" => $customer->numDocumento ?? "00000000000000"
             ]
         ];
-        
     }
+
+    public function buildDTEJsonContingencia(Contingencia $contingencia): array
+    {
+        $contingencia->loadMissing([
+            'store.taxInfo',
+            'sales.tipoDte',
+            'debitNotes',
+            'creditNotes',
+            'tipoContingencia'
+        ]);
+
+        $storeTaxInfo = $contingencia->store->taxInfo;
+
+        $detalleDTE = [];
+        $noItem = 1;
+
+        foreach ($contingencia->sales as $sale) {
+            $detalleDTE[] = [
+                'noItem' => $noItem++,
+                'codigoGeneracion' => $sale->codigo_generacion,
+                'tipoDoc' => $sale->tipoDte->codigo
+            ];
+        }
+
+        foreach ($contingencia->debitNotes as $nd) {
+            $detalleDTE[] = [
+                'noItem' => $noItem++,
+                'codigoGeneracion' => $nd->codigo_generacion,
+                'tipoDoc' => '05'
+            ];
+        }
+
+        foreach ($contingencia->creditNotes as $nc) {
+            $detalleDTE[] = [
+                'noItem' => $noItem++,
+                'codigoGeneracion' => $nc->codigo_generacion,
+                'tipoDoc' => '06'
+            ];
+        }
+
+        if (empty($detalleDTE)) {
+            throw new \Exception('No existen DTE asociados a la contingencia');
+        }
+
+
+        return [
+            'identificacion' => [
+                'version' => 3,
+                'ambiente' => '01',
+                'codigoGeneracion' => $contingencia->codigo_generacion,
+                'fTransmision' => $contingencia->fecha_hora_inicio->format('Y-m-d'),
+                'hTransmision' => $contingencia->fecha_hora_inicio->format('H:i:s'),
+            ],
+
+            'emisor' => [
+                'nit' => $storeTaxInfo->nit,
+                'nombre' => $storeTaxInfo->razon_social,
+                'nombreResponsable' => $storeTaxInfo->razon_social,
+                'tipoDocResponsable' => '36',
+                'numeroDocResponsable' => $storeTaxInfo->nit,
+                'tipoEstablecimiento' => '01',
+                'codEstableMH' => null,
+                'codPuntoVenta' => null,
+                'telefono' => $storeTaxInfo->telefono,
+                'correo' => $storeTaxInfo->email
+            ],
+
+            'detalleDTE' => $detalleDTE,
+
+            'motivo' => [
+                'fInicio' => $contingencia->fecha_hora_inicio->format('Y-m-d'),
+                'fFin' => $contingencia->fecha_hora_fin->format('Y-m-d'),
+                'hInicio' => $contingencia->fecha_hora_inicio->format('H:i:s'),
+                'hFin' => $contingencia->fecha_hora_fin->format('H:i:s'),
+                'tipoContingencia' => $contingencia->tipoContingencia->codigo,
+                'motivoContingencia' => $contingencia->motivo_contingencia
+            ]
+        ];
+    }
+
 
 
     /**

@@ -14,6 +14,7 @@ use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\ActividadEconomicaController;
 use App\Http\Controllers\CashClosureController;
+use App\Http\Controllers\ContingenciaController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\DTEController;
@@ -91,20 +92,6 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     //rutas para usuarios
     Route::resource('stores.users', \App\Http\Controllers\UserController::class);
-
-    Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])
-        ->name('users.index');
-    Route::get('users/create', [\App\Http\Controllers\UserController::class, 'create'])
-        ->name('users.create');
-    Route::post('users', [\App\Http\Controllers\UserController::class, 'store'])
-        ->name('users.store');
-    Route::get('users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])
-        ->name('users.edit');
-    Route::put('users/{user}', [\App\Http\Controllers\UserController::class, 'update'])
-        ->name('users.update');
-    Route::delete('users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])
-        ->name('users.destroy');
-
 
     // Listar productos de una tienda
     Route::get('stores/{store}/product_types', [ProductTypeController::class, 'index'])
@@ -273,6 +260,21 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         Route::post('/cash-closures/close', [CashClosureController::class, 'closeCash'])->name('cash.closures.close');
         Route::get('/cash-closures/{id}/print', [CashClosureController::class, 'print'])->name('cash.closures.print');
     });
+    Route::prefix('stores/{store}/contingencias')->group(function () {
+
+        Route::get('/', [ContingenciaController::class, 'index'])
+            ->name('contingencias.index');
+
+        Route::get('/create', [ContingenciaController::class, 'create'])
+            ->name('contingencias.create');
+
+        Route::post('/', [ContingenciaController::class, 'store'])
+            ->name('contingencias.store');
+
+        Route::post('/{contingencia}/cerrar', [ContingenciaController::class, 'close'])
+            ->name('contingencias.cerrar');
+    });
+
 
 
     //Bucket Test OCI

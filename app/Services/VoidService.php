@@ -51,8 +51,8 @@ class VoidService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/anulardte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/anulardte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => 2,
                     'documento' => $signedData['body'] ?? null
@@ -112,8 +112,8 @@ class VoidService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/anulardte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/anulardte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => 2,
                     'documento' => $signedData['body'] ?? null
@@ -175,8 +175,8 @@ class VoidService
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://apitest.dtes.mh.gob.sv/fesv/anulardte', [
-                    'ambiente' => '00',
+                ->post('https://api.dtes.mh.gob.sv/fesv/anulardte', [
+                    'ambiente' => '01',
                     'idEnvio' => 1,
                     'version' => 2,
                     'documento' => $signedData['body'] ?? null
