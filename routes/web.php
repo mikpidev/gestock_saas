@@ -21,6 +21,7 @@ use App\Http\Controllers\DTEController;
 use App\Models\Sale;
 use App\Http\Controllers\CreditNoteController;
 use App\Http\Controllers\DebitNoteController;
+use App\Http\Controllers\OCIController;
 use App\Http\Controllers\ReporteVentas;
 
 //Cache prevent back history
@@ -279,4 +280,9 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     //Bucket Test OCI
     Route::get('/oci-test', [\App\Http\Controllers\OCIController::class, 'uploadTest']);
+
+    //Email Test OCI
+    Route::post('/stores/{store}/sales/{sale}/send-email', [\App\Http\Controllers\OCIController::class, 'emailSend'])
+        ->name('stores.email.send');
+
 });

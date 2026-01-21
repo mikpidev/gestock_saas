@@ -259,6 +259,16 @@
 
                     @endif
 
+                    <form action="{{ route('stores.email.send', [$store->id, $sale->id]) }}"
+                        method="POST"
+                        onsubmit="return confirm('¿Enviar DTE por correo al cliente?');"
+                        style="display:inline;">
+                        @csrf
+                        <button class="btn btn-success">
+                            <i class="bi bi-envelope"></i> Enviar correo
+                        </button>
+                    </form>
+
                 </td>
             </tr>
             @endforeach

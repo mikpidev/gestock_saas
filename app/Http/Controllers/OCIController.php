@@ -3,9 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Services\OCIService;
+use Illuminate\Support\Facades\Log;
+use App\Models\Sale;
+use App\Models\Store;
+use App\Services\DocumentService;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OCIController extends Controller
 {
+    protected OCIService $ociService;
+    protected DocumentService $dteService;
+
+
+    public function __construct(OCIService $ociService, DocumentService $dteService)
+    {
+        $this->ociService = $ociService;
+        $this->dteService = $dteService;
+    }
     //Test controller for OCI configuration
 
     public function uploadTest()
@@ -31,11 +50,11 @@ class OCIController extends Controller
             return "No se pudo cargar la private key";
         }
 
-        $signingString =            
-        
-        "(request-target): put /n/{$namespace}/b/{$bucket}/o/{$objectName}\n" .
-        "date: {$date}\n" .
-        "host: objectstorage.{$region}.oraclecloud.com";
+        $signingString =
+
+            "(request-target): put /n/{$namespace}/b/{$bucket}/o/{$objectName}\n" .
+            "date: {$date}\n" .
+            "host: objectstorage.{$region}.oraclecloud.com";
 
         //firmar la cadena
 
@@ -77,7 +96,134 @@ class OCIController extends Controller
                 "url" => $url
             ];
         }
-
     }
 
+    public function emailSend(Store $store, Sale $sale)
+    {
+        try {
+
+
+            // (opcional pero recomendado)
+            if ($sale->store_id !== $store->id) {
+                return response()->json([
+                    'error' => 'La venta no pertenece a la tienda'
+                ], 403);
+            }
+
+            $sale->load([
+                'store.taxInfo',
+                'customer',
+                'details.productType',
+                'creditNotes.creditNoteDetails.productType',
+                'debitNotes.debitNoteDetails.productType',
+                'tipoDte'
+            ]);
+
+            // Validar email cliente
+            $to = $sale->customer->correo ?? null;
+
+            if (!$to) {
+                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                return response()->json([
+                    'error' => 'El cliente no tiene correo'
+                ], 422);
+            }
+
+            // 🔹 Tipo DTE
+            $tipo = $sale->tipoDte->codigo ?? null;
+
+            switch ($tipo) {
+                case '01':
+                    $json = $this->dteService->buildDTEJsonFE($sale);
+                    break;
+                case '03':
+                    $json = $this->dteService->buildDTEJsonCF($sale);
+                    break;
+                case '14':
+                    $json = $this->dteService->buildDTEJsonSE($sale);
+                    break;
+                default:
+                    return response()->json([
+                        'error' => 'Tipo DTE no soportado'
+                    ], 400);
+            }
+
+            // 🔹 JSON en memoria
+            $jsonContent = json_encode(
+                $json,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            );
+
+            // 🔹 QR
+            $urlQR = "https://admin.factura.gob.sv/consultaPublica"
+                . "?ambiente=00"
+                . "&codGen={$json['identificacion']['codigoGeneracion']}"
+                . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(150),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+            $qrImage = base64_encode($writer->writeString($urlQR));
+
+            // 🔹 PDF en memoria
+            $pdf = Pdf::loadView('reportes.ventas', [
+                'tipoDteDescripcion' => [
+                    '01' => 'Factura',
+                    '03' => 'Crédito Fiscal',
+                    '14' => 'Factura Sujeto Excluido',
+                ][$tipo] ?? 'Documento',
+                'dte'      => $json,
+                'emisor'   => $json['emisor'],
+                'receptor' => $tipo === '14'
+                    ? $json['sujetoExcluido']
+                    : $json['receptor'],
+                'resumen'  => $json['resumen'],
+                'qrImage'  => $qrImage
+            ]);
+
+            $pdfBinary = $pdf->output();
+
+            // 🔹 Adjuntos (SIN archivos físicos)
+            $attachments = [
+                [
+                    'data' => $pdfBinary,
+                    'name' => "DTE_{$sale->codigo_generacion}.pdf",
+                    'mime' => 'application/pdf',
+                ],
+                [
+                    'data' => $jsonContent,
+                    'name' => "DTE_{$sale->codigo_generacion}.json",
+                    'mime' => 'application/json',
+                ],
+            ];
+
+            // 🔹 Envío por OCI
+            $subject = "Documento Tributario Electrónico {$sale->codigo_generacion}";
+            $body = "Estimado(a) {$sale->customer->nombre}, adjunto encontrará su comprobante electrónico.";
+
+            $this->ociService->emailSubmissionToOCI(
+                $to,
+                $subject,
+                $body,
+                $attachments
+            );
+
+            return response()->json([
+                'message' => 'Correo enviado correctamente'
+            ]);
+        } catch (\Throwable $e) {
+
+            Log::error('Error enviando DTE por correo', [
+                'sale_id' => $sale->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'No se pudo enviar el correo'
+            ], 500);
+        }
+    }
 }

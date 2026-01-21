@@ -53,6 +53,16 @@ return [
         'key_file' => env('OCI_KEY_FILE'),
         'bucket' => env('OCI_BUCKET'),
     ],
+
+    'oci_smtp' => [
+        'host' => env('SMTP_HOST'),
+        'port' => env('SMTP_PORT'),
+        'username' => env('SMTP_OCID'),
+        'password' => env('SMTP_PASSWORD'),
+        'encryption' => env('SMTP_ENCRYPTION', 'tls'),
+        'from_email' => env('OCI_EMAIL_FROM', 'realmadrid.mi9u31@gmail.com'),
+        'from_name' => env('OCI_EMAIL_FROM_NAME', 'Villa Mercedes'),
+    ],
     
 
 ];

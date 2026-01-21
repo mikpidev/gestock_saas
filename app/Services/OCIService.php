@@ -6,10 +6,22 @@ use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Oracle\Signer\Signer;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Mail;
 
 
 class OCIService
 {
+    protected array $config;
+    protected Mailer $mailer;
+
+    //constructor
+    public function __construct()
+    {
+        //oci SMTP
+        $this->config = config('services.oci_smtp');
+
+    }
 
     public function uploadReportsToOCI($objectName, $filePath, $contentType = "application/octet-stream")
 
@@ -102,4 +114,59 @@ class OCIService
 
     }
 
+
+    public function emailSubmissionToOCI(
+        string $to,
+        string $subject,
+        string $body,
+        array $attachments = []
+    ): void {
+        try {
+
+            $fromEmail = config('services.oci_smtp.from_email');
+            $fromName  = config('services.oci_smtp.from_name');
+
+            if (!$fromEmail) {
+                throw new \Exception('OCI from_email no configurado');
+            }
+
+            Mail::raw($body, function (Message $message) use (
+                $to,
+                $subject,
+                $attachments,
+                $fromEmail,
+                $fromName
+            ) {
+                $message
+                    ->from($fromEmail, $fromName)
+                    ->to($to)
+                    ->subject($subject);
+
+                foreach ($attachments as $file) {
+                    if (
+                        empty($file['data']) ||
+                        empty($file['name']) ||
+                        empty($file['mime'])
+                    ) {
+                        throw new \Exception('Adjunto inválido');
+                    }
+
+                    $message->attachData(
+                        $file['data'],
+                        $file['name'],
+                        ['mime' => $file['mime']]
+                    );
+                }
+            });
+
+        } catch (\Throwable $e) {
+
+            Log::error('Error enviando correo por OCI', [
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new \Exception('No se pudo enviar el correo por OCI');
+        }
+    }
 }
