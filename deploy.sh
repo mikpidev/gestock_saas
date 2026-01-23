@@ -34,11 +34,14 @@ echo "Setting permissions..."
 chown -R www-data:www-data $PROJECT_PATH #adjust path if necessary
 chmod -R 775 $PROJECT_PATH/storage $PROJECT_PATH/bootstrap/cache #adjust path if necessary
 
-#Check Apache server status and restart if necessary
 echo "Checking Apache server status..."
-systemctl status apache2
+systemctl is-active apache2 || echo "Apache is not running or inactive"
 
 echo "Restarting Apache server..."
 systemctl restart apache2
 
-echo "Deployment process completed successfully. Don't forget to add env variables if needed. and test the application."
+echo "Verifying Apache server status..."
+systemctl is-active apache2 && echo "Apache is running ✅"
+
+echo "Deployment process completed successfully."
+echo "Don't forget to add env variables if needed and test the application."
