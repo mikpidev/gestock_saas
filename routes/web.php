@@ -48,8 +48,6 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     //rutas para compañias
     Route::resource('companies', CompanyController::class);
-    Route::put('companies/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
-        ->name('companies.update');
 
     //rutas para tax info
     Route::resource('stores', StoreController::class);
