@@ -23,7 +23,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->foreignId('tipo_contingencia_id')
-                ->constrained('tipo_contingencias');
+                ->constrained('tipo_contingencia');
 
             $table->string('codigo_generacion')->unique();
 
