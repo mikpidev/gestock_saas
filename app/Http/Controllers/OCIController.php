@@ -210,10 +210,12 @@ class OCIController extends Controller
                 $body,
                 $attachments
             );
-
             return response()->json([
-                'message' => 'Correo enviado correctamente'
+                'success' => true,
+                'message' => 'Correo enviado correctamente',
+                'redirect' => route('stores.sales.index', $store->id),
             ]);
+
         } catch (\Throwable $e) {
 
             Log::error('Error enviando DTE por correo', [

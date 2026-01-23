@@ -66,9 +66,25 @@
         background: #fafafa;
     }
 
-    .actions {
+
+
+    .btn-act {
         display: flex;
-        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border-radius: 6px;
+        font-size: 13px;
+        padding: 6px 10px;
+        background:fixed #10b981;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-act:hover {
+        background: #059669;
     }
 
     .btn {
@@ -98,6 +114,14 @@
     }
 
     .btn-print:hover {
+        background: #059669;
+    }
+
+    .btn-email {
+        background: #10b981;
+    }
+
+    .btn-email:hover {
         background: #059669;
     }
 
@@ -223,53 +247,75 @@
                 </td>
 
                 <td class="actions">
-
-
-                    <button onclick="mostrarDTE('{{ route('dte.public', $sale->codigo_generacion) }}')"
-                        class="btn btn-info">
-                        <i class="bi bi-eye"></i> Ver
-                    </button>
-
-
-                    <button onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')" class="btn btn-print">
-                        <i class="bi bi-printer"></i> Imprimir
-                    </button>
-                    @php
-                    $canDelete = $sale->created_at->greaterThan(now()->subHours(24));
-                    @endphp
-
-                    @if ($canDelete)
-                    <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}"
-                        method="POST"
-                        onsubmit="return confirm('¿Eliminar venta?');">
-                        @csrf
-                        @method('DELETE')
-                        <button class="btn btn-delete">
-                            <i class="bi bi-trash"></i>
+                    <div class="dropdown">
+                        <button class="btn-act btn-secondary dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            Acciones
                         </button>
-                    </form>
-                    @else
-                    <span data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="No se puede eliminar ventas con más de 24 horas">
-                        <button class="btn btn-delete" disabled>
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </span>
 
+                        <ul class="dropdown-menu">
 
-                    @endif
+                            {{-- Ver DTE --}}
+                            <li>
+                                <button class="dropdown-item"
+                                    onclick="mostrarDTE('{{ route('dte.public', $sale->codigo_generacion) }}')">
+                                    <i class="bi bi-eye"></i> Ver DTE
+                                </button>
+                            </li>
 
-                    <form action="{{ route('stores.email.send', [$store->id, $sale->id]) }}"
-                        method="POST"
-                        onsubmit="return confirm('¿Enviar DTE por correo al cliente?');"
-                        style="display:inline;">
-                        @csrf
-                        <button class="btn btn-success">
-                            <i class="bi bi-envelope"></i> Enviar correo
-                        </button>
-                    </form>
+                            {{-- Imprimir --}}
+                            <li>
+                                <button class="dropdown-item"
+                                    onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')">
+                                    <i class="bi bi-printer"></i> Imprimir
+                                </button>
+                            </li>
 
+                            {{-- Enviar correo --}}
+                            <li>
+                                <button class="dropdown-item"
+                                    onclick="enviarDTEPorCorreo('{{ route('stores.email.send', [$store->id, $sale->id]) }}')">
+                                    <i class="bi bi-envelope"></i> Enviar correo
+                                </button>
+                            </li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            {{-- Eliminar --}}
+                            @php
+                            $canDelete = $sale->created_at->greaterThan(now()->subHours(24));
+                            @endphp
+
+                            @if ($canDelete)
+                            <li>
+                                <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('¿Eliminar venta?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="dropdown-item text-danger">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </form>
+                            </li>
+                            @else
+                            <li>
+                                <span class="dropdown-item text-muted"
+                                    data-bs-toggle="tooltip"
+                                    title="No se puede eliminar ventas con más de 24 horas">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </span>
+                            </li>
+                            @endif
+
+                        </ul>
+                    </div>
                 </td>
+
             </tr>
             @endforeach
 
@@ -328,5 +374,24 @@
             return new bootstrap.Tooltip(el)
         })
     });
+
+
+    function enviarDTEPorCorreo(url) {
+        if (confirm('¿Enviar DTE por correo electrónico?')) {
+            fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.redirect) {
+                        window.location.href = data.redirect;
+                    }
+                });
+        }
+    }
 </script>
 @endsection

@@ -32,6 +32,7 @@ class Sale extends Model
         'tipo_moneda',
         'tipo_operacion',
         'condicion_operacion',
+        'payment_method',
         'total_no_gravado',
         'total_exenta',
         'total_gravada',

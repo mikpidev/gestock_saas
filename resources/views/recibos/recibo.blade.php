@@ -139,7 +139,6 @@
         <!-- FOOTER -->
         <p class="small" style="text-align:center;">
             Documento generado electrónicamente<br>
-            Representación impresa sin validez fiscal<br>
             ¡Gracias por su compra!
         </p>
 

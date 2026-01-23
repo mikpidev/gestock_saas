@@ -296,7 +296,27 @@
         <!-- TOTALES -->
         <div class="totales">
             <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'] ?? 0, 2) }}</span></div>
-            <div class="fila-total"><span>IVA:</span><span>${{ number_format($resumen['totalIva'] ?? 0, 2) }}</span></div>
+
+            @php
+            $iva = 0;
+
+            if (!empty($resumen['totalIva'])) {
+            $iva = $resumen['totalIva'];
+            } elseif (!empty($resumen['tributos'])) {
+            foreach ($resumen['tributos'] as $tributo) {
+            if (($tributo['codigo'] ?? null) === '20') {
+            $iva = $tributo['valor'] ?? 0;
+            break;
+            }
+            }
+            }
+            @endphp
+
+            <div class="fila-total">
+                <span>IVA:</span>
+                <span>${{ number_format($iva, 2) }}</span>
+            </div>
+
             <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }}</span></div>
             <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'] ?? 0, 2) }}</strong></div>
         </div>

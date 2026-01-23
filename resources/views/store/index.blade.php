@@ -17,7 +17,7 @@
         <thead>
             <tr>
                 <th>Nombre</th>
-                <th>Encaragado</th>
+                <th>Encargado</th>
                 <th>Estado</th>
                 <th>Comentarios </th>
                 <th></th>
