@@ -34,6 +34,10 @@ echo "Setting permissions..."
 chown -R www-data:www-data $PROJECT_PATH #adjust path if necessary
 chmod -R 775 $PROJECT_PATH/storage $PROJECT_PATH/bootstrap/cache #adjust path if necessary
 
+#Check Apache server status and restart if necessary
+echo "Checking Apache server status..."
+systemctl status apache2
+
 echo "Restarting Apache server..."
 systemctl restart apache2
 
