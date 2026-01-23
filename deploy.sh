@@ -28,7 +28,7 @@ echo "Clearing and caching Laravel configurations..."
 php artisan optimize:clear
 
 echo "Optimizing application..."
-php artisan optimize
+php artisan optimize || true
 
 echo "Setting permissions..."
 chown -R www-data:www-data $PROJECT_PATH #adjust path if necessary
