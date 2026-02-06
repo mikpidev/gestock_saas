@@ -252,7 +252,7 @@
             @endforeach
         </select>
 
-        <select id="payment_method" class="cart-select">
+        <select  id="payment_method" name="payment_method" class="cart-select">
             <option value="Efectivo">Efectivo</option>
             <option value="Tarjeta">Tarjeta</option>
             <option value="Transferencia">Transferencia</option>
@@ -423,6 +423,7 @@
             const tipo_documento_id = document.getElementById('tipo_documento_id').value;
             const customers_id = document.getElementById('customers_id').value;
             const sale_date = document.getElementById('sale_date').value;
+            const payment_method = document.getElementById('payment_method').value;
 
             if (!tipo_documento_id || !customers_id || !sale_date) {
                 alert('Completa todos los campos requeridos');
@@ -436,6 +437,7 @@
                 customers_id,
                 discount_amount,
                 sale_date,
+                payment_method,
                 products: Object.values(cart)
             };
 

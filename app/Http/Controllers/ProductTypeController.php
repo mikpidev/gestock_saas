@@ -41,10 +41,10 @@ class ProductTypeController extends Controller
         $this->validateStoreAccess($store);
 
         // Mostrar solo los tipos de productos de esta tienda
-        $productTypes = ProductType::all();
+        $productTypes = ProductType::where('store_id', $store->id)->get();
         $categories = $productTypes->groupBy('category');
 
-        return view('productType.index', compact('productTypes', 'categories','store'));
+        return view('productType.index', compact('productTypes', 'categories', 'store'));
     }
 
     /**
@@ -66,6 +66,8 @@ class ProductTypeController extends Controller
         //validar acceso a la tienda
         $this->validateStoreAccess($store);
 
+        
+
         // Validar los datos del formulario
         $request->validate(
             [
@@ -86,6 +88,42 @@ class ProductTypeController extends Controller
             ]
         );
 
+        //si producto fue eliminado anteriormente, ignorar unique method
+        $existingProduct = ProductType::withTrashed()
+            ->where('name', $request->name)
+            ->where('store_id', $store->id)
+            ->first();
+        if ($existingProduct) {
+            if ($existingProduct->trashed()) {
+                $existingProduct->restore();
+                $existingProduct->update([
+                    'price' => $request->price,
+                    'stock' => $request->stock,
+                    'category' => $request->category,
+                    'description' => $request->description,
+                ]);
+                return redirect()
+                    ->route('stores.product_types.index', $store)
+                    ->with('success', 'Tipo de producto restaurado y actualizado exitosamente.');
+            } else {
+                return redirect()
+                    ->route('stores.product_types.index', $store)
+                    ->with('error', 'Ya existe un tipo de producto con ese nombre en esta tienda.');
+            }
+        }
+
+        //Validar que el tipo de producto no exista en la tienda actual
+        $existingProductType = ProductType::where('name', $request->name)
+            ->where('store_id', $store->id)
+            ->first();
+        if ($existingProductType) {
+            return redirect()
+                ->route('stores.product_types.index', $store)
+                ->with('error', 'Ya existe un tipo de producto con ese nombre en esta tienda.');
+        }
+
+        
+
         // Crear el nuevo tipo de producto asociado a la tienda y compañía
         ProductType::create([
             'name' => $request->name,
@@ -96,6 +134,8 @@ class ProductTypeController extends Controller
             'store_id' => $store->id,
             'company_id' => $store->company_id,
         ]);
+
+
 
 
         return redirect()
@@ -142,13 +182,15 @@ class ProductTypeController extends Controller
      */
     public function update(Request $request, Store $store, ProductType $productType)
     {
+
+        //validar acceso a la tienda
+        $this->validateStoreAccess($store);
         //validar que usuario pertenezca a esta tienda
         if ($productType->store_id !== Auth::user()->store_id) {
             abort(404, 'Tipo de producto no encontrado en esta tienda.');
         }
 
-        //validar acceso a la tienda
-        $this->validateStoreAccess($store);
+
 
 
 
@@ -184,7 +226,7 @@ class ProductTypeController extends Controller
 
         //regresar a vista
         return redirect()
-            ->route('stores.product_types.index', $store)
+            ->route('stores.product_types.index', $store->id)
             ->with('success', 'Tipo de producto actualizado exitosamente.');
     }
 

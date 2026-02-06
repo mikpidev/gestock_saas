@@ -116,7 +116,11 @@ class SaleController extends Controller
             'products.*.quantity' => 'required|numeric|min:1',
             'products.*.price' => 'required|numeric|min:0',
             'tipo_documento_id' => 'required|exists:tipo_documento,id',
+            'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
         ]);
+
+        // logs data for debugging
+        \Log::info('Creating sale with data: ', $data);
 
         // Calcular totales
         $discountPercent = $data['discount_amount'] ?? 0; // valor como 0.10 = 10%
@@ -168,7 +172,7 @@ class SaleController extends Controller
             'tipo_moneda' => 'USD',
             'tipo_operacion' => 1,
             'condicion_operacion' => 1,
-            'total_no_gravado' => $total_no_gravado,
+            'payment_method' => $data['payment_method'] ,
             'total_exenta' => $total_exenta,
             'total_gravada' => $netAmount,
             'total_iva' => $total_iva,
