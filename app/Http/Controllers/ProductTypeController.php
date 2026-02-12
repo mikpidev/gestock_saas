@@ -239,7 +239,7 @@ class ProductTypeController extends Controller
         $this->validateStoreAccess($productType->store);
 
         //validar que usuario pertenezca a esta tienda
-        if ($productType->store_id !== Auth::user()->store_id) {
+        if ($productType->store_id !== Auth::user()->store_id && !Auth::user()->hasRole('superadmin')) {
             abort(404, 'Tipo de producto no encontrado en esta tienda.');
         }
 
