@@ -50,7 +50,7 @@ class ReporteVentas extends Controller
     public function dteReporte(OciService $oci)
     {
         ini_set('memory_limit', '1024M');
-        set_time_limit(120);
+        set_time_limit(0);
 
         $basePath = storage_path("app/dte_reportes/");
         $tempPath = storage_path("app/dte_reportes/temp/");
@@ -142,7 +142,7 @@ class ReporteVentas extends Controller
 
                 // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
-                    . "?ambiente=00"
+                    . "?ambiente=01"
                     . "&codGen={$json['identificacion']['codigoGeneracion']}"
                     . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
 
@@ -281,7 +281,7 @@ class ReporteVentas extends Controller
 
                 // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
-                    . "?ambiente=00"
+                    . "?ambiente=01"
                     . "&codGen={$json['identificacion']['codigoGeneracion']}"
                     . "&fechaEmi=" . date(
                         'Y-m-d',
