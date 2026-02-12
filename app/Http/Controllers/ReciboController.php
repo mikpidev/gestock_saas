@@ -28,8 +28,7 @@ class ReciboController extends Controller
             'store:id,store_name,address',
             'store.taxInfo:id,store_id,nit,nrc,telefono',
             'details:id,sale_id,product_type_id,quantity,unit_price,subtotal',
-            'details.productType:id,name'
-        
+            'details.productType:id,name',
         ])
             ->where('store_id', $storeId)
             ->findOrFail($saleId);
@@ -37,7 +36,7 @@ class ReciboController extends Controller
         $dteResponse = DteResponse::where('sale_id', $venta->id)->first();
 
         // URL QR Hacienda
-        $urlQR = "https://admin.factura.gob.sv/consultaPublica?ambiente=00"
+        $urlQR = "https://admin.factura.gob.sv/consultaPublica?ambiente=01"
             . "&codGen={$venta->codigo_generacion}"
             . "&fechaEmi={$venta->sale_date->format('Y-m-d')}";
 

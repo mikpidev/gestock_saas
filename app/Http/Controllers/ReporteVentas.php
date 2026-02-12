@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\DTEController;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Models\DteResponse;
 use App\Services\DocumentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,8 @@ class ReporteVentas extends Controller
             'tipoDte'
         ])
             ->where('dte_status', 'PROCESADO')
-            ->whereDate('sale_date', '>=', now()->subDays(16));
+            ->orWhere('dte_status', 'PENDIENTE')
+            ->whereDate('sale_date', '>=', now()->subDays(21));
 
         $query->chunk(110, function ($sales) use ($basePath, $tempPath, $zipPrincipal, $oci) {
 
@@ -87,6 +89,9 @@ class ReporteVentas extends Controller
                     'tipoDte'
                 ]);
 
+                // llamar SelloDTE
+                $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
+
                 $tipoDteDescripcion = [
                     '01' => 'Factura',
                     '03' => 'Crédito Fiscal',
@@ -98,14 +103,27 @@ class ReporteVentas extends Controller
                 switch ($tipo) {
                     case '01':
                         $json = $this->dteService->buildDTEJsonFE($sale);
+                        //agregar selloDTE al JSON para el PDF
+                        if ($dteResponse) {
+                            $json['sello_recibido'] = $dteResponse->sello_recibido;
+                        }
+
                         break;
 
                     case '03':
                         $json = $this->dteService->buildDTEJsonCF($sale);
+                        //agregar selloDTE al JSON para el PDF
+                        if ($dteResponse) {
+                            $json['sello_recibido'] = $dteResponse->sello_recibido;
+                        }
                         break;
 
                     case '14':
                         $json = $this->dteService->buildDTEJsonSE($sale);
+                        //agregar selloDTE al JSON para el PDF
+                        if ($dteResponse) {
+                            $json['sello_recibido'] = $dteResponse->sello_recibido;
+                        }
                         break;
 
                     default:
@@ -144,7 +162,8 @@ class ReporteVentas extends Controller
                     //validar si es SE - pass sujetoExcluido en lugar de receptor
                     'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
                     'resumen'  => $json['resumen'],
-                    'qrImage'  => $qrImage
+                    'qrImage'  => $qrImage,
+                    'dteResponse' => $dteResponse
                 ]);
 
                 $pdfFilename = "{$tempPath}/dte_{$codigoGen}.pdf";

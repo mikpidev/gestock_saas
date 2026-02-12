@@ -176,7 +176,7 @@
                         </tr>
                         <tr>
                             <td class="etiqueta">Sello DTE:</td>
-                            <td>{{ $dte['sello'] ?? '---' }}</td>
+                            <td>{{ $dteResponse->sello_recibido ?? 'N/A' }}</td>
                         </tr>
                     </table>
                 </td>

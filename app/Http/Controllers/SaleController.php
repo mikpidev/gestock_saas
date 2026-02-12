@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Customer;
+use App\Models\DteResponse;
 use App\Models\ProductType;
 use App\Models\InvoiceNumber;
 use App\Models\Store;
@@ -255,6 +256,7 @@ class SaleController extends Controller
             'debitNotes.debitNoteDetails.productType',
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
+        $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
 
         // Mapeo de descripciones
         $tipoDteDescripcion = [
@@ -303,7 +305,8 @@ class SaleController extends Controller
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
             'resumen'  => $json['resumen'],
-            'qrImage'  => $qrImage
+            'qrImage'  => $qrImage,
+            'dteResponse' => $dteResponse
         ]);
     }
 
