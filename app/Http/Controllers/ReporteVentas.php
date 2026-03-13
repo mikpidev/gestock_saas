@@ -90,8 +90,9 @@ class ReporteVentas extends Controller
                 $q->where('dte_status', 'PROCESADO')
                   ->orWhere('dte_status', 'PENDIENTE');
             })
-            ->whereDate('sale_date', '>=', now()->subDays(30));
-    
+            
+            ->whereBetween('sale_date', ['2026-02-01', '2026-02-28']);
+
         $query->chunk(40, function ($sales) use ($zipPrincipal) {
     
             $saleIds = $sales->pluck('id');
