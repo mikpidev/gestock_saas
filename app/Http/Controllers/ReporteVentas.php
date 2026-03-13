@@ -46,24 +46,38 @@ class ReporteVentas extends Controller
         $pdf = \PDF::loadView('reportes.ventas', compact('store', 'sales', 'saleDetails', 'productType'));
         return $pdf->download('reporte_ventas.pdf');
     }
-
     public function dteReporte(OciService $oci)
     {
         ini_set('memory_limit', '1024M');
         set_time_limit(0);
-
-        $basePath = storage_path("app/dte_reportes/");
-        $tempPath = storage_path("app/dte_reportes/temp/");
-
-        if (!file_exists($basePath)) mkdir($basePath, 0777, true);
-        if (!file_exists($tempPath)) mkdir($tempPath, 0777, true);
-
+    
+        $basePath = storage_path("app/dte_reportes");
+        $tempPath = storage_path("app/dte_reportes/temp");
+        
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0777, true);
+        }
+        
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+    
         $zipPrincipalName = 'dtes_export_' . date('Y-m-d') . '.zip';
-        $zipPrincipalPath = $basePath . $zipPrincipalName;
-
+        $zipPrincipalPath = storage_path("app/dte_reportes/{$zipPrincipalName}");
+    
         $zipPrincipal = new \ZipArchive;
-        $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
+        $result = $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        
+        if ($result !== true) {
+            \Log::error('No se pudo abrir el ZIP', [
+                'path' => $zipPrincipalPath,
+                'result' => $result
+            ]);
+        
+            return back()->with('error', 'No se pudo crear el archivo ZIP.');
+        }
+    
         $query = Sale::with([
             'store.taxInfo',
             'customer',
@@ -72,60 +86,46 @@ class ReporteVentas extends Controller
             'debitNotes.debitNoteDetails.productType',
             'tipoDte'
         ])
-            ->where('dte_status', 'PROCESADO')
-            ->orWhere('dte_status', 'PENDIENTE')
-            ->whereDate('sale_date', '>=', now()->subDays(21));
-
-        $query->chunk(110, function ($sales) use ($basePath, $tempPath, $zipPrincipal, $oci) {
-
+            ->where(function ($q) {
+                $q->where('dte_status', 'PROCESADO')
+                  ->orWhere('dte_status', 'PENDIENTE');
+            })
+            ->whereDate('sale_date', '>=', now()->subDays(30));
+    
+        $query->chunk(40, function ($sales) use ($zipPrincipal) {
+    
+            $saleIds = $sales->pluck('id');
+    
+            $dteResponses = DteResponse::whereIn('sale_id', $saleIds)
+                ->get()
+                ->keyBy('sale_id');
+    
             foreach ($sales as $sale) {
-
-                $sale->load([
-                    'store.taxInfo',
-                    'customer',
-                    'details.productType',
-                    'creditNotes.creditNoteDetails.productType',
-                    'debitNotes.debitNoteDetails.productType',
-                    'tipoDte'
-                ]);
-
-                // llamar SelloDTE
-                $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
-
+    
+                $dteResponse = $dteResponses[$sale->id] ?? null;
+    
+                $tipo = strtolower($sale->tipoDte->codigo ?? '');
+    
                 $tipoDteDescripcion = [
                     '01' => 'Factura',
                     '03' => 'Crédito Fiscal',
                     '14' => 'Factura Sujeto Excluido',
                 ];
-
-                $tipo = strtolower($sale->tipoDte->codigo ?? '');
-
+    
                 switch ($tipo) {
+    
                     case '01':
                         $json = $this->dteService->buildDTEJsonFE($sale);
-                        //agregar selloDTE al JSON para el PDF
-                        if ($dteResponse) {
-                            $json['sello_recibido'] = $dteResponse->sello_recibido;
-                        }
-
                         break;
-
+    
                     case '03':
                         $json = $this->dteService->buildDTEJsonCF($sale);
-                        //agregar selloDTE al JSON para el PDF
-                        if ($dteResponse) {
-                            $json['sello_recibido'] = $dteResponse->sello_recibido;
-                        }
                         break;
-
+    
                     case '14':
                         $json = $this->dteService->buildDTEJsonSE($sale);
-                        //agregar selloDTE al JSON para el PDF
-                        if ($dteResponse) {
-                            $json['sello_recibido'] = $dteResponse->sello_recibido;
-                        }
                         break;
-
+    
                     default:
                         \Log::warning("Tipo DTE desconocido", [
                             "sale_id" => $sale->id,
@@ -133,80 +133,108 @@ class ReporteVentas extends Controller
                         ]);
                         continue 2;
                 }
-
+    
+                if ($dteResponse) {
+                    $json['sello_recibido'] = $dteResponse->sello_recibido;
+                }
+    
                 $codigoGen = $sale->codigo_generacion;
-
-                // Guardar JSON
-                $jsonFilename = "{$tempPath}/dte_{$codigoGen}.json";
+    
+                // Guardar JSON temporal
+                $jsonFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.json");
                 file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
-
+    
                 // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
                     . "?ambiente=01"
                     . "&codGen={$json['identificacion']['codigoGeneracion']}"
                     . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
-
+    
                 $renderer = new ImageRenderer(
                     new RendererStyle(150),
                     new SvgImageBackEnd()
                 );
-
+    
                 $writer = new Writer($renderer);
                 $qrImage = base64_encode($writer->writeString($urlQR));
-
+    
                 // Generar PDF
                 $pdf = Pdf::loadView('reportes.ventas', [
                     'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                    'dte'      => $json,
-                    'emisor'   => $json['emisor'],
-                    //validar si es SE - pass sujetoExcluido en lugar de receptor
+                    'dte' => $json,
+                    'emisor' => $json['emisor'],
                     'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-                    'resumen'  => $json['resumen'],
-                    'qrImage'  => $qrImage,
+                    'resumen' => $json['resumen'],
+                    'qrImage' => $qrImage,
                     'dteResponse' => $dteResponse
                 ]);
-
-                $pdfFilename = "{$tempPath}/dte_{$codigoGen}.pdf";
+    
+                $pdfFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.pdf");
                 $pdf->save($pdfFilename);
-
-                // Crear ZIP individual
+    
+                // Agregar directo al ZIP principal
                 $zipIndividualName = "DTE_{$codigoGen}.zip";
-                $zipIndividualPath = "{$tempPath}/{$zipIndividualName}";
-
+                $zipIndividualPath = storage_path("app/dte_reportes/temp/{$zipIndividualName}");
+                
                 $zipIndividual = new \ZipArchive;
-                $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-
+                $result = $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+                
+                if ($result !== true) {
+                    \Log::error("No se pudo crear ZIP individual", [
+                        "codigoGen" => $codigoGen
+                    ]);
+                    continue;
+                }
+                
                 $zipIndividual->addFile($jsonFilename, "dte_{$codigoGen}.json");
                 $zipIndividual->addFile($pdfFilename, "dte_{$codigoGen}.pdf");
-
+                
                 $zipIndividual->close();
-
-                // Agregar al ZIP principal
+                
                 $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
+    
 
-
-
-                \Log::info("DTE generado y enviado a OCI", [
-                    "sale_id" => $sale->id,
-                    "zip" => $zipIndividualPath
-                ]);
             }
         });
-
+    
         $zipPrincipal->close();
-        // SUBIR A OCI
-        $oci->uploadReportsToOCI(
-            $zipPrincipalName,  // nombre en OCI
-            $zipPrincipalPath,   // ruta local
-            "application/zip"
-        );
 
-        // DESCARGAR ZIP PRINCIPAL LOCAL
+        // borrar temporales para no llenar disco
+        //unlink($jsonFilename);
+        //unlink($pdfFilename);
+    
+        \Log::info("ZIP principal creado", [
+            "path" => $zipPrincipalPath,
+            "size" => filesize($zipPrincipalPath)
+        ]);
+    
+        if (!file_exists($zipPrincipalPath)) {
+            return back()->with('error', 'No se pudo generar el ZIP.');
+        }
+    
+        // Subir a OCI
+        $oci->uploadReportsToOCI(
+            $zipPrincipalName,
+            $zipPrincipalPath
+        );
+    
         return response()->download($zipPrincipalPath)->deleteFileAfterSend(true);
     }
 
+    // Descargar ZIP desde OCI Bucket
+    public function downloadDteReporteFromOCI(OciService $oci)
+    {
+        $zipName = 'dtes_export_' . date('Y-m-d') . '.zip';
+        $localPath = storage_path("app/dte_reportes/{$zipName}");
 
-    public function dteReporteNC(OciService $oci)
+        // Lógica para descargar el archivo desde OCI
+        $oci->downloadReportFromOCI($zipName, $localPath);
+
+        return response()->download($localPath)->deleteFileAfterSend(true);
+    }
+
+
+    public function dteReporteNC(OciService $oci) 
     {
         ini_set('memory_limit', '1024M');
         set_time_limit(120);
