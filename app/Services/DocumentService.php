@@ -17,8 +17,6 @@ use App\Models\VoidND;
 
 class DocumentService
 {
-    protected string $nit = '04142309731011';
-    protected string $password = '9e.VAGQEVNximSC';
 
     /** Generar total en letras */
 
@@ -49,6 +47,9 @@ class DocumentService
      */
     public function buildDTEJsonFE(Sale $sale): array
     {
+
+
+        // Datos del cliente y tienda
         $customer = $sale->customer;
         $isConsumidorFinal = !$customer;
         $storeTaxInfo = $sale->store->taxInfo;
@@ -284,8 +285,12 @@ class DocumentService
             // Precio viene CON IVA
             $precioConIva = round((float) $detail->unit_price, 4);
 
-            // Precio SIN IVA (MH exige esto)
-            $precioSinIva = round($precioConIva / 1.13, 4);
+            // Precio SIN IVA (MH exige esto) 
+            if ($precioConIva < 1) {
+                $precioSinIva = round($precioConIva / 1.13, 2);
+            } else {
+                $precioSinIva = round($precioConIva / 1.13, 4);
+            }
 
             $descuento = round((float) ($discount_amount ?? 0), 2);
 
@@ -380,8 +385,8 @@ class DocumentService
             "resumen" => [
                 "totalNoSuj" => 0.00,
                 "totalExenta" => 0.00,
-                "totalGravada" => round($totalGravada, 2),
-                "subTotalVentas" => round($totalGravada, 2),
+                "totalGravada" => round($sale->total_gravada, 2),
+                "subTotalVentas" => round($sale->total_gravada - $sale->total_iva, 2),
                 "descuNoSuj" => 0.00,
                 "descuExenta" => 0.00,
                 "descuGravada" => 0.00,
@@ -392,27 +397,27 @@ class DocumentService
                     [
                         "codigo" => "20",
                         "descripcion" => "IVA",
-                        "valor" => round($totalIva, 2)
+                        "valor" => round($sale->total_iva, 2)
                     ]
                 ],
 
-                "subTotal" => round($totalGravada, 2),
+                "subTotal" => round($sale->total_gravada - $sale->total_iva, 2),
                 "ivaPerci1" => 0.00,
                 "ivaRete1" => 0.00,
                 "reteRenta" => 0.00,
 
-                "montoTotalOperacion" => round($montoTotalOperacion, 2),
+                "montoTotalOperacion" => round($sale->total_gravada, 2),
                 "totalNoGravado" => 0.00,
-                "totalPagar" => round($montoTotalOperacion, 2),
+                "totalPagar" => round($sale->total_gravada, 2),
 
-                "totalLetras" => $this->totalEnLetras($montoTotalOperacion),
+                "totalLetras" => $this->totalEnLetras($sale->total_gravada),
                 "saldoFavor" => 0.00,
                 "condicionOperacion" => 1,
 
                 "pagos" => [
                     [
                         "codigo" => "01",
-                        "montoPago" => round($montoTotalOperacion, 2),
+                        "montoPago" => round($sale->total_gravada, 2),
                         "referencia" => null,
                         "plazo" => null,
                         "periodo" => null
@@ -1159,17 +1164,27 @@ class DocumentService
     /**
      * Firma el documento usando el firmador local
      */
-    public function signDocument(array $dteJson): array
+    public function signDocument(array $dteJson, string $nit, string $password_pri, string $cert_firma_digital): array
     {
-        $payload = [
-            "nit" => $this->nit,
-            "passwordPri" => $this->password,
-            "dteJson" => $dteJson
+        // Obtener el puerto del certificado desde DTEController
+        $port = [
+            "port" => $cert_firma_digital ?? '1234'
+
         ];
+        $payload = [
+            "nit" => $nit ?? '00000000000000',
+            "passwordPri" => $password_pri ?? 'default_password',
+            "dteJson" => $dteJson,
+        ];
+
+        //debug log del payload antes de enviarlo al firmador
+        Log::debug('Puerto Certificado', $port);
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json'
-        ])->post('http://localhost:8113/firmardocumento/', $payload);
+        ])->post("http://localhost:{$port['port']}/firmardocumento/", $payload);
+
+        // logs request antes de firmar
 
         if ($response->failed()) {
             Log::error('Error firmando documento', $response->json());
