@@ -223,21 +223,21 @@ class DocumentService
                 "version" => 3,
                 "ambiente" => $environment,
                 //"tipoDte" => "03",
-                // "numeroControl" => $sale->numero_control,
+               // "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
                 //"tipoModelo" => 1,
-                // "tipoOperacion" => 1,
+               // "tipoOperacion" => 1,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
                 "horEmi" => now()->format('H:i:s'),
                 "fusion" => null
 
-                // "tipoMoneda" => $sale->tipo_moneda,
+               // "tipoMoneda" => $sale->tipo_moneda,
             ],
             "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nombre" => $storeTaxInfo->actividad_economica,
                 //"nomEstablecimiento" => $storeTaxInfo->actividad_economica,
-                // "tipoEstablecimiento" => "01",
+               // "tipoEstablecimiento" => "01",
                 "codEstableMH" => "S001",
                 "codEstable" => "S001",
                 "codPuntoVentaMH" => "P001",
@@ -1173,64 +1173,38 @@ class DocumentService
     /**
      * Firma el documento usando el firmador local
      */
-    public function signDocument(array|string $dteJson, string $nit, string $password_pri, string $cert_firma_digital): array
+    public function signDocument(array $dteJson, string $nit, string $password_pri, string $cert_firma_digital): array
     {
-        // Puerto limpio (sin array innecesario)
-        $port = $cert_firma_digital ?? '8113';
+        // Obtener el puerto del certificado desde DTEController
+        $port = [
+            "port" => $cert_firma_digital ?? '1234'
 
-        // Validar DTE
-        if (empty($dteJson)) {
-            throw new \Exception('DTE vacío');
-        }
-
-        // Evitar doble encode
-        if (is_array($dteJson)) {
-            $dteJsonString = json_encode($dteJson, JSON_UNESCAPED_UNICODE);
-        } else {
-            // Validar que el string sea JSON válido
-            json_decode($dteJson);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('DTE JSON inválido');
-            }
-            $dteJsonString = $dteJson;
-        }
-
-        // Payload correcto
+        ];
         $payload = [
-            "nit" => $nit,
-            "passwordPri" => $password_pri,
-            "activo" => true,
-            "dteJson" => $dteJsonString,
+            "nit" => $nit ?? '00000000000000',
+            "passwordPri" => $password_pri ?? 'default_password',
+            "dteJson" => $dteJson,
         ];
 
-        // Debug útil
-        Log::debug('FIRMADOR REQUEST', [
-            'url' => "http://localhost:{$port}/firmardocumento/",
-            'payload_preview' => [
-                'nit' => $nit,
-                'dte_length' => strlen($dteJsonString)
-            ]
-        ]);
+        //debug log del payload antes de enviarlo al firmador
+        Log::debug('Puerto Certificado', $port);
 
-        // Request controlado (CLAVE)
+        //Logs del payload antes de enviarlo al firmador
+        Log::debug('Payload para firmar documento', $payload);
+
         $response = Http::withHeaders([
             'Content-Type' => 'application/json'
-        ])
-            ->withBody(json_encode($payload), 'application/json')
-            ->post("http://localhost:{$port}/firmardocumento/");
+        ])->post("http://localhost:{$port['port']}/firmardocumento/", $payload);
 
-        // Validación de error HTTP
+        // logs request antes de firmar
+
         if ($response->failed()) {
-            Log::error('Error firmando documento', [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            Log::error('Error firmando documento', $response->json());
             throw new \Exception('Error al firmar documento');
         }
 
         $signedData = $response->json();
 
-        // Validación respuesta firmador
         if (!isset($signedData['status']) || $signedData['status'] !== 'OK') {
             Log::error('Error en la firma del documento', $signedData);
             throw new \Exception('Firma del documento fallida');
