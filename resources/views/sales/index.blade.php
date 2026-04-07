@@ -76,7 +76,7 @@
         border-radius: 6px;
         font-size: 13px;
         padding: 6px 10px;
-        background:fixed #10b981;
+        background: fixed #10b981;
         color: #fff;
         border: none;
         cursor: pointer;
@@ -170,6 +170,7 @@
     }
 
     .filter-bar input {
+        display: inline-block;
         border: 1px solid #d1d5db;
         border-radius: 6px;
         padding: 6px;
@@ -192,19 +193,25 @@
     @endif
 
     <form method="GET" class="filter-bar">
-        <label><b>Fecha:</b></label>
-        <input type="date" name="fecha" value="{{ $fecha }}">
-        <button class="btn btn-info">Filtrar</button>
-        <a href="?fecha={{ now()->toDateString() }}" class="btn btn-print">
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filtros">
+            Filtros
+        </button>
+        <a href="?from={{ now()->toDateString() }}&to={{ now()->toDateString() }}" class="btn btn-print">
             <i class="bi bi-calendar-check"></i> Hoy
         </a>
-        <a href="{{ route('reportes.ventas') }}" class="btn btn-print">
-            <i class="bi bi-file-earmark-pdf"></i> PDF
-        </a>
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reportes">
+            Reportes
+        </button>
+
+
     </form>
 
+
+
     @if($sales->isEmpty())
-    <div class="no-data">No hay ventas para <b>{{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}</b></div>
+    <div class="no-data">No hay ventas para <b>{{ \Carbon\Carbon::parse($dateFrom)->format('d/m/Y') }}</b> a <b>{{ \Carbon\Carbon::parse($dateTo)->format('d/m/Y') }}</b></div>
     @else
 
     <table>
@@ -350,6 +357,82 @@
     </div>
 </div>
 
+
+<!-- Modal filtros -->
+<div class="modal fade" id="filtros" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">Filtros</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="GET" class="filters">
+                    <label>Desde:</label>
+                    <input type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
+
+                    <label>Hasta:</label>
+                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }} ">
+
+                    <label>Cliente:</label>
+                    <select name="customer_id" class="form-control">
+                        <option value="">Seleccionar cliente</option>
+                        <option value="">-- Selecciona Cliente --</option>
+                        @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}">{{ $customer->nombre }}</option>
+                        @endforeach
+                    </select>
+
+                    <label>Código de Generación:</label>
+                    <input type="text" name="codigo_generacion" value="{{ request('codigo_generacion') }}" class="form-control" placeholder="Código de generación">
+
+                    <label>Estado DTE:</label>
+                    <select name="dte_status" class="form-control">
+                        <option value="">Seleccionar estado</option>
+                        @foreach($dteStatuses as $status)
+                        <option value="{{ $status }}" {{ request('dte_status') == $status ? 'selected' : '' }}>
+                            {{ $status }}
+                        </option>
+                        @endforeach
+                    </select>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="document.querySelector('.filters').submit()">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal filtros -->
+<div class="modal fade" id="reportes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">Generar Reportes</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="GET" class="filter-bar" action="{{ route('reportes.ventas') }}">
+                    <label>Desde:</label>
+                    <input type="date" name="from" value=" {{ $dateFrom }} ">
+
+                    <label>Hasta:</label>
+                    <input type="date" name="to" value="{{ $dateTo }} ">
+
+
+            </div>
+            <div class="modal-footer">
+                <a href="{{ route('reportes.ventas', ['from' => $dateFrom, 'to' => $dateTo]) }}">
+                    <button type="button" class="btn btn-primary" onclick="document.querySelector('.filter-bar').submit()">Generar Reporte</button>
+            </div>
+            </form>
+
+        </div>
+    </div>
+</div>
 
 <script>
     function mostrarModalImpresion(url) {

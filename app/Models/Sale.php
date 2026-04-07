@@ -26,6 +26,7 @@ class Sale extends Model
         'discount_amount',
         'net_amount',
         'dte_status',
+        'environment',
         'contingencia_id',
         'numero_control',      // número de control para DTE
         'codigo_generacion',   // UUID para DTE

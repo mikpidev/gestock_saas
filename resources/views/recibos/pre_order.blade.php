@@ -25,7 +25,7 @@
             width: 100px;
             height: 100px;
         }
-        
+
 
 
         .linea {
@@ -59,35 +59,24 @@
             <img src="{{ public_path('Logo_recortado.png') }}" style="width:100px; height:auto; display:inline-block;">
         </div>
         <h3 style="margin:0; padding:0;">{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
-        <p class="small" style="margin:0; padding:0;">
-            Dirección: {{ $venta->store->address ?? '' }}<br>
-            Tel: {{ $venta->store->taxInfo->telefono ?? '' }}<br>
-            NIT: {{ $venta->store->taxInfo->nit ?? '' }} | NRC: {{ $venta->store->taxInfo->nrc ?? '' }}
-        </p>
 
 
-        <!-- DATOS DTE -->
-        <p class="small">
-            <strong>Tipo DTE:</strong> {{ $venta->tipoDte->nombre ?? 'TICKET' }}<br>
-            <strong>No. Control:</strong> {{ $venta->numero_control ?? 'N/A' }}<br>
-            <strong>Código Generación:</strong> {{ $venta->codigo_generacion ?? 'N/A' }}<br>
-            <strong>Sello de Recibido:</strong> {{ $dteResponse->sello_recibido ?? 'N/A' }}
-
-        </p>
 
         <div class="linea"></div>
 
         <!-- INFO VENTA -->
         <p class="small">
-            <strong>Fecha:</strong> {{ $venta->sale_date->format('d/m/Y H:i') }}<br>
-            <strong>Atendió:</strong> {{ $venta->user->name ?? 'Cajero' }}
+        <h1>Orden #: {{ $venta->id }} </h1>
+        <div class="linea"></div>
+
+        <strong>Fecha:</strong> {{ $venta->sale_date->format('d/m/Y H:i') }}<br>
+        <strong>Atendió:</strong> {{ $venta->user->name ?? 'Cajero' }}<br>
         </p>
 
         <div class="linea"></div>
 
         <!-- CLIENTE -->
         <p class="small">
-            <strong>Orden #: </strong>{{ $venta->id }} <br>
             <strong>Cliente:</strong> {{ $venta->customer->nombre ?? 'Consumidor Final' }}<br>
             @if($venta->customer)
             @if($venta->customer->numDocumento)
@@ -104,42 +93,17 @@
         <!-- DETALLE PRODUCTOS -->
         @foreach ($venta->details as $item)
         <p class="item">
-            {{ $item->productType->name }} x{{ $item->quantity }}
-            <span style="float:right;">${{ number_format($item->subtotal, 2) }}</span>
+            {{ $item->productType->name }}
+            <span style="float:right;">{{ number_format($item->quantity, 0) }}</span>
         </p>
         @endforeach
 
         <div class="linea"></div>
 
-        <!-- TOTALES -->
-        @if ($venta->total_exenta > 0)
-        <p class="totales">Exento: ${{ number_format($venta->total_exenta, 2) }}</p>
-        @endif
-        @if ($venta->total_no_gravado > 0)
-        <p class="totales">No Gravado: ${{ number_format($venta->total_no_gravado, 2) }}</p>
-        @endif
-        @if ($venta->total_amount > 0)
-        <p class="totales">Subtotal: ${{ number_format($venta->total_amount, 2) }}</p>
-        @endif
-        @if ($venta->tax_amount > 0)
-        <p class="totales">IVA 13%: ${{ number_format($venta->tax_amount, 2) }}</p>
-        @endif
-        @if ($venta->discount_amount > 0)
-        <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
-        @endif
-        <p class="totales">Total: ${{ number_format($venta->net_amount, 2) }}</p>
- 
 
-        <div class="linea"></div>
-
-        <!-- QR Centrado-->
-
-        <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
-            <img src="data:image/png;base64,{{ $qrImage }}" style="width:100px; height:auto; display:inline-block;">
-        </div>
         <!-- FOOTER -->
         <p class="small" style="text-align:center;">
-            Documento generado electrónicamente<br>
+            Pre Orden<br>
             ¡Gracias por su compra!
         </p>
 

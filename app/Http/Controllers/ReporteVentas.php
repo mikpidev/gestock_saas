@@ -46,7 +46,7 @@ class ReporteVentas extends Controller
         $pdf = \PDF::loadView('reportes.ventas', compact('store', 'sales', 'saleDetails', 'productType'));
         return $pdf->download('reporte_ventas.pdf');
     }
-    public function dteReporte(OciService $oci)
+    public function dteReporte(Request $request, OciService $oci)
     {
         ini_set('memory_limit', '1024M');
         set_time_limit(0);
@@ -77,6 +77,10 @@ class ReporteVentas extends Controller
         
             return back()->with('error', 'No se pudo crear el archivo ZIP.');
         }
+
+        //Inicializar consulta con relaciones necesarias para evitar N+1
+        $dateFrom = $request->input('dateFrom', now()->subDays(30)->toDateString());
+        $dateTo = $request->input('dateTo', now()->toDateString());
     
         $query = Sale::with([
             'store.taxInfo',
@@ -91,7 +95,7 @@ class ReporteVentas extends Controller
                   ->orWhere('dte_status', 'PENDIENTE');
             })
             
-            ->whereBetween('sale_date', ['2026-02-01', '2026-02-28']);
+            ->whereBetween('sale_date', [$dateFrom, $dateTo]);
 
         $query->chunk(40, function ($sales) use ($zipPrincipal) {
     

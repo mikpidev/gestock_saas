@@ -53,6 +53,8 @@ class DocumentService
         $customer = $sale->customer;
         $isConsumidorFinal = !$customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
+
 
         // Receptor
         $receptor = $isConsumidorFinal ? [
@@ -128,7 +130,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 1,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "tipoDte" => "01",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
@@ -215,23 +217,31 @@ class DocumentService
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
 
+        $environment = $sale->environment == 'Production' ? '01' : '00';
         return [
             "identificacion" => [
-                "version" => 2,
-                "ambiente" => "01",
-                "codigoGeneracion" => $void->codigo_generacion,
-                "fecAnula" => $void->void_date->format('Y-m-d'),
-                "horAnula" => now()->format('H:i:s'),
+                "version" => 3,
+                "ambiente" => $environment,
+                //"tipoDte" => "03",
+               // "numeroControl" => $sale->numero_control,
+                "codigoGeneracion" => $sale->codigo_generacion,
+                //"tipoModelo" => 1,
+               // "tipoOperacion" => 1,
+                "fecEmi" => $sale->sale_date->format('Y-m-d'),
+                "horEmi" => now()->format('H:i:s'),
+                "fusion" => null
+
+               // "tipoMoneda" => $sale->tipo_moneda,
             ],
             "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nombre" => $storeTaxInfo->actividad_economica,
-                "nomEstablecimiento" => $storeTaxInfo->actividad_economica,
-                "tipoEstablecimiento" => "01",
-                "codEstableMH" => null,
-                "codEstable" => null,
-                "codPuntoVentaMH" => null,
-                "codPuntoVenta" => null,
+                //"nomEstablecimiento" => $storeTaxInfo->actividad_economica,
+               // "tipoEstablecimiento" => "01",
+                "codEstableMH" => "S001",
+                "codEstable" => "S001",
+                "codPuntoVentaMH" => "P001",
+                "codPuntoVenta" => "P001",
                 "telefono" => $storeTaxInfo->telefono,
                 "correo" => $storeTaxInfo->email,
             ],
@@ -241,7 +251,6 @@ class DocumentService
                 "selloRecibido" => $selloRecibidoOriginal,
                 "numeroControl" => $sale->numero_control,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
-                "montoIva" => (float) $sale->total_iva,
                 "codigoGeneracionR" => null,
                 "tipoDocumento" => $customer->tipoDocumento ?? "36",
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",

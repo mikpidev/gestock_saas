@@ -36,7 +36,10 @@ return [
     ],
 
     'hacienda' => [
-        'base_url' => env('HACIENDA_API_URL_TEST'),
+        'prod_url' => env('HACIENDA_PROD_URL'),
+        'test_url' => env('HACIENDA_TEST_URL'),
+        'token_url_test' => env('HACIENDA_API_URL_TEST'),
+        'token_url_prod' => env('HACIENDA_API_URL_PROD'),
         'user' => env('HACIENDA_USER'),
         'pass' => env('HACIENDA_PASS'),
     ],
@@ -46,12 +49,13 @@ return [
     ],
 
     'oci' => [
-        'tenancy_id' => env('OCI_TENANCY_ID'),
-        'user_id' => env('OCI_USER_ID'),
+        'tenancy_id' => env('OCI_TENANCY'),
+        'user_id' => env('OCI_USER'),
         'fingerprint' => env('OCI_FINGERPRINT'),
         'region' => env('OCI_REGION'),
         'key_file' => env('OCI_KEY_FILE'),
         'bucket' => env('OCI_BUCKET'),
+        'namespace' => env('OCI_NAMESPACE'),
     ],
 
     'oci_smtp' => [

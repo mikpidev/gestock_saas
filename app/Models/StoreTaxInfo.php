@@ -9,6 +9,7 @@ class StoreTaxInfo extends Model
 {
     use SoftDeletes;
 
+    
     // Campos que se pueden asignar de forma masiva
     protected $fillable = [
         'company_id',
@@ -23,10 +24,10 @@ class StoreTaxInfo extends Model
         'codActividad',
         'email',
         'telefono',
-        'cert_firma_digital',
         'estado',
         'comentarios',
     ];
+
 
     // Relación con la compañía (inversa 1:N)
     public function company()

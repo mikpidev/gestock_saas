@@ -3,26 +3,28 @@
 namespace App\Services;
 
 use App\Models\HaciendaToken;
+use App\Models\Store;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
+
 class HaciendaAuthService
 {
-    protected $url = 'https://api.dtes.mh.gob.sv/seguridad/auth';
+/*     protected $url = 'https://api.dtes.mh.gob.sv/seguridad/auth';
     protected $user;
-    protected $pass;
+    protected $pass; */
 
-    public function __construct()
+/*     public function __construct()
     {
         $this->user = config('services.hacienda.user');
         $this->pass = config('services.hacienda.pass');
-    }
+    } */
 
     /**
      * Obtiene un token válido de Hacienda.
      */
-    public function getToken()
+    public function getToken(Store  $store)
     {
         $token = HaciendaToken::latest()->first();
 
@@ -30,26 +32,50 @@ class HaciendaAuthService
             return $token->token;
         }
 
-        return $this->generateNewToken();
+        $nit = $store->taxInfo->nit;
+        $api_key = $store->mh_access->api_key;
+        $environment = $store->environment ?? 'default_environment';
+
+        return $this->generateNewToken($nit, $api_key, $environment);
     }
 
     /**
      * Genera un nuevo token y lo guarda en base de datos.
      */
-    public function generateNewToken()
-    {   
+    public function generateNewToken(string $nit, string $api_key, string $environment)
+    {
 
         try {
+
+           if ($environment === 'Production') {
+                $url = config('services.hacienda.token_url_prod') . '/seguridad/auth';
+            } elseif ($environment === 'Development') {
+                $url = config('services.hacienda.token_url_test') . '/seguridad/auth';
+            } else {
+                return [
+                    'estado' => 'ERROR',
+                    'mensaje' => "Ambiente inválido: {$environment}"
+                ];
+            }
+
+
+            $url = config('services.hacienda.token_url_test') . '/seguridad/auth';
             $response = Http::asForm()
                 ->withOptions(['verify' => false])
-                ->post($this->url, [
-                    'user' => $this->user,
-                    'pwd' =>  $this->pass,
+                ->post($url, [
+                    'user' => $nit,
+                    'pwd' => $api_key,
                 ]);
         } catch (\Exception $e) {
             throw new \Exception('Error de conexión con Hacienda: ' . $e->getMessage());
         }
 
+        Log::info("Obteniendo token de Hacienda )", [
+            'user' => $nit,
+            'pass' => $api_key,
+            'response_status' => $response->status(),
+            'response_body' => $response->body('token'),
+        ]);
         if ($response->failed()) {
             Log::error('Error en la petición de token a Hacienda', ['body' => $response->body()]);
             throw new \Exception('Error en la petición de token a Hacienda');
@@ -72,7 +98,7 @@ class HaciendaAuthService
             'expires_at' => Carbon::now()->addMinutes(5), // token válido 5 min
         ]);
 
-        Log::info('Nuevo token generado', ['token' => substr($tokenValue, 0, 20) . '...']);
+        Log::info('Nuevo token generado', ['token' => $tokenValue]);
 
         return $token->token;
     }

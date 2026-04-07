@@ -312,6 +312,9 @@
             <button id="btnImprimirVenta" class="btn btn-primary">
                 <i class="bi bi-printer"></i> Imprimir Ticket
             </button>
+            <button id="btnImprimirPreOrden" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Imprimir Pre Orden
+            </button>
         </div>
 
     </div>
@@ -459,6 +462,13 @@
                     // PREPARAR BOTÓN DE IMPRIMIR
                     document.getElementById('btnImprimirVenta').onclick = function() {
                         const w = window.open(data.ticket_url, '_blank', 'width=400,height=800');
+                        w.onload = () => w.print();
+                    };
+
+                    // PREPARAR BOTÓN DE PRE ORDEN
+                    document.getElementById('btnImprimirPreOrden').onclick = function() {
+                        console.log('PREORDER URL:', data.pre_order_url);
+                        const w = window.open(data.pre_order_url, '_blank', 'width=400,height=800');
                         w.onload = () => w.print();
                     };
 

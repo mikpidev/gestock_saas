@@ -11,6 +11,7 @@ use App\Services\HaciendaAuthService;
 use App\Services\ReceptionService;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Models\Store;
 use App\Services\ConsultaService;
 use App\Services\ContingenciaService;
 
@@ -52,12 +53,22 @@ class DTEController extends Controller
             switch ($tipoDTE) {
 
                 case '01': // Factura Electronica
-                    $dteJson = $this->documentService->buildDTEJsonFE($sale);
+
+                    $nit = $sale->store->taxInfo->nit ?? '00000000000000';
+                    $password_pri = $sale->store->mh_access->password_pri ?? 'default_password';
+                    $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
+                    $dteJson = $this->documentService->buildDTEJsonFE($sale, []);
                     break;
                 case '03': // Comprobante Fiscal
+                    $nit = $sale->store->taxInfo->nit ?? '00000000000000';
+                    $password_pri = $sale->store->mh_access->password_pri ?? 'default_password';
+                    $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
                     $dteJson = $this->documentService->buildDTEJsonCF($sale, []);
                     break;
                 case '14': // Sujeto Excluido
+                    $nit = $sale->store->taxInfo->nit ?? '00000000000000';
+                    $password_pri = $sale->store->mh_access->password_pri ?? 'default_password';
+                    $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
                     $dteJson = $this->documentService->buildDTEJsonSE($sale, []);
                     break;
                 default:
@@ -67,11 +78,22 @@ class DTEController extends Controller
             Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
 
             //  Firmar documento
-            $signedData = $this->documentService->signDocument($dteJson);
+            $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
             Log::info("Documento firmado ({$tipoDTE})", $signedData);
 
             // Obtener token Hacienda
-            $token = $this->authService->generateNewToken();
+            
+            $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+            $environment = $sale->store->environment ?? 'default_environment';
+
+            Log::info("Obteniendo token de Hacienda ({$tipoDTE})", [
+                'nit' => $nit,
+                'environment' => $environment
+            ]);
+
+            $token = $this->authService->generateNewToken($nit, $api_key, $environment);
+
+            Log::info("Token obtenido de Hacienda ({$tipoDTE})", ['token' => $token]);
 
             //  Enviar a Hacienda
             $haciendaResponse = $this->receptionService->sendToHacienda($sale, $signedData, $token);
@@ -109,15 +131,22 @@ class DTEController extends Controller
                 throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta nota de crédito');
             }
 
+            $nit = $creditNote->store->taxInfo->nit ?? '00000000000000';
+            $password_pri = $creditNote->store->mh_access->password_pri ?? 'default_password';
+            $cert_firma_digital = $creditNote->store->mh_access->port_firma_digital ?? 'default_port';
+
             $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale);
             Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
 
             //  Firmar documento
-            $signedData = $this->documentService->signDocument($dteJson);
+            $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
             Log::info("Documento firmado ({$tipoDTE})", $signedData);
 
             // Obtener token Hacienda
-            $token = $this->authService->generateNewToken();
+            $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+            $environment = $sale->store->environment ?? 'default_environment';
+            // Obtener token Hacienda
+            $token = $this->authService->generateNewToken($nit, $api_key, $environment);
 
             //  Enviar a Hacienda
             $haciendaResponse = $this->receptionService->sendNCToHacienda($creditNote, $signedData, $token);
@@ -157,12 +186,18 @@ class DTEController extends Controller
             $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale);
             Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
 
+            $nit = $sale->store->taxInfo->nit ?? '00000000000000';
+            $password_pri = $sale->store->mh_access->password_pri ?? 'default_password';
+            $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
+
             //  Firmar documento
-            $signedData = $this->documentService->signDocument($dteJson);
+            $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
             Log::info("Documento firmado ({$tipoDTE})", $signedData);
 
             // Obtener token Hacienda
-            $token = $this->authService->generateNewToken();
+            $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+            $environment = $sale->store->environment ?? 'default_environment';
+            $token = $this->authService->generateNewToken($nit, $api_key, $environment);
 
             //  Enviar a Hacienda
             $haciendaResponse = $this->receptionService->sendNDToHacienda($debitNote, $signedData, $token);
@@ -170,7 +205,7 @@ class DTEController extends Controller
 
             //  Guardar info del DTE en la nota de crédito
             $debitNote->update([
-                'dte_codigo' => $debitNote->codigo_generacion,
+                'dte_codigo' => $debitNote->co6digo_generacion,
                 'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
             ]);
 
@@ -195,6 +230,7 @@ class DTEController extends Controller
     public function consultarDTE(Sale $sale, ConsultaService $consultaService)
     {
         try {
+
             // Obtener token de Hacienda
             $token = $this->authService->getToken(); // Usar getToken para reutilizar token válido
 

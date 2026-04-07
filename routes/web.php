@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\MHAccessController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\StoreTaxInfoController;
 use App\Http\Controllers\ProductTypeController;
@@ -87,7 +88,17 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('stores_tax_info.update');
 
 
-
+    //Rutas Hacienda Access
+    Route::get('/stores/{store}/mh_access/create', [MHAccessController::class, 'create'])
+        ->name('mh_access.create');
+    Route::post('/stores/{store}/mh_access', [MHAccessController::class, 'store'])
+        ->name('mh_access.store');
+    Route::get('/stores/{store}/mh_access/{mhAccess}/edit', [MHAccessController::class, 'edit'])
+        ->name('mh_access.edit');
+    Route::put('/stores/{store}/mh_access', [MHAccessController::class, 'update'])
+        ->name('mh_access.update');
+    Route::delete('/stores/{store}/mh-access/{mhAccess}', [MHAccessController::class, 'destroy'])
+        ->name('mh_access.destroy');
 
     //rutas para usuarios
     Route::resource('stores.users', \App\Http\Controllers\UserController::class);
@@ -184,6 +195,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
     Route::get('/stores/{store}/sales/{sale}/print', [ReciboController::class, 'print'])
         ->name('ticket.print');
+    Route::get('/stores/{store}/sales/{sale}/preorder', [ReciboController::class, 'preorder'])
+        ->name('ticket.preorder');
 
     Route::get('/stores/{store}/sales/{sale}/reprint', [ReciboController::class, 'reprint'])
         ->name('ticket.reprint');
@@ -282,5 +295,4 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //Email Test OCI
     Route::post('/stores/{store}/sales/{sale}/send-email', [\App\Http\Controllers\OCIController::class, 'emailSend'])
         ->name('stores.email.send');
-
 });

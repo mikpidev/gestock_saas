@@ -16,6 +16,7 @@ class Store extends Model
         'manager',
         'email',
         'status',
+        'environment',
         'comments',
     ];
 
@@ -68,6 +69,11 @@ class Store extends Model
         return $this->hasOne(StoreTaxInfo::class);
     }
 
+    public function mh_access()
+    {
+        return $this->hasOne(MHAccess::class, 'store_id', 'id');
+    }
+
     //relacion usuarios
     public function users()
     {
@@ -102,4 +108,5 @@ class Store extends Model
     {
         return $this->hasMany(DebitNote::class);
     }
+
 }

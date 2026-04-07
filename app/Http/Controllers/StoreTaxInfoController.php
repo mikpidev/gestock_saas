@@ -5,8 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Store;
 use App\Models\StoreTaxInfo;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Http\Request;
+use Illuminate\Testing\Fluent\Concerns\Has;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Code;
+use Illuminate\Support\Facades\Hash;
+
+
 
 class StoreTaxInfoController extends Controller
 {
@@ -48,7 +53,6 @@ class StoreTaxInfoController extends Controller
             'codActividad' => 'required|exists:cod_actividad,codigo',
             'email' => 'required|email|max:100',
             'telefono' => 'required|max:8',
-            'cert_firma_digital' => 'required|max:200',
             'estado' => 'required|in:activo,suspendido,vencido',
             'comentarios' => 'nullable|max:500',
         ]);
@@ -120,7 +124,6 @@ class StoreTaxInfoController extends Controller
             'codActividad' => 'required|exists:cod_actividad,codigo',
             'email' => 'required|email|max:100',
             'telefono' => 'required|max:8',
-            'cert_firma_digital' => 'required|max:200',
             'estado' => 'required|in:activo,suspendido,vencido',
             'comentarios' => 'nullable|max:500',
         ]);

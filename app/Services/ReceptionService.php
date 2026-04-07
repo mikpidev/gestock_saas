@@ -9,6 +9,15 @@ use App\Models\Sale;
 
 class ReceptionService
 {
+
+    public function __construct()
+    {
+
+        config([
+            'services.hacienda.prod_url' => env('HACIENDA_PROD_URL'),
+            'services.hacienda.test_url' => env('HACIENDA_TEST_URL'),
+        ]);
+    }
     /**
      * Envía un documento firmado a Hacienda
      *
@@ -22,6 +31,18 @@ class ReceptionService
     {
         // Obtener código de DTE directamente de la relación
         $tipoDTE = $sale->tipoDte?->codigo;
+
+        //obtener ambiente desde sales
+        $environment = $sale->store->environment; // 'prod' o 'test'
+
+        Log::info("Enviando DTE a Hacienda", [
+            'sale_id' => $sale->id,
+            'tipo_documento' => $sale->tipo_documento_id,
+            'tipoDTE' => $tipoDTE,
+            'ambiente' => $environment,
+            'token' => $token,
+            'data firmada' => $signedData['body'] ?? null
+        ]);
 
         if (!$tipoDTE) {
             Log::error("Tipo de DTE inválido para la venta {$sale->id}");
@@ -40,23 +61,50 @@ class ReceptionService
 
         $version = $versionDTE[$tipoDTE];
 
+        if ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepciondte';
+            $ambiente = '01';
+        } elseif ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepciondte';
+            $ambiente = '00';
+        } else {
+            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
+
+        Log::info('Request a Hacienda - PRE', [
+            'url' => $url,
+            'ambiente' => $ambiente,
+            'idEnvio' => 1,
+            'version' => $version,
+            'tipoDte' => $tipoDTE,
+            'codigoGeneracion' => $sale->codigo_generacion,
+            'has_token' => !empty($token),
+            'token_preview' => substr($token, 0, 20) . '...', // no log completo por seguridad
+            'documento_length' => strlen($signedData['body'] ?? ''),
+        ]);
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '01',
+                ->post($url, [
+                    'ambiente' => $ambiente,
                     'idEnvio' => 1,
                     'version' => $version,
                     'tipoDte' => $tipoDTE,
                     'codigoGeneracion' => $sale->codigo_generacion,
-                    'documento' => $signedData['body'] ?? null
+                    'documento' => $signedData['body'] ?? '',
                 ]);
+
 
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
-                'body' => $response->body()
+                'body' => $response->body(),
+
             ]);
 
             $data = $response->json();
@@ -100,28 +148,43 @@ class ReceptionService
     {
         $tipoDTE = '05'; // Nota de Crédito Electrónica
         $version = 3;
-    
+        $environment = $creditNote->store->environment; // 'prod' o 'test'
+
+        if ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepciondte';
+            $ambiente = '01';
+        } elseif ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepciondte';
+            $ambiente = '00';
+        } else {
+            Log::error("Ambiente desconocido para la venta {$creditNote->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
+
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '01',
+                ->post($url, [
+                    'ambiente' => $ambiente,
                     'idEnvio' => 1,
                     'version' => $version,
                     'tipoDte' => $tipoDTE,
                     'codigoGeneracion' => $creditNote->codigo_generacion,
                     'documento' => $signedData['body'] ?? null
                 ]);
-    
+
             $data = $response->json();
-    
+
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
-    
+
             // Guardar en dte_responses_nc
             try {
                 \App\Models\DteResponseNC::create([
@@ -143,23 +206,22 @@ class ReceptionService
             } catch (\Exception $e) {
                 Log::error('Error guardando DteResponseNC al crear NC: ' . $e->getMessage());
             }
-    
+
             return $data;
-    
         } catch (\Throwable $th) {
             Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
                 'credit_note_id' => $creditNote->id,
                 'tipo_documento' => $creditNote->tipo_documento_id,
                 'trace' => $th->getTraceAsString()
             ]);
-    
+
             return [
                 'estado' => 'ERROR',
                 'mensaje' => $th->getMessage()
             ];
         }
     }
-    
+
 
     public function sendNDToHacienda($debitNote, $signedData, $token)
     {
@@ -168,30 +230,45 @@ class ReceptionService
 
         $versionDTE = 3;
 
-        $version = $versionDTE;
+        $environment = $debitNote->store->environment; // 'prod' o 'test'
+
+         if ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepciondte';
+            $ambiente = '01';
+        } elseif ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepciondte';
+            $ambiente = '00';
+        } else {
+            Log::error("Ambiente desconocido para la venta {$debitNote->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
+
 
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepciondte', [
-                    'ambiente' => '01',
+                ->post($url, [
+                    'ambiente' => $ambiente,
                     'idEnvio' => 1,
-                    'version' => $version,
+                    'version' => $versionDTE,
                     'tipoDte' => $tipoDTE,
                     'codigoGeneracion' => $debitNote->codigo_generacion,
                     'documento' => $signedData['body'] ?? null
                 ]);
 
-                $data = $response->json();
+            $data = $response->json();
 
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
 
-                        // Guardar en dte_responses_nc
+            // Guardar en dte_responses_nc
             try {
                 \App\Models\DteResponseND::create([
                     'debit_note_id' => $debitNote->id,
@@ -216,8 +293,6 @@ class ReceptionService
 
 
             return $data;
-
-
         } catch (\Throwable $th) {
             Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
                 'debit_note_id' => $debitNote->id,

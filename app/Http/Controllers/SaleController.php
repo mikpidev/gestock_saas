@@ -60,31 +60,53 @@ class SaleController extends Controller
     public function index(Request $request, Store $store)
     {
         $authService = app(HaciendaAuthService::class);
-        $token = $authService->getToken();
+
+
+        $token = $authService->getToken($store);
         $consultaService = new ConsultaService();
+        $customers = Customer::where('store_id', $store->id)->get();
+        $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
 
         // Primero obtenemos la fecha del request (si no viene, usa hoy)
-        $fecha = $request->fecha ?? Carbon::today()->toDateString();
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->startOfDay();
 
-        // Filtramos ventas de ESTA tienda y de ESA fecha
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+        //obtener filtro clientes, codigo generacion y estado DTE para mostrar en el index
+        $customers_id = $request->customer_id;
+        $codigo_generacion_filter = $request->codigo_generacion;
+        $dte_status = $request->dte_status;
+
+
+        //obtener datos para mostrar en el filtro
+
+        //customers para filtro
         $sales = Sale::with('customer')
-            ->where('store_id', $store->id)
-            ->whereDate('created_at', $fecha)
-            ->orderByDesc('created_at')
-            ->get();
+        ->where('store_id', $store->id)
+        ->whereBetween('sale_date', [$dateFrom, $dateTo])
+        ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
+        ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
+        ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
+        ->orderByDesc('sale_date')
+        ->get();
 
         // Consultar DTE solo a las ventas filtradas
         foreach ($sales as $sale) {
-            if ($sale->dte_status === null || $sale->dte_status === 'PENDIENTE') {
+            if ($sale->dte_status !== 'PROCESADO') {
                 $consultaService->consultarSale($sale, $token);
+                
             }
         }
 
-        return view('sales.index', compact('store', 'sales', 'fecha'));
+        return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
     {
-        $token = app(HaciendaAuthService::class)->getToken();
+        $token = app(HaciendaAuthService::class)->getToken($store);
         $consultaService->consultarSale($sale, $token);
 
         return redirect()->back()->with('success', 'Estado DTE actualizado.');
@@ -173,7 +195,7 @@ class SaleController extends Controller
             'tipo_moneda' => 'USD',
             'tipo_operacion' => 1,
             'condicion_operacion' => 1,
-            'payment_method' => $data['payment_method'] ,
+            'payment_method' => $data['payment_method'],
             'total_exenta' => $total_exenta,
             'total_gravada' => $netAmount,
             'total_iva' => $total_iva,
@@ -181,6 +203,7 @@ class SaleController extends Controller
             'codigo_generacion' => $invoiceNumber->codigo_generacion,
             'invoice_number' => $invoiceNumber->number,
             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
+            'environment' => $store->environment ?? 'Production'
         ]);
 
         // Crear detalles
@@ -198,6 +221,7 @@ class SaleController extends Controller
                 'iva_item' => round($ivaItem, 2),
             ]);
         }
+
 
         // Generar DTE según tipo de documento
         try {
@@ -239,10 +263,12 @@ class SaleController extends Controller
         return response()->json([
             'success' => true,
             'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
+            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
             'sale_id' => $sale->id
         ]);
-        
-        
+
+        return redirect()->route('stores.sales.index', $store->id)
+            ->with('success', 'Venta creada correctamente. El DTE se generará en breve.');
     }
 
 

@@ -62,6 +62,7 @@ class StoreController extends Controller
             'manager'    => 'required|max:100',
             'email'      => 'required|email|unique:stores,email',
             'status'     => 'required|in:activa,suspendida,inactiva',
+            'environment' => 'required|in:Production,Development',
             'comments'   => 'nullable',
         ]);
 
@@ -158,6 +159,7 @@ class StoreController extends Controller
             'manager' => 'required|max:100',
             'email' => ['required','email','max:100', Rule::unique('stores')->ignore($store->id)->whereNull('deleted_at'),],  // Solo verifica registros activos
             'status' => 'required|in:activa,suspendida,inactiva',
+            'environment' => 'required|in:Production,Development',
             'comments' => 'nullable',
         ]);
 

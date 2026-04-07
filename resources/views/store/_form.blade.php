@@ -23,6 +23,13 @@
     <option value="suspendida" {{ (old('status', $store->status ?? '') == 'suspendida') ? 'selected' : '' }}>Suspendida</option>
     <option value="inactiva" {{ (old('status', $store->status ?? '') == 'inactiva') ? 'selected' : '' }}>Inactiva</option>
 </select>
+
+<label for="environment">Entorno</label>
+<select name="environment" id="environment" class="form-control" required>
+    <option value="Production" {{ (old('environment', $store->environment ?? '') == 'Production') ? 'selected' : '' }}>Production</option>
+    <option value="Development" {{ (old('environment', $store->environment ?? '') == 'Development') ? 'selected' : '' }}>Development</option>
+</select>
+
 <label for="comments">Comentarios</label>
 <textarea name="comments" id="comments" class="form-control" rows="4">{{ old('comments', $store->comments ?? '') }}</textarea>
 

@@ -11,6 +11,19 @@
             class="btn btn-warning text-white">
             <i class="fas fa-edit"></i> Editar Información
         </a>
+
+        ` <!-- BOTÓN EDITAR MH Access-->
+        @if($store->mh_access)
+        <a href="{{ route('mh_access.edit', [$store, $store->mh_access]) }}"
+            class="btn btn-warning text-white">
+            <i class="fas fa-edit"></i> Editar Acceso a Hacienda
+        </a>
+        @else
+        <a href="{{ route('mh_access.create', $store) }}"
+            class="btn btn-success text-white">
+            <i class="fas fa-plus"></i> Crear Acceso a Hacienda
+        </a>
+        @endif
     </div>
 
     <div class="card shadow-sm border-0 rounded-4">

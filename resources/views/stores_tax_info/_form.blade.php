@@ -41,6 +41,8 @@
 
 .gestok-form-body input[type="email"],
 .gestok-form-body input[type="text"],
+.gestok-form-body input[type="password"],
+
 .gestok-form-body select {
     width: 100%;
     padding: 0.6rem;
@@ -200,11 +202,6 @@
             <label for="email">Correo Electrónico</label>
             <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $storeTaxInfo->email ?? '') }}">
             @error('email') <div class="text-danger">{{ $message }}</div> @enderror
-
-            {{-- Certificado de Firma Digital --}}
-            <label for="cert_firma_digital">Certificado de Firma Digital</label>
-            <input type="text" name="cert_firma_digital" id="cert_firma_digital" class="form-control" value="{{ old('cert_firma_digital', $storeTaxInfo->cert_firma_digital ?? '') }}" required>
-            @error('cert_firma_digital') <div class="text-danger">{{ $message }}</div> @enderror
 
             {{-- Estado --}}
             <label for="estado">Estado</label>

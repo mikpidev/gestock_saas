@@ -11,6 +11,7 @@ use App\Models\DteResponseND;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use League\CommonMark\Environment\Environment;
 
 class ConsultaService
 {
@@ -26,20 +27,48 @@ class ConsultaService
             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
         }
 
-        $tipoDTE = "01"; // Ajustar según tipo de venta
+        $tipoDTE = $sale->tipoDte?->codigo;
 
+
+        if (!$tipoDTE) {
+            throw new \Exception('Tipo de DTE no seleccionado o no encontrado para esta venta');
+        }
+
+        $environment = $sale->store->environment ?? 'default_environment';
+
+        if ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepcion/consultadte/';
+        } elseif ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
+        } else {
+            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
+
+        //Logs before the request
+/*         Log::info("Consultando DTE en Hacienda", [
+            'sale_id' => $sale->id,
+            'nitEmisor' => $sale->store->taxInfo->nit,
+            'tdte' => $tipoDTE,
+            'codigoGeneracion' => $sale->codigo_generacion,
+            'url' => $url
+        ]); */
+        
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
-                'nitEmisor' =>  $sale->store->taxInfo->nit,
-                'tdte' => $tipoDTE,
-                'codigoGeneracion' => $sale->codigo_generacion
-            ]);
-        
-            
+                ->post($url, [
+                    'nitEmisor' =>  $sale->store->taxInfo->nit,
+                    'tdte' => $tipoDTE,
+                    'codigoGeneracion' => $sale->codigo_generacion
+                ]);
+
+
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
@@ -74,7 +103,6 @@ class ConsultaService
             $sale->save();
 
             return $data;
-
         } catch (\Throwable $e) {
             Log::error("Error consultando DTE en Hacienda", [
                 'sale_id' => $sale->id,
@@ -99,19 +127,32 @@ class ConsultaService
 
         // 04 es el tipo de DTE para Nota de Crédito
         $tipoDTE = "04"; // Ajustar según tipo de venta
+        $environment = $creditNote->store->environment ?? 'default_environment';
+
+        if ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepcion/consultadte';
+        } elseif ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte';
+        } else {
+            Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
 
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
-                'nitEmisor' => env('HACIENDA_USER'),
-                'tdte' => $tipoDTE,
-                'codigoGeneracion' => $creditNote->codigo_generacion
-            ]);
-        
-            
+                ->post($url, [
+                    'nitEmisor' => $creditNote->store->taxInfo->nit,
+                    'tdte' => $tipoDTE,
+                    'codigoGeneracion' => $creditNote->codigo_generacion
+                ]);
+
+
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
@@ -146,7 +187,6 @@ class ConsultaService
             $creditNote->save();
 
             return $data;
-
         } catch (\Throwable $e) {
             Log::error("Error consultando DTE en Hacienda", [
                 'sale_id' => $creditNote->id,
@@ -168,18 +208,33 @@ class ConsultaService
 
         $tipoDTE = "06"; // Ajustar según tipo de venta
 
+        $environment = $debitNote->store->environment ?? 'default_environment';
+
+        if ($environment === 'Development') {
+            $url = config('services.hacienda.test_url') . 'recepcion/consultadte';
+        } elseif ($environment === 'Production') {
+            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte';
+        } else {
+            Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
+            return [
+                'estado' => 'ERROR',
+                'mensaje' => 'Ambiente desconocido'
+            ];
+        }
+
+
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'Content-Type' => 'application/json'
             ])->withOptions(['verify' => false])
-                ->post('https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte/', [
-                'nitEmisor' => env('HACIENDA_USER'),
-                'tdte' => $tipoDTE,
-                'codigoGeneracion' => $debitNote->codigo_generacion
-            ]);
-        
-            
+                ->post($url, [
+                    'nitEmisor' => $debitNote->store->taxInfo->nit,
+                    'tdte' => $tipoDTE,
+                    'codigoGeneracion' => $debitNote->codigo_generacion
+                ]);
+
+
             Log::info("Hacienda Response ({$tipoDTE})", [
                 'status' => $response->status(),
                 'body' => $response->body()
@@ -214,7 +269,6 @@ class ConsultaService
             $debitNote->save();
 
             return $data;
-
         } catch (\Throwable $e) {
             Log::error("Error consultando DTE en Hacienda", [
                 'sale_id' => $debitNote->id,

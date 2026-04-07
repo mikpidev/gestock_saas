@@ -8,7 +8,7 @@ use Oracle\Signer\Signer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Mail;
-
+use Illuminate\Support\Facades\Storage;
 
 class OCIService
 {
@@ -20,15 +20,17 @@ class OCIService
     {
         //oci SMTP
         $this->config = config('services.oci_smtp');
-
     }
 
     public function uploadReportsToOCI($objectName, $filePath, $contentType = "application/octet-stream")
 
     {
 
+        //verificar objectname y filepath
+        \Log::info('OCI Upload - Object Name: ' . $objectName . ', File Path: ' . $filePath . ', Size:' . filesize($filePath) . ' bytes');
+
         //Variables de entorno OCI
-        $namespace = config('services.oci.tenancy_id');
+        $namespace = config('services.oci.namespace');
         $bucket = config('services.oci.bucket');
         $region = config('services.oci.region');
         $userOcid = config('services.oci.user_id');
@@ -36,35 +38,45 @@ class OCIService
         $fingerprint = config('services.oci.fingerprint');
         $keyFile = config('services.oci.key_file');
 
-      
+
         $url = "https://objectstorage.{$region}.oraclecloud.com/n/{$namespace}/b/{$bucket}/o/{$objectName}";
         $date = gmdate('D, d M Y H:i:s T');
 
-        
+
         //Cargar la clave privada
         $privateKey = openssl_pkey_get_private(file_get_contents($keyFile));
         if (!$privateKey) {
             return "No se pudo cargar la private key";
         }
 
-        $signingString =            
-        
-        "(request-target): put /n/{$namespace}/b/{$bucket}/o/{$objectName}\n" .
-        "date: {$date}\n" .
-        "host: objectstorage.{$region}.oraclecloud.com";
 
+
+        //crear path en bucket si no existe
+        if (!file_exists($filePath)) mkdir($filePath, 0777, true);
 
         $body = file_get_contents($filePath);
+        //$Bodysize = filesize($filePath);
+        $contentLength = strlen($body);
+        $contentSha256 = base64_encode(hash('sha256', $body, true));
 
-        //firmar la cadena
+        $signingString =
+            "(request-target): put /n/{$namespace}/b/{$bucket}/o/{$objectName}\n" .
+            "host: objectstorage.{$region}.oraclecloud.com\n" .
+            "date: {$date}\n" .
+            "content-type: {$contentType}\n" .
+            "content-length: {$contentLength}\n" .
+            "x-content-sha256: {$contentSha256}";
+
+        \Log::info("OCI Upload -  Content-Length: " . $contentLength);
+
+       //firmar la cadena
 
         openssl_sign($signingString, $signature, $privateKey, "SHA256");
         $signature = base64_encode($signature);
 
         //headers Auth
-
         $authHeader = sprintf(
-            'Signature keyId="%s/%s/%s",algorithm="rsa-sha256",headers="(request-target) date host",signature="%s"',
+            'Signature keyId="%s/%s/%s",algorithm="rsa-sha256",headers="(request-target) host date content-type content-length x-content-sha256",signature="%s"',
             $tenancyOcid,
             $userOcid,
             $fingerprint,
@@ -73,15 +85,19 @@ class OCIService
 
         // convertir headers a formato curl 
         $curlHeaders = [];
-        foreach ([
-            "date" => $date,
-            "host" => "objectstorage.$region.oraclecloud.com",
-            "authorization" => $authHeader,
-            "content-type" => $contentType,
-            "content-length" => strlen($body)
-        ] as $key => $value) {
+        foreach (
+            [
+                "date" => $date,
+                "host" => "objectstorage.$region.oraclecloud.com",
+                "authorization" => $authHeader,
+                "content-type" => $contentType,
+                "content-length" => $contentLength,
+                "x-content-sha256" => $contentSha256
+            ] as $key => $value
+        ) {
             $curlHeaders[] = "{$key}: {$value}";
         }
+
 
         // enviar PUT directamente con curl (más confiable)
 
@@ -91,11 +107,28 @@ class OCIService
         curl_setopt($ch, CURLOPT_HTTPHEADER, $curlHeaders);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
+        //verificar headers antes de enviar
+        \Log::info('OCI Upload - Headers: ' . json_encode($curlHeaders));
+
         $response = curl_exec($ch);
-        $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error    = curl_error($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error  = curl_error($ch);
+
+        if ($response === false) {
+            \Log::error('OCI CURL ERROR', [
+                'error' => $error
+            ]);
+        } else {
+            \Log::info('OCI RESPONSE', [
+                'status' => $status,
+                'body' => $response
+            ]);
+        }
+
+
 
         curl_close($ch);
+
 
         if ($response === false) {
             return [
@@ -111,7 +144,6 @@ class OCIService
             "error" => $error,
             "url" => $url
         ];
-
     }
 
 
@@ -158,7 +190,6 @@ class OCIService
                     );
                 }
             });
-
         } catch (\Throwable $e) {
 
             Log::error('Error enviando correo por OCI', [
