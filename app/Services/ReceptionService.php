@@ -52,6 +52,13 @@ class ReceptionService
             ];
         }
 
+        // llamando url bases
+        log::info("URLs de Hacienda", [
+            'prod_url' => config('services.hacienda.prod_url'),
+            'test_url' => config('services.hacienda.test_url'),
+        ]);
+
+
         // Mapear código de DTE a versión
         $versionDTE = [
             '01' => 1, // Factura Electrónica
