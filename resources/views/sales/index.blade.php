@@ -175,6 +175,22 @@
         border-radius: 6px;
         padding: 6px;
     }
+
+
+    .filters {
+        background: #f9fafb;
+        padding: 12px;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filters input {
+        display: inline-block;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px;
+    }
 </style>
 
 <div class="card-table">
