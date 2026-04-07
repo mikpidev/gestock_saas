@@ -9,7 +9,7 @@ use App\Models\Sale;
 
 class ReceptionService
 {
-
+/* 
     public function __construct()
     {
 
@@ -17,7 +17,7 @@ class ReceptionService
             'services.hacienda.prod_url' => env('HACIENDA_PROD_URL'),
             'services.hacienda.test_url' => env('HACIENDA_TEST_URL'),
         ]);
-    }
+    } */
     /**
      * Envía un documento firmado a Hacienda
      *
