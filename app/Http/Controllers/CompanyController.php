@@ -77,6 +77,8 @@ class CompanyController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        
         session(['selected_company_id' => $company->id]);
 
         return redirect()->route('stores.index');

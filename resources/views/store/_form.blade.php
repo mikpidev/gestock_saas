@@ -1,6 +1,6 @@
 <!--Formulario para crear o editar una tienda-->
 
-<input type="hidden" name="company_id" value="{{ old('company_id', $company->id ?? '') }}">
+<input type="hidden" name="company_id" value="{{ old('company_id', $store->company_id ?? $company->id) }}">
 
 <label for="store_name">Nombre de la Tienda</label>
 <input type="text" name="store_name" id="store_name" class="form-control" value="{{ old('store_name', $store->store_name ?? '') }}" required>

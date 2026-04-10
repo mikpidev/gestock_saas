@@ -22,12 +22,21 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login')->with('error', 'Por favor, inicia sesión.');
         }
-
         if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
+    
+            if (!$companyId) {
+                return redirect()->route('companies.select'); // o donde seleccione empresa
+            }
+    
             $stores = Store::where('company_id', $companyId)->get();
+    
         } elseif ($user->hasRole('admin')) {
-            $stores = Store::where('company_id', $user->company_id)->get();
+
+        $companyId = session('selected_company_id') ?? $user->company_id;
+
+        $stores = Store::where('company_id', $companyId)->get();
+    
         } else {
             abort(403, 'Acceso no autorizado.');
         }
@@ -55,7 +64,6 @@ class StoreController extends Controller
         }
         
         $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
             'store_name' => 'required|max:200',
             'address'    => 'required',
             'phone'      => 'required|size:8',
@@ -66,7 +74,6 @@ class StoreController extends Controller
             'comments'   => 'nullable',
         ]);
 
-        $company = Company::findOrFail($validated['company_id']);
         $store = $company->stores()->create($validated);
 
         return redirect()->route('store_tax_info.create', ['store' => $store->id])

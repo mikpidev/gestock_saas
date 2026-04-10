@@ -19,12 +19,14 @@ class HomeController extends Controller
 
         // Admin: accede a la tienda asignada
         if ($user->hasRole('admin')) {
-            $store = $user->store; // asegúrate que la relación está definida
-            return redirect()->route('stores.index', $store->id);
+            $store = $user->store; // asegúrate que la relación está definida 
+
+            session(['selected_company_id' => $user->company_id]);
+            return redirect()->route('stores.index');
         }
 
         //User: accede a la tienda que pertenece
-        if($user->hasRole('user')){
+        if ($user->hasRole('user')) {
             $store = $user->store;
             return redirect()->route('stores.show', $store->id);
         }
