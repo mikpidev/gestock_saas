@@ -223,21 +223,21 @@ class DocumentService
                 "version" => 3,
                 "ambiente" => $environment,
                 //"tipoDte" => "03",
-               // "numeroControl" => $sale->numero_control,
+                // "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
                 //"tipoModelo" => 1,
-               // "tipoOperacion" => 1,
+                // "tipoOperacion" => 1,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
                 "horEmi" => now()->format('H:i:s'),
                 "fusion" => null
 
-               // "tipoMoneda" => $sale->tipo_moneda,
+                // "tipoMoneda" => $sale->tipo_moneda,
             ],
             "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nombre" => $storeTaxInfo->actividad_economica,
                 //"nomEstablecimiento" => $storeTaxInfo->actividad_economica,
-               // "tipoEstablecimiento" => "01",
+                // "tipoEstablecimiento" => "01",
                 "codEstableMH" => "S001",
                 "codEstable" => "S001",
                 "codPuntoVentaMH" => "P001",
@@ -283,6 +283,9 @@ class DocumentService
         $discount_amount = $sale->discount_amount ?? 0.00;
         $totalGravada = 0.00;
         $totalIva = 0.00;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
+
+
 
         // ==============================
         // CUERPO DOCUMENTO
@@ -340,7 +343,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "tipoDte" => "03",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
