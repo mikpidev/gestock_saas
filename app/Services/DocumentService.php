@@ -397,7 +397,7 @@ class DocumentService
             "resumen" => [
                 "totalNoSuj" => 0.00,
                 "totalExenta" => 0.00,
-                "totalGravada" => round($sale->total_gravada, 2),
+                "totalGravada" => round($totalGravada, 2),
                 "subTotalVentas" => round($sale->total_gravada - $sale->total_iva, 2),
                 "descuNoSuj" => 0.00,
                 "descuExenta" => 0.00,
