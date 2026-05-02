@@ -469,6 +469,7 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
         $sale->load('dteResponses');
         $selloRecibidoOriginal = $sale->dteResponses()
             ->where('estado', 'PROCESADO') // solo DTE exitosos
@@ -478,7 +479,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -530,6 +531,7 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
 
 
         // Cuerpo documento
@@ -558,7 +560,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 1,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "tipoDte" => "14",
                 "numeroControl" => $sale->numero_control,
                 "codigoGeneracion" => $sale->codigo_generacion,
@@ -648,6 +650,7 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
         $sale->load('dteResponses');
         $selloRecibidoOriginal = $sale->dteResponses()
             ->where('estado', 'PROCESADO') // solo DTE exitosos
@@ -657,7 +660,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -708,6 +711,9 @@ class DocumentService
         $customer = $creditNote->customer ?? $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
 
+        //Llamamos el ambiente
+        $environment = $sale->environment == 'Production' ? '01' : '00';
+
         // USAR creditNoteDetails() con valores POSITIVOS
         $cuerpoDocumento = $creditNote->creditNoteDetails->map(function ($creditNoteDetail, $index) use ($creditNote) {
             $detail = $creditNoteDetail->saleDetail; // Detalle original de la venta
@@ -751,7 +757,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "tipoDte" => "05", // ← Esto indica que es Nota de Crédito
                 "numeroControl" => $creditNote->numero_control,
                 "codigoGeneracion" => $creditNote->codigo_generacion,
@@ -839,6 +845,8 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        //Llamamos ambiente desde venta
+        $environment = $sale->environment == 'Production' ? '01' : '00';
 
         // Tomar solo DTE procesados de la venta original
         $selloRecibidoOriginal = $creditNote->dteResponses()
@@ -849,7 +857,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -901,7 +909,7 @@ class DocumentService
     {
         $customer = $debitNote->customer ?? $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
-
+        $environment = $sale->environment == 'Production' ? '01' : '00';
         // USAR debitNoteDetails() con valores POSITIVOS
         $cuerpoDocumento = $debitNote->debitNoteDetails->map(function ($debitNoteDetail, $index) use ($debitNote) {
             $detail = $debitNoteDetail->saleDetail; // Detalle original de la venta
@@ -945,7 +953,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 3,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "tipoDte" => "06", // ← Esto indica que es Nota de Crédito
                 "numeroControl" => $debitNote->numero_control,
                 "codigoGeneracion" => $debitNote->codigo_generacion,
@@ -1038,6 +1046,7 @@ class DocumentService
     {
         $customer = $sale->customer;
         $storeTaxInfo = $sale->store->taxInfo;
+        $environment = $sale->environment == 'Production' ? '01' : '00';
 
         // Tomar solo DTE procesados de la venta original
         $selloRecibidoOriginal = $debitNote->dteResponses()
@@ -1048,7 +1057,7 @@ class DocumentService
         return [
             "identificacion" => [
                 "version" => 2,
-                "ambiente" => "01",
+                "ambiente" => $environment,
                 "codigoGeneracion" => $void->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
@@ -1103,6 +1112,7 @@ class DocumentService
         ]);
 
         $storeTaxInfo = $contingencia->store->taxInfo;
+        $environment = $contingencia->store->environment == 'Production' ? '01' : '00';
 
         $detalleDTE = [];
         $noItem = 1;
@@ -1139,7 +1149,7 @@ class DocumentService
         return [
             'identificacion' => [
                 'version' => 3,
-                'ambiente' => '01',
+                'ambiente' => $environment,
                 'codigoGeneracion' => $contingencia->codigo_generacion,
                 'fTransmision' => $contingencia->fecha_hora_inicio->format('Y-m-d'),
                 'hTransmision' => $contingencia->fecha_hora_inicio->format('H:i:s'),
