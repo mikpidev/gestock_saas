@@ -344,12 +344,12 @@ class DTEController extends Controller
             Log::info('DTE Contingencia antes de firmar', $dteJson);
 
             // Firmar documento
-            $signedData = $this->documentService->signDocument($dteJson);
+            $signedData = $this->documentService->signDocument($dteJson, $contingencia->store->taxInfo->nit, $contingencia->store->mh_access->password_pri, $contingencia->store->mh_access->port_firma_digital);
 
             Log::info('DTE Contingencia firmado', $signedData);
 
             // Token
-            $token = $this->authService->generateNewToken();
+            $token = $this->authService->generateNewToken( $contingencia->store->taxInfo->nit, $contingencia->store->mh_access->api_key, $contingencia->store->environment);
 
             // Enviar a Hacienda
             $haciendaResponse = $this->contingenciaService

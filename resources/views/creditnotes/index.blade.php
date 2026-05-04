@@ -196,7 +196,7 @@
                 <tr>
                     <td>{{ $creditNote->codigo_generacion ?? '—' }}</td>
                     <td>{{ $creditNote->customer->nombre ?? 'Sin cliente' }}</td>
-                    <td>{{ $creditNote->sale->invoice_number ?? 'N/A' }}</td>
+                    <td>{{ $creditNote->sale->codigo_generacion ?? 'N/A' }}</td>
                     <td>{{ \Carbon\Carbon::parse($creditNote->credit_note_date)->format('d/m/Y') }}</td>
                     <td>${{ number_format($creditNote->total_amount, 2) }}</td>
 

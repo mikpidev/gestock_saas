@@ -11,19 +11,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Llamar primero al seeder de roles y permisos
-        $this->call(\Database\Seeders\RolesAndPermissionsSeeder::class);
-
-        // Llamar al seeder de usuarios iniciales
-        $this->call(\Database\Seeders\UserSeeder::class);
-
-        // (Opcional) si quieres seguir creando usuarios de prueba
-        // User::factory(10)->create();
-
-        //llamar seeder para departamentos 
-        $this->call(\Database\Seeders\DepartamentosSeeder::class);
-
-        //llamar seeder municipios
-        $this->call(\Database\Seeders\MunicipiosSeeder::class);
+        $this->call([
+            TipoDocumentoSeeder::class,
+            TipoDocumentoIdentificacionSeeder::class,
+            TipoModeloSeeder::class,
+            TipoOperacionSeeder::class,
+            TipoContigenciaSeeder::class,
+            TipoEstablecimientoSeeder::class,
+            FormaPagoSeeder::class,
+            DepartamentosSeeder::class,
+            MunicipiosSeeder::class,
+            CodActividadSeeder::class,
+            RolesAndPermissionsSeeder::class,
+            UserSeeder::class,
+            ConsumidorFinalSeeder::class,
+        ]);
     }
 }

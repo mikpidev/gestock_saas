@@ -59,9 +59,9 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('stores/{store}', [StoreController::class, 'show'])->name('stores.show');
     Route::delete('stores/{store}', [StoreController::class, 'destroy'])->name('stores.destroy');
     Route::get('stores/{store}/edit', [StoreController::class, 'edit'])->name('stores.edit');
-
+    Route::put('stores/{store}', [StoreController::class, 'update'])->name('stores.update');
     Route::get('companies/{company}/stores/create', [StoreController::class, 'create'])->name('stores.create');
-    Route::post('companies/{company}/stores', [StoreController::class, 'store'])->name('store.store');
+    Route::post('stores/{company}', [StoreController::class, 'store'])->name('store.store');
     //Route::resource('stores', StoreController::class);
 
 

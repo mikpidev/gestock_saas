@@ -478,20 +478,19 @@ class DocumentService
 
         return [
             "identificacion" => [
-                "version" => 2,
+                "version" => 3,
                 "ambiente" => $environment,
                 "codigoGeneracion" => $void->codigo_generacion,
-                "fecAnula" => $void->void_date->format('Y-m-d'),
-                "horAnula" => now()->format('H:i:s'),
+                "fecEmi" => $sale->sale_date->format('Y-m-d'),
+                "horEmi" => now()->format('H:i:s'),
+                "fusion" => null
             ],
             "emisor" => [
                 "nit" => $storeTaxInfo->nit,
                 "nombre" => $storeTaxInfo->actividad_economica,
-                "nomEstablecimiento" => $storeTaxInfo->actividad_economica,
-                "tipoEstablecimiento" => "01",
-                "codEstableMH" => null,
+                "codEstableMH" => "S001",
                 "codEstable" => null,
-                "codPuntoVentaMH" => null,
+                "codPuntoVentaMH" => "P001",
                 "codPuntoVenta" => null,
                 "telefono" => $storeTaxInfo->telefono,
                 "correo" => $storeTaxInfo->email,
@@ -502,7 +501,7 @@ class DocumentService
                 "selloRecibido" => $selloRecibidoOriginal,
                 "numeroControl" => $sale->numero_control,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
-                "montoIva" => (float) $sale->total_iva,
+                //"montoIva" => (float) $sale->total_iva,
                 "codigoGeneracionR" => null,
                 "tipoDocumento" => $customer->tipoDocumento ?? "36",
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",
@@ -1151,8 +1150,8 @@ class DocumentService
                 'version' => 3,
                 'ambiente' => $environment,
                 'codigoGeneracion' => $contingencia->codigo_generacion,
-                'fTransmision' => $contingencia->fecha_hora_inicio->format('Y-m-d'),
-                'hTransmision' => $contingencia->fecha_hora_inicio->format('H:i:s'),
+                'fTransmision' => $contingencia->fecha_hora_fin->format('Y-m-d'),
+                'hTransmision' => $contingencia->fecha_hora_fin->format('H:i:s'),
             ],
 
             'emisor' => [

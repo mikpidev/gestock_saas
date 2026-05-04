@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::table('sales', function (Blueprint $table) {
             // ejemplo: cambiar a foreignId para relacionar con invoice_numbers
-            $table->foreignId('invoice_number_id')->after('customer_id')->nullable()->constrained('invoice_numbers');
-            $table->dropColumn('invoice'); // si quieres eliminar la columna anterior
+            $table->foreignId('invoice_number_id')->after('customers_id')->nullable()->constrained('invoice_numbers');
         });
     }
     

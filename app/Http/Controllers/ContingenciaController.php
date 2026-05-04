@@ -39,19 +39,19 @@ class ContingenciaController extends Controller
 
     //create function
 
-    public function create()
+    public function create(Store $store)
     {
         //pasar tipo de contingencias a la vista
 
         $tipoContingencias = \App\Models\TipoContingencia::all();
 
-        return view('contingencias.create', compact('tipoContingencias'));
+        return view('contingencias.create', compact('store','tipoContingencias'));
     }
 
     /**
      * Crear / abrir contingencia
      */
-    public function store(Request $request)
+    public function store(Request $request, Store $store)
     {
         $request->validate([
             'tipo_contingencia'   => 'required|exists:tipo_contingencias,id',
@@ -65,11 +65,11 @@ class ContingenciaController extends Controller
             $request->fecha_inicio . ' ' . $request->hora_inicio
         );
 
-        $invoiceNumber = InvoiceNumber::getNextNumber(auth()->user()->store_id, $request->tipo_contingencia);
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $request->tipo_contingencia);
 
 
         Contingencia::create([
-            'store_id'             => auth()->user()->store_id,
+            'store_id'             => $store->id,
             'user_id'              => auth()->id(),
             'tipo_contingencia_id' => $request->tipo_contingencia,
             'fecha_hora_inicio'    => $fechaHoraInicio,
@@ -80,7 +80,7 @@ class ContingenciaController extends Controller
 
         return redirect()
             ->route('contingencias.index', [
-                'store' => auth()->user()->store_id
+                'store' => $store->id
             ])
             ->with('success', 'Contingencia creada correctamente');
     }

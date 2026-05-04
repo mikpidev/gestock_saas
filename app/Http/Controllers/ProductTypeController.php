@@ -42,7 +42,7 @@ class ProductTypeController extends Controller
 
         // Mostrar solo los tipos de productos de esta tienda
         $productTypes = ProductType::where('store_id', $store->id)->get();
-        $categories = $productTypes->groupBy('category');
+        $categories = $productTypes->groupBy('category')->sortKeys(); // Agrupar por categoría y ordenar alfabéticamente
 
         return view('productType.index', compact('productTypes', 'categories', 'store'));
     }

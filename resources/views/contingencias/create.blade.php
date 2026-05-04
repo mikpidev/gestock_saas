@@ -4,7 +4,7 @@
 <div class="container">
     <h4>Iniciar Contingencia</h4>
 
-    <form method="POST" action="{{ route('contingencias.store', auth()->user()->store_id) }}">
+    <form action="{{ route('contingencias.store', $store->id) }}" method="POST">
         @csrf
 
 
@@ -24,7 +24,7 @@
                 <select name="tipo_contingencia" class="form-control" required>
                     <option value="">Seleccione</option>
                     @foreach($tipoContingencias as $tipo)
-                        <option value="{{ $tipo->id }}">{{ $tipo->nombre }}</option>
+                    <option value="{{ $tipo->id }}">{{ $tipo->nombre }}</option>
                     @endforeach
                 </select>
             </div>
@@ -36,7 +36,7 @@
         </div>
 
         <button class="btn btn-success mt-3">Iniciar Contingencia</button>
-        <a href="{{ route('contingencias.index', auth()->user()->store_id) }}" class="btn btn-secondary mt-3">
+        <a href="{{ route('contingencias.index', $store->id) }}" class="btn btn-secondary mt-3">
             Cancelar
         </a>
     </form>

@@ -7,7 +7,7 @@
 </div>
 
 <!--     formulario para la creacion de un companias -->
-<form action="{{ route('stores.store', ['company' => $company->id]) }}" method="POST">
+<form action="{{ route('store.store', ['company' => $company->id]) }}" method="POST">
     @csrf
     @include('store._form')
 </form>

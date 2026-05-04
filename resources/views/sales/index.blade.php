@@ -248,7 +248,7 @@
                 <td>{{ $sale->codigo_generacion ?? '—' }}</td>
                 <td>{{ $sale->customer->nombre ?? 'Sin cliente' }}</td>
                 <td>${{ number_format($sale->net_amount, 2) }}</td>
-                <td>{{ $sale->sale_date->format('d/m/Y H:i') }}</td>
+                <td>{{ $sale->created_at->format('d/m/Y H:i') }}</td>
 
                 <td>
                     @php
@@ -388,7 +388,7 @@
                     <input type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
 
                     <label>Hasta:</label>
-                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }} ">
+                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }}">
 
                     <label>Cliente:</label>
                     <select name="customer_id" class="form-control">
@@ -439,11 +439,11 @@
                     <input type="date" name="to" value="{{ $dateTo }} ">
 
 
-            </div>
-            <div class="modal-footer">
-                <a href="{{ route('reportes.ventas', ['from' => $dateFrom, 'to' => $dateTo]) }}">
-                    <button type="button" class="btn btn-primary" onclick="document.querySelector('.filter-bar').submit()">Generar Reporte</button>
-            </div>
+                <div class="modal-footer">
+                    <a href="{{ route('reportes.ventas', ['from' => $dateFrom, 'to' => $dateTo]) }}">
+                        <button type="button" class="btn btn-primary" onclick="document.querySelector('.filter-bar').submit()">Generar Reporte</button>
+                    </a>
+                </div>
             </form>
 
         </div>

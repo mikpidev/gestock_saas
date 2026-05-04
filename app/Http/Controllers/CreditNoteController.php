@@ -46,8 +46,16 @@ class CreditNoteController extends Controller
 
     public function index(Request $request, Store $store)
     {
+        $authService = app(HaciendaAuthService::class);
+
         // Primero obtenemos la fecha del request (si no viene, usa hoy)
         $fecha = $request->fecha ?? Carbon::today()->toDateString();
+
+        $token = $authService->getToken($store);
+        $consultaService = new ConsultaService();
+        $customers = Customer::where('store_id', $store->id)->get();
+        $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
+
 
         // Filtramos ventas de ESTA tienda y de ESA fecha
         $creditNotes = CreditNote::with('customer')
@@ -58,6 +66,15 @@ class CreditNoteController extends Controller
 
         // Solicitar lista de notas de crédito
 
+        //Consultar estado de cada DTE y actualizar en base de datos
+        // Consultar DTE solo a las ventas filtradas
+        foreach ($creditNotes as $creditNote) {
+            if ($creditNote->dte_status !== 'PROCESADO') {
+                $consultaService->consultarNC($creditNote, $token);
+            }
+        }
+
+
 
         return view('creditnotes.index', compact('store', 'creditNotes', 'fecha'));
     }
@@ -67,7 +84,7 @@ class CreditNoteController extends Controller
 
     public function refreshDTE(Store $store, CreditNote $creditNote, ConsultaService $consultaService)
     {
-        $token = app(HaciendaAuthService::class)->getToken();
+        $token = app(HaciendaAuthService::class)->getToken($store);
         $consultaService->consultarNC($creditNote, $token);
 
         return redirect()->back()->with('success', 'Estado DTE actualizado.');

@@ -59,7 +59,6 @@ class HaciendaAuthService
             }
 
 
-            $url = config('services.hacienda.token_url_test') . '/seguridad/auth';
             $response = Http::asForm()
                 ->withOptions(['verify' => false])
                 ->post($url, [
@@ -84,9 +83,13 @@ class HaciendaAuthService
         $data = $response->json();
         $tokenValue = $data['body']['token'] ?? $data['token'] ?? null;
 
+        //mostrart token
+        Log::info('Token obtenido de Hacienda', ['token' => $tokenValue]);
+
         if (!$tokenValue) {
             Log::error('Token no encontrado en la respuesta de Hacienda', ['data' => $data]);
             throw new \Exception('Token no encontrado en la respuesta de Hacienda');
+        
         }
 
         // Limpiar tokens antiguos

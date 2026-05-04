@@ -13,7 +13,7 @@ class TipoContigenciaSeeder extends Seeder
     public function run(): void
     {
         //tipo_contingencia
-        DB::table('tipo_contingencia')->insert([
+        DB::table('tipo_contingencias')->insert([
             ['codigo' => '1', 'nombre' => 'No disponibilidad de sistema del MH'],
             ['codigo' => '2', 'nombre' => 'No disponibilidad de sistema del emisor'],
             ['codigo' => '3', 'nombre' => 'Falla en el suministro de servicio de Internet del Emisor'],

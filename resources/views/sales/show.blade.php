@@ -240,7 +240,7 @@
                 </div>
                 <div class="columna">
                     <div class="etiqueta">Documento:</div>
-                    <div>{{ $receptor['numDocumento'] ?? 'N/A' }}</div>
+                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] }}</div>
                 </div>
                 <div class="columna">
                     <div class="etiqueta">NRC:</div>
@@ -295,7 +295,7 @@
 
         <!-- TOTALES -->
         <div class="totales">
-            <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'] ?? 0, 2) }}</span></div>
+            <div class="fila-total"><span>SUMAS</span></div>
 
             @php
             $iva = 0;

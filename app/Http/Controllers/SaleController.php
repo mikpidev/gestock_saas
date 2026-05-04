@@ -118,7 +118,9 @@ class SaleController extends Controller
         $this->validateStoreAccess($store);
         $customers = Customer::where('store_id', $store->id)->get();
         $products = ProductType::where('store_id', $store->id)->get();
-        $categories = $products->groupBy('category');
+
+        //Agrupar productos por categoria alfabeticamente para mostrar en el select del formulario de creación de venta
+        $categories = $products->groupBy('category')->sortKeys(); 
         $tipoDocumentos = TipoDte::all();
 
 

@@ -50,9 +50,14 @@ class DebitNoteController extends Controller
      */
     public function index(Request $request, Store $store)
     {
+
+        $authService = app(HaciendaAuthService::class);
+
         // Primero obtenemos la fecha del request (si no viene, usa hoy)
         $fecha = $request->fecha ?? Carbon::today()->toDateString();
 
+        $token = $authService->getToken($store);
+        $consultaService = new ConsultaService();
         // Filtramos ventas de ESTA tienda y de ESA fecha
         $debitNotes = DebitNote::with('customer')
             ->where('store_id', $store->id)
@@ -60,10 +65,18 @@ class DebitNoteController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        //Consultar estado de cada DTE y actualizar en base de datos
+        // Consultar DTE solo a las ventas filtradas
+        foreach ($debitNotes as $debitNote) {
+            if ($debitNote->dte_status !== 'PROCESADO') {
+                $consultaService->consultarND($debitNote, $token);
+            }
+        }
+
         return view('debitnotes.index', compact('store', 'debitNotes', 'fecha'));
     }
 
-    
+
     public function refreshDTE(Store $store, DebitNote $debitNote, ConsultaService $consultaService)
     {
         $token = app(HaciendaAuthService::class)->getToken();
@@ -302,7 +315,7 @@ class DebitNoteController extends Controller
     public function destroy(Store $store, DebitNote $debitNote)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($debitNote->store_id != $store->id) {
             \Log::info('Verificación de tienda en destroy ND', [
                 'store_id_param' => $store->id,
@@ -316,31 +329,29 @@ class DebitNoteController extends Controller
         if ($debitNote->created_at->lessThan(now()->subHours(24))) {
             return redirect()->back()->withErrors('No se puede anular una venta con más de 24 horas de antigüedad.');
         }
-    
+
         try {
             // Llamar al VoidDTEController para generar la anulación de la ND
             $voidController = app(\App\Http\Controllers\VoidNDController::class);
-            $response = $voidController->voidND($debitNote,$debitNote->sale);
-    
+            $response = $voidController->voidND($debitNote, $debitNote->sale);
+
             // Verificar que Hacienda haya confirmado la anulación
             if (($response->getData()->estado ?? '') !== 'PROCESADO') {
                 return redirect()->back()->withErrors('Hacienda no confirmó la anulación de la ND.');
             }
-    
+
             // Soft delete solo si Hacienda respondió correctamente
             $debitNote->delete();
-    
+
             return redirect()->route('stores.sales.index', $store->id)
                 ->with('success', 'Nota de debito anulada correctamente.');
-    
         } catch (\Throwable $th) {
             \Log::error('Error anulando ND: ' . $th->getMessage(), [
                 'debit_note_id' => $debitNote->id,
                 'trace' => $th->getTraceAsString()
             ]);
-    
+
             return redirect()->back()->withErrors('Error generando la anulación de la ND: ' . $th->getMessage());
         }
     }
-
 }

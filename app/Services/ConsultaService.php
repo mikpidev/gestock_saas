@@ -130,9 +130,9 @@ class ConsultaService
         $environment = $creditNote->store->environment ?? 'default_environment';
 
         if ($environment === 'Development') {
-            $url = config('services.hacienda.test_url') . 'recepcion/consultadte';
+            $url = config('services.hacienda.test_url') . 'recepcion/consultadte/';
         } elseif ($environment === 'Production') {
-            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte';
+            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
         } else {
             Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
             return [
@@ -140,6 +140,15 @@ class ConsultaService
                 'mensaje' => 'Ambiente desconocido'
             ];
         }
+
+        //info antes de la consulta
+        Log::info("Consultando DTE en Hacienda", [
+            'credit_note_id' => $creditNote->id,
+            'nitEmisor' => $creditNote->store->taxInfo->nit,
+            'tdte' => $tipoDTE,
+            'codigoGeneracion' => $creditNote->codigo_generacion,
+            'url' => $url
+        ]);
 
         try {
             $response = Http::withHeaders([
@@ -211,9 +220,9 @@ class ConsultaService
         $environment = $debitNote->store->environment ?? 'default_environment';
 
         if ($environment === 'Development') {
-            $url = config('services.hacienda.test_url') . 'recepcion/consultadte';
+            $url = config('services.hacienda.test_url') . 'recepcion/consultadte/';
         } elseif ($environment === 'Production') {
-            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte';
+            $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
         } else {
             Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
             return [
@@ -222,6 +231,14 @@ class ConsultaService
             ];
         }
 
+                //info antes de la consulta
+        Log::info("Consultando DTE en Hacienda", [
+            'debit_note_id' => $debitNote->id,
+            'nitEmisor' => $debitNote->store->taxInfo->nit,
+            'tdte' => $tipoDTE,
+            'codigoGeneracion' => $debitNote->codigo_generacion,
+            'url' => $url
+        ]);
 
         try {
             $response = Http::withHeaders([
@@ -279,3 +296,5 @@ class ConsultaService
         }
     }
 }
+
+
