@@ -150,7 +150,8 @@
         <!-- ENCABEZADO -->
         <div class="encabezado">
             <div>
-                <img src="{{ asset('Logo_recortado.png') }}" style="width:150px; height:auto; display:inline-block;">
+                <img src="{{ asset($emisor['nombre'] . '_recortado.png') }}"
+                    style="width:150px; height:auto; display:inline-block;">
             </div>
 
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>

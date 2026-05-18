@@ -75,15 +75,10 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Certificado Firma Digital</label>
-                    <div class="p-2 border rounded bg-light text-truncate">{{ $storeTaxInfo->cert_firma_digital }}</div>
-                </div>
-
-                <div class="col-md-6">
                     <label class="form-label fw-semibold">Estado</label>
                     <div class="p-2 border rounded bg-light">
-                        @if($storeTaxInfo->estado == 'ACTIVO')
-                        <span class="badge bg-success">ACTIVO</span>
+                        @if($storeTaxInfo->estado == 'activo')
+                        <span class="badge bg-success">activo</span>
                         @else
                         <span class="badge bg-danger">{{ $storeTaxInfo->estado ?? '—' }}</span>
                         @endif

@@ -1,6 +1,4 @@
-@extends('layouts.admin')
 
-@section('content')
 
     <!--     formulario para la creacion de un usuario -->
     <form action="{{ route('stores.product_types.store', $store->id) }}" method="POST">        
@@ -19,4 +17,3 @@
     @endif
     
     
-@endsection

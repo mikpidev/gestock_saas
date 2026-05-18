@@ -49,7 +49,13 @@ class CustomersController extends Controller
         $this->validateStoreAccess($store);
         $customers = $store->customers()->get();
 
-        return view('customers.index', compact('customers', 'store'));
+        //traer catálogos
+        $tiposDocumento = TipoDocumento::all();
+        $actividades = CodActividad::all();
+        $departamentos = Departamento::all();
+        $municipios = Municipio::all();
+
+        return view('customers.index', compact('store', 'customers', 'tiposDocumento', 'actividades', 'departamentos', 'municipios'));
     }
 
     /**

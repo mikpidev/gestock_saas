@@ -1,7 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Ingresar - Gestok')
-@section('subtitle', 'Accede a tu cuenta')
+@section('title', 'Ingresar - Gestock')
 
 @section('content')
 <form method="POST" action="{{ route('login') }}">

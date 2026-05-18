@@ -1,114 +1,911 @@
-/* resources/css/app.css */
+/* resources/css/custom.css */
+
+/* ============================
+   VARIABLES
+============================ */
+
+:root {
+    --color-primario: #ffffff;
+    --color-black: #1a1a1a;
+    --color-secundario: #d9d9d9;
+    --color-acento: rgb(217 217 217 / 85%);
+    --color-bordes: #8f8e8e;
+    --color-degradado: linear-gradient(135deg, #ff0000 0%, #af2828 100%);
+
+    /* Store Panel Color*/
+    --color-panel-primario: #ffffff;
+    --color-panel-black: #1a1a1a;
+    --color-panel-secundario: #d9d9d9;
+    --color-panel-acento: rgb(217 217 217 / 85%);
+    --color-panel-bordes: #8f8e8e;
+    --color-panel-texto: linear-gradient(135deg, #ff0000 0%, #af2828 100%);
+
+    /* Graph Color Script */
+    --color-graph-primario: #ff0000;
+    --color-graph-secundario: #af2828;
+}
+
+
+
+
+/* Header */
+
+header {
+    background: var(--color-secundario);
+    /* Fondo principal sólido */
+    padding: 1rem 2rem;
+    color: #fff;
+    position: relative;
+}
+
+/* Gradiente detrás del logo */
+header::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    /* Inicia desde la izquierda */
+    top: 0;
+    width: 150px;
+    /* Ancho del gradiente */
+    height: 100%;
+    /* Ocupa toda la altura del header */
+    z-index: 0;
+    /* Debe estar detrás del contenido */
+    border-radius: 0 8px 8px 0;
+    /* Bordes suavizados opcional */
+}
+
+/* Logo encima del gradiente */
+header .navbar-brand {
+    position: relative;
+    z-index: 1;
+    /* Logo sobre el gradiente */
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    background-color: var(--color-fondo);
+    border-right: 2px solid var(--color-bordes);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar a {
+    color: var(--color-texto);
+    font-weight: 500;
+    padding: 0.75rem;
+    border-bottom: 1px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.sidebar a:hover {
+    color: var(--color-primario);
+    background-color: var(--color-fondo-secundario);
+    border-color: var(--color-primario);
+}
+
+/* Botones */
+.btn-primary {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-secundario);
+    border-color: var(--color-acento);
+}
+
+.btn-secondary {
+    background-color: var(--color-fondo);
+    color: var(--color-acento);
+    border: 2px solid var(--color-acento);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-acento);
+    color: #fff;
+}
+
+/* Tarjetas */
+.card {
+    background-color: var(--color-fondo);
+    border: 1px solid var(--color-bordes);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: var(--color-texto);
+    background-color: var(--color-fondo-secundario);
+    transition: border-color 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--color-primario);
+    outline: none;
+    background-color: #fff;
+}
+
+/* Footer */
+footer {
+    background-color: var(--color-fondo-secundario);
+    color: var(--color-texto);
+}
+
+.gradient-text {
+    background: var(--color-degradado);
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    background-clip: text;
+    color: transparent;
+}
 
 /* ============================
    ENLACES
 ============================ */
 
-:root {
-    --color-primario: #ffb548;
-    --color-secundario: #ff6c37;
-    --color-acento: #8e5928;
-}
-
 a {
     text-decoration: none;
-    color: var(--color-acento);
+    color: var(--color-black);
     transition: color 0.2s ease;
 }
 
 a:hover {
     text-decoration: none;
-    color: var(--color-secundario);
     font-weight: 500;
 }
 
 /* ============================
-   BOTÓN CONFIGURACIÓN (Engranaje)
+   BOTÓN CONFIGURACIÓN
 ============================ */
+
 #config-btn {
     border: 1px solid var(--color-acento);
     background-color: transparent;
-    color: var(--color-acento);
+    color: var(--color-graph-secundario);
     border-radius: 6px;
     padding: 0.4rem 0.8rem;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 
-    svg {
-        vertical-align: middle;
-        margin-right: 0.25rem;
-        height: 1.5em;
-        width: 1.5em;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+
+#config-btn svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.8em;
+    width: 1.8em;
 }
 
 #config-btn:hover {
-    background-color: var(--color-primario);
-    border-color: var(--color-secundario);
-    color: #fff;
-    font-weight: 500;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
+    color: var(--color-black);
+    font-weight: 475;
+}
+
+.btn-back {
+    color: var(--color-black);
+    border-color: 1px solid var(--color-bordes);
+    background-color: transparent;
+    border-radius: 6px;
+    padding: 0.4rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-back svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.5em;
+    width: 1.5em;
+}
+
+.btn-back:hover {
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
+    color: var(--color-black);
+    font-weight: 475;
 }
 
 /* ============================
    BOTÓN EDITAR
 ============================ */
+
 .btn-edit {
-    color: var(--color-secundario);
-    border: 1px solid var(--color-secundario);
+    color: var(--color-graph-secundario);
+    border: 1px solid var(--color-acento);
     background-color: transparent;
     border-radius: 6px;
-    padding: 0.4rem 0.8rem;
+    padding: 0.4rem 1.5rem;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+}
 
-    svg {
-        vertical-align: middle;
-        margin-right: 0.25rem;
-        height: 1.5em;
-        width: 1.5em;
-    }
+.btn-edit svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.5em;
+    width: 1.5em;
 }
 
 .btn-edit:hover {
-    background-color: var(--color-secundario);
+    background-color: var(--color-acento);
     border-color: var(--color-acento);
-    color: #fff;
-    font-weight: 500;
+    color: var(--color-black);
+    font-weight: 475;
+}
+
+/* ============================
+   BOTÓN ELIMINAR
+============================ */
+
+.btn-rm {
+    color: var(--color-graph-secundario);
+    border: 1px solid var(--color-acento);
+    background-color: transparent;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-rm svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.5em;
+    width: 1.5em;
+}
+
+.btn-rm:hover {
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
+    color: var(--color-black);
+    font-weight: 475;
 }
 
 /* ============================
    BOTÓN AGREGAR
 ============================ */
+
 .btn-add {
-    color: var(--color-acento);
+    color: var(--color-black);
     border: 1px solid var(--color-primario);
     background-color: var(--color-primario);
     border-radius: 6px;
     padding: 0.5rem 1rem;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+}
 
-    svg {
-        vertical-align: middle;
-        margin-right: 0.25rem;
-        height: 1.5em;
-        width: 1.5em;
-    }
+.btn-add svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.5em;
+    width: 1.5em;
 }
 
 .btn-add:hover {
-    background-color: var(--color-secundario);
-    border-color: var(--color-acento);
-    color: #fff;
+    background-color: var(--color-primario);
+    border-color: var(--color-bordes);
     font-weight: 500;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* ============================
    DIVISOR
 ============================ */
+
 .divider {
-    border-top: 2px solid rgba(0,0,0,0.1);
+    border-top: 2px solid rgba(0, 0, 0, 0.1);
     margin: 2rem 0;
+}
+
+/* ============================
+   Modal
+============================ */
+
+.btn-modal {
+    background: var(--color-primario);
+    color: #1a1a1a;
+
+    border: 1px solid var(--color-bordes);
+    border-radius: 10px;
+
+    padding: 0.65rem 1.2rem;
+
+    display: inline-flex;
+    align-items: right;
+    justify-content: right;
+    gap: 0.45rem;
+
+    font-weight: 500;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.btn-modal svg {
+    height: 1.1rem;
+    width: 1.1rem;
+
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+
+    opacity: 0.85;
+}
+
+.btn-modal:hover {
+    background: var(--color-acento);
+    border-color: var(--color-acento);
+
+    color: var(--color-acento);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.btn-modal:hover svg {
+    transform: scale(1.05);
+    opacity: 1;
+}
+
+.btn-modal:active {
+    transform: translateY(0);
+
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.btn-modal:focus {
+    outline: none;
+
+    box-shadow: 0 0 0 3px rgb(217 217 217 / 35%);
+}
+
+/* ============================
+   Form Text Box
+============================ */
+.form-control,
+.form-select,
+textarea {
+    border-radius: 20px;
+
+    border: 1px solid var(--color-bordes);
+
+    padding: 0.75rem 1rem;
+
+    background: #fff;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.15s ease;
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea:focus {
+    border-color: var(--color-secundario);
+
+    box-shadow: 0 0 0 4px rgb(217 217 217 / 25%);
+
+    transform: translateY(-1px);
+}
+
+/* ============================
+   Store Panel
+============================ */
+
+/* ===== Contenedor general ===== */
+.gestok-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== Sidebar siempre expandido ===== */
+.gestok-panel {
+    width: 220px;
+    background: var(--color-panel-fondo);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    /* eliminamos padding global para alinear borde */
+    min-height: 100vh;
+}
+
+.gestok-panel-inner {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* ===== Botones del menú optimizados para touch ===== */
+.gestok-panel a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--color-panel-texto);
+    background: var(--color-panel-fondo);
+    border-bottom: 2px solid var(--color-panel-bordes);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.gestok-panel a:hover {
+    color: var(--color-panel-black);
+    border-bottom-color: var(--color-panel-primario);
+    transform: translateX(3px);
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Iconos dentro de los botones */
+.gestok-panel a i {
+    font-size: 1.4rem;
+    min-width: 24px;
+    text-align: center;
+    color: inherit;
+}
+
+/* Contenido principal */
+.gestok-main {
+    flex: 1;
+    padding: 2rem;
+    background: #f2f2f2;
+}
+
+/* ===== Media Queries ===== */
+@media (max-width: 992px) {
+    .gestok-container {
+        flex-direction: column;
+    }
+
+    .gestok-panel {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid var(--color-panel-bordes);
+    }
+}
+
+/* ===== Search Queries Catalogos ===== */
+/* ============================
+   Select2 Custom Style
+============================ */
+
+.select2-container .select2-selection--single {
+    border-radius: 20px !important;
+
+    border: 1px solid var(--color-bordes) !important;
+
+    padding: 0.75rem 1rem !important;
+
+    background: #fff !important;
+
+    height: auto !important;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.15s ease !important;
+}
+
+/* Texto interno */
+.select2-container--default
+    .select2-selection--single
+    .select2-selection__rendered {
+    line-height: normal !important;
+
+    padding-left: 0 !important;
+
+    color: inherit !important;
+}
+
+/* Flecha */
+.select2-container--default
+    .select2-selection--single
+    .select2-selection__arrow {
+    height: 100% !important;
+
+    right: 10px !important;
+}
+
+/* Focus */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default .select2-selection--single:focus {
+    border-color: var(--color-secundario) !important;
+
+    box-shadow: 0 0 0 4px rgb(217 217 217 / 25%) !important;
+
+    transform: translateY(-1px);
+}
+
+/* Dropdown */
+.select2-dropdown {
+    border-radius: 20px !important;
+
+    border: 1px solid var(--color-bordes) !important;
+
+    overflow: hidden;
+}
+
+/* Search input */
+.select2-search__field {
+    border-radius: 12px !important;
+
+    padding: 0.5rem !important;
+
+    border: 1px solid var(--color-bordes) !important;
+}
+
+/* ============================
+   Sales Styles
+============================ */
+
+.card-table {
+    background: #fff;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 2rem auto;
+    max-width: 1100px;
+}
+
+.card-header-custom {
+    background: var(--color-acento);
+    color: #fff;
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header-custom h2 {
+    color: var(--color-black);
+    font-size: 1.4rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.btn-new {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--color-black);
+    text-decoration: none;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-new:hover {
+    background: var(--color-secundario);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+th {
+    background: #f3f4f6;
+    font-weight: 600;
+}
+
+th,
+td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tr:hover {
+    background: #fafafa;
+}
+
+
+
+
+
+
+.badge {
+    padding: 5px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.badge-procesado {
+    background: #10b981;
+}
+
+.badge-rechazado {
+    background: #ef4444;
+}
+
+.badge-pendiente {
+    background: #ca8a04;
+}
+
+.no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.filter-bar {
+    background: #f9fafb;
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.filter-bar input {
+    display: inline-block;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+.filters {
+    background: #f9fafb;
+    padding: 12px;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.filters input {
+    display: inline-block;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+/* ============================
+   Sales Cart Styles
+============================ */
+
+/* ===== Layout general ===== */
+.main-container {
+    display: flex;
+    gap: 1rem;
+    height: 90vh;
+    flex-wrap: wrap;
+    /* permite que los elementos bajen de línea en pantallas pequeñas */
+}
+
+.products-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* ===== Tarjetas de productos ===== */
+.product-card.card {
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    border-radius: 12px;
+}
+
+.product-card.card img {
+    width: 100%;
+    height: 120px;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+}
+
+.product-card.card .card-body {
+    width: 100%;
+    text-align: center;
+}
+
+.product-card.card h6 {
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+}
+
+.product-card.card p {
+    font-size: 0.85rem;
+    color: var(--color-black);
+    margin: 0;
+}
+
+.product-card.card:active {
+    transform: scale(0.97);
+}
+
+.product-card.card:hover {
+    background: var(--color-primario);
+}
+
+.nav-link.gradient-text.active,
+.nav-link.gradient-text {
+    background: linear-gradient(135deg, #ff0000 0%, #af2828 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+
+    color: transparent !important;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ===== Sidebar del carrito ===== */
+.cart-sidebar {
+    width: 340px;
+    background: #fff;
+    padding: 1rem;
+    border-left: 2px solid var(--color-primario);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.cart-sidebar h4 {
+    color: var(--color-black);
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cart-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+/* ===== Campos ===== */
+.cart-select,
+.cart-date {
+    margin-bottom: 1rem;
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 0.95rem;
+}
+
+/* ===== Tabla del carrito ===== */
+.cart-table th,
+.cart-table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+#total-wrapper {
+    font-weight: bold;
+    text-align: right;
+    font-size: 1.1rem;
+    color: var(--color-acento);
+    margin-top: 0.5rem;
+}
+
+/* ===== Botón principal ===== */
+.btn-create-sale {
+    background: var(--color-degradado);
+    color: #fff;
+    border: none;
+    padding: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-create-sale:hover {
+    transform: translateY(-2px);
+    opacity: 0.92;
+}
+
+/* ===== Media Queries ===== */
+@media (max-width: 992px) {
+    .main-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .cart-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 2px solid var(--color-primario);
+        margin-top: 1rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .product-card.card img {
+        height: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 576px) {
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+        padding: 0.5rem;
+    }
+
+    .product-card.card img {
+        height: 80px;
+    }
 }

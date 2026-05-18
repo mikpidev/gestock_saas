@@ -59,10 +59,9 @@ class SaleController extends Controller
 
     public function index(Request $request, Store $store)
     {
+
         $authService = app(HaciendaAuthService::class);
 
-
-        $token = $authService->getToken($store);
         $consultaService = new ConsultaService();
         $customers = Customer::where('store_id', $store->id)->get();
         $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
@@ -77,33 +76,48 @@ class SaleController extends Controller
             : Carbon::today()->endOfDay();
 
         //obtener filtro clientes, codigo generacion y estado DTE para mostrar en el index
+
         $customers_id = $request->customer_id;
         $codigo_generacion_filter = $request->codigo_generacion;
         $dte_status = $request->dte_status;
 
 
         //obtener datos para mostrar en el filtro
-
-        //customers para filtro
         $sales = Sale::with('customer')
-        ->where('store_id', $store->id)
-        ->whereBetween('sale_date', [$dateFrom, $dateTo])
-        ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
-        ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
-        ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
-        ->orderByDesc('sale_date')
-        ->get();
+            ->where('store_id', $store->id)
+            ->whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
+            ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
+            ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
+            ->orderByDesc('sale_date')
+            ->get();
 
-        // Consultar DTE solo a las ventas filtradas
-        foreach ($sales as $sale) {
-            if ($sale->dte_status !== 'PROCESADO') {
-                $consultaService->consultarSale($sale, $token);
-                
+
+        // Solo ventas no procesadas
+        $pendingSales = $sales->filter(function ($sale) {
+            return !empty($sale->codigo_generacion)
+                && $sale->dte_status !== 'PROCESADO';
+        });
+        if ($pendingSales->isNotEmpty()) {
+
+            try {
+                $token = $authService->getToken($store);
+            } catch (\Exception $e) {
+                $token = null;
+            }
+
+            if ($token) {
+                foreach ($pendingSales as $sale) {
+                    $consultaService->consultarSale($sale, $token);
+                }
             }
         }
 
+
+
         return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
+
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
     {
         $token = app(HaciendaAuthService::class)->getToken($store);
@@ -120,7 +134,7 @@ class SaleController extends Controller
         $products = ProductType::where('store_id', $store->id)->get();
 
         //Agrupar productos por categoria alfabeticamente para mostrar en el select del formulario de creación de venta
-        $categories = $products->groupBy('category')->sortKeys(); 
+        $categories = $products->groupBy('category')->sortKeys();
         $tipoDocumentos = TipoDte::all();
 
 
@@ -285,7 +299,7 @@ class SaleController extends Controller
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
         $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
-
+        
         // Mapeo de descripciones
         $tipoDteDescripcion = [
             '01' => 'Factura',

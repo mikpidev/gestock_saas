@@ -1,6 +1,4 @@
-@extends('layouts.admin')
 
-@section('content')
 <!-- formulario para la edición de una tienda -->
 <form action="{{ route('stores.update', $store->id) }}" method="POST">
     @csrf
@@ -17,4 +15,4 @@
         </ul>       
     </div>
 @endif
-@endsection
+

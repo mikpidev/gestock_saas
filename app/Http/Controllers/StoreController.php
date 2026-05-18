@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Company;
@@ -24,19 +25,17 @@ class StoreController extends Controller
         }
         if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
-    
+
             if (!$companyId) {
                 return redirect()->route('companies.select'); // o donde seleccione empresa
             }
-    
+
             $stores = Store::where('company_id', $companyId)->get();
-    
         } elseif ($user->hasRole('admin')) {
 
-        $companyId = session('selected_company_id') ?? $user->company_id;
+            $companyId = session('selected_company_id') ?? $user->company_id;
 
-        $stores = Store::where('company_id', $companyId)->get();
-    
+            $stores = Store::where('company_id', $companyId)->get();
         } else {
             abort(403, 'Acceso no autorizado.');
         }
@@ -46,11 +45,11 @@ class StoreController extends Controller
 
 
     public function create(Company $company)
-    {   
+    {
         $user = Auth::user();
         if (!$user) {
             return redirect()->route('login');
-        }  
+        }
 
         // Lógica para mostrar el formulario de creación de tienda ya incluye la compañia previamente creada
         return view('store.create', compact('company'));
@@ -62,7 +61,7 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
-        
+
         $validated = $request->validate([
             'store_name' => 'required|max:200',
             'address'    => 'required',
@@ -77,17 +76,16 @@ class StoreController extends Controller
         $store = $company->stores()->create($validated);
 
         return redirect()->route('store_tax_info.create', ['store' => $store->id])
-        ->with('success', 'Tienda creada, ahora crea la información fiscal de la tienda.');
-
+            ->with('success', 'Tienda creada, ahora crea la información fiscal de la tienda.');
     }
-    
+
     public function show(Store $store)
     {
         $user = Auth::user();
         if (!$user) {
             return redirect()->route('login');
         }
-    
+
         // Validar acceso según rol
         if ($user->hasRole('superadmin')) {
             $companyId = session('selected_company_id');
@@ -98,23 +96,30 @@ class StoreController extends Controller
         } else {
             abort(403, 'Acceso no autorizado.');
         }
-    
+
+        //llamar Catalogos
+
+        $actividades = \App\Models\CodActividad::all();
+        $departamentos = \App\Models\Departamento::all();
+        $municipios = \App\Models\Municipio::all();
+
+
         // Cargar relaciones necesarias
         $store->load(['taxInfo', 'company']);
-    
+
         // Base query para esta tienda
         $baseQuery = Sale::where('store_id', $store->id);
-    
+
         // Últimas 5 ventas
         $sales = $baseQuery->latest('created_at')->take(5)->get();
-    
+
         // Totales y conteos
         $salesTodayTotal = (clone $baseQuery)->whereDate('created_at', Carbon::today())->sum('total_amount');
         $salesTodayCount = (clone $baseQuery)->whereDate('created_at', Carbon::today())->count();
-    
+
         $salesWeekTotal = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->sum('total_amount');
         $salesWeekCount = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count();
-    
+
         // Ventas por día de la última semana para gráfico
         $weeklySalesLabels = [];
         $weeklySalesData = [];
@@ -123,10 +128,13 @@ class StoreController extends Controller
             $weeklySalesLabels[] = $date->locale('es')->isoFormat('ddd'); // Lunes, Mar, etc.
             $weeklySalesData[] = (clone $baseQuery)->whereDate('created_at', $date)->sum('total_amount');
         }
-        
+
 
         return view('store.show', compact(
             'store',
+            'actividades',
+            'departamentos',
+            'municipios',
             'sales',
             'salesTodayTotal',
             'salesTodayCount',
@@ -136,8 +144,8 @@ class StoreController extends Controller
             'weeklySalesData'
         ));
     }
-    
-    
+
+
 
     public function edit(Request $request, Store $store)
     {
@@ -152,11 +160,11 @@ class StoreController extends Controller
     }
 
     public function update(Request $request, Store $store)
-    {  
+    {
         $user = Auth::user();
         if (!$user) {
             return redirect()->route('login');
-        } 
+        }
 
         // Validación de los datos del formulario
         $validated = $request->validate([
@@ -164,7 +172,7 @@ class StoreController extends Controller
             'address' => 'required',
             'phone' => 'required|size:8',
             'manager' => 'required|max:100',
-            'email' => ['required','email','max:100', Rule::unique('stores')->ignore($store->id)->whereNull('deleted_at'),],  // Solo verifica registros activos
+            'email' => ['required', 'email', 'max:100', Rule::unique('stores')->ignore($store->id)->whereNull('deleted_at'),],  // Solo verifica registros activos
             'status' => 'required|in:activa,suspendida,inactiva',
             'environment' => 'required|in:Production,Development',
             'comments' => 'nullable',
@@ -188,6 +196,3 @@ class StoreController extends Controller
         return redirect()->route('store.show')->with('success', 'Tienda eliminada exitosamente.');
     }
 }
-
-
-

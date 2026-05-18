@@ -4,18 +4,22 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2></h2>
-    <button type="button" class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#gestokModal">
-        <i class="bi bi-plus-circle"></i> Agregar Compañía
+    <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#gestokModal" title="Crear Compañía" style="margin-right: 75px;">
+        <i class="bi bi-plus-circle"></i>
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
+        </svg>
     </button>
 </div>
+
 
 <!-- Modal para crear compañía -->
 <div class="modal fade" id="gestokModal" tabindex="-1" aria-labelledby="gestokModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header" style="background-color: #8e5928; color: #fff;">
+            <div class="modal-header" style="background-color: #fff; color: #000;">
                 <h5 class="modal-title" id="gestokModalLabel">Crear Compañía</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="color: #000;"></button>
             </div>
             <div class="modal-body">
                 <div id="formResponse"></div>
@@ -49,7 +53,7 @@
                 <td>{{ ucfirst($company->status) }}</td>
                 <td>{{ $company->comments }}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-warning editCompanyBtn"
+                    <button class="btn btn-sm btn-edit editCompanyBtn"
                         data-id="{{ $company->id }}"
                         data-company_name="{{ $company->company_name }}"
                         data-address="{{ $company->address }}"
@@ -68,7 +72,7 @@
                     <form action="{{ route('companies.destroy', $company->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta compañía?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                        <button type="submit" class="btn btn-sm btn-rm gradient-text">Eliminar</button>
                     </form>
                 </td>
             </tr>
@@ -86,7 +90,7 @@
 <div class="modal fade" id="editCompanyModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header" style="background-color: #8e5928; color: #fff;">
+            <div class="modal-header">
                 <h5 class="modal-title">Editar</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>

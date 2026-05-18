@@ -44,8 +44,10 @@ class UserController extends Controller
         $this->validateStoreAccess($store);
 
         // Mostrar solo los usuarios de esta tienda
+        $roles = Role::all(); // Obtener todos los roles disponibles
+
         $users = $store->users()->with('roles')->get();
-        return view('users.index', compact('users', 'store'));
+        return view('users.index', compact('users', 'store', 'roles'));
     }
 
     /**
@@ -129,31 +131,31 @@ class UserController extends Controller
     public function update(Request $request, Store $store, User $user)
     {
         $this->validateStoreAccess($store);
-    
+
         if ($user->store_id !== $store->id) {
             abort(404, 'Usuario no encontrado en esta tienda.');
         }
-    
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|exists:roles,name',
         ]);
-    
+
         $user->update($request->only('name', 'email'));
-    
+
         if ($request->filled('password')) {
             $user->update(['password' => Hash::make($request->password)]);
         }
-    
+
         $user->syncRoles([$request->role]);
-    
+
         return redirect()
             ->route('stores.users.index', $store->id)
             ->with('success', 'Usuario actualizado exitosamente.');
     }
-    
+
 
 
     /**

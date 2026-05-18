@@ -1,4 +1,6 @@
 import './bootstrap';
+import '../css/app.css';
+import '../css/custom.css';
 import Alpine from 'alpinejs';
 import { Chart, registerables } from 'chart.js';
 
@@ -29,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets: [{
                 label: 'Ventas',
                 data: weeklySalesData,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: '#ff0000',
+                borderColor: '#af2828',
                 borderWidth: 1
             }]
         },

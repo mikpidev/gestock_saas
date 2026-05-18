@@ -4,18 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Gestok - Login')</title>
+    <title>@yield('title', 'Gestock - Login')</title>
     <style>
         :root {
-            --color-primario: #ffb548;
-            --color-secundario: #ff6c37;
-            --color-acento: #8e5928;
+            --color-primario: #111111;
+            --color-secundario: #1c1c1c;
+            --color-acento: #ffffff;
+            --color-border: #d9d9d9;
+            --color-text: #1a1a1a;
+            --color-muted: #777777;
         }
 
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(180deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+            background: linear-gradient(180deg,
+                    #f8f8f8 0%,
+                    #efefef 45%,
+                    #dcdcdc 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -23,52 +29,32 @@
         }
 
         .auth-card {
-            background: #fff;
-            color: #000;
             width: 100%;
             max-width: 400px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            border-radius: 18px;
             overflow: hidden;
             animation: fadeIn 0.6s ease;
-        }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+            background: #ffffff;
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            box-shadow:
+                0 12px 35px rgba(0, 0, 0, 0.10),
+                0 2px 10px rgba(0, 0, 0, 0.04);
+
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .auth-header {
-            position: relative;
-            background: linear-gradient(360deg, var(--color-primario) 75%, var(--color-secundario) 125%);
-            color: #fff;
-            padding: 2rem 1.5rem;
-            text-align: center;
+            padding: 0;
             overflow: hidden;
-        }
-
-        /* Oscurece un poco el fondo para que el logo resalte más */
-        .auth-header::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.15);
-            z-index: 0;
+            background: #000;
         }
 
         .auth-header img {
-            position: relative;
-            z-index: 1;
-            filter: brightness(1.2) contrast(1.1) ;
-            width: 180px;
-            margin-bottom: 0.5rem;
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            margin: 0;
         }
 
         .auth-header h1 {
@@ -76,50 +62,60 @@
             font-weight: bold;
             margin: 0;
             letter-spacing: 1px;
+            color: #fff;
         }
 
         .auth-header p {
             font-size: 0.9rem;
             margin-top: 0.5rem;
-            color: #ffd9b3;
+            color: #d1d1d1;
         }
 
         .auth-body {
             padding: 2rem;
+            color: var(--color-text);
         }
 
         label {
             display: block;
             font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-            font-weight: bold;
-            color: var(--color-acento);
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            color: #2a2a2a;
         }
 
         input[type="email"],
         input[type="password"],
         input[type="text"] {
             width: 100%;
-            padding: 0.7rem;
+            padding: 0.8rem 0.9rem;
             margin-bottom: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            background: #fafafa;
+            border: 1px solid #dcdcdc;
+            border-radius: 10px;
             font-size: 0.95rem;
-            color: #000;
-            transition: border-color 0.3s ease;
+            color: #222;
+            transition: all 0.25s ease;
+        }
+
+        input::placeholder {
+            color: #999;
         }
 
         input:focus {
-            border-color: var(--color-secundario);
+            border-color: #888;
             outline: none;
-            background: #fffaf5;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
         }
 
         .actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
+            color: var(--color-muted);
+            font-size: 0.88rem;
         }
 
         input[type="checkbox"] {
@@ -127,54 +123,69 @@
         }
 
         .btn {
-            background: var(--color-secundario);
+            width: 50%;
+            background: linear-gradient(180deg,
+                    #1a1a1a 0%,
+                    #000000 100%);
             color: #fff;
             border: none;
-            padding: 0.7rem 1.2rem;
-            border-radius: 6px;
+            padding: 0.85rem 1.2rem;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: bold;
-            transition: background 0.3s ease, transform 0.1s ease;
+            font-size: 0.96rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
         }
 
         .btn:hover {
-            background: var(--color-acento);
-            transform: scale(1.03);
+            background: linear-gradient(180deg,
+                    #2a2a2a 0%,
+                    #111111 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.15);
         }
 
         .link {
             font-size: 0.85rem;
-            color: var(--color-acento);
-            text-decoration: underline;
+            color: #555;
+            text-decoration: none;
+            transition: color 0.2s ease;
         }
 
         .link:hover {
-            text-decoration: none;
-            color: var(--color-secundario);
+            color: #000;
         }
 
         .register,
         .extra {
             text-align: center;
-            margin-top: 1.2rem;
+            margin-top: 1.3rem;
             font-size: 0.9rem;
+            color: #666;
         }
 
         .register a,
         .extra a {
-            color: var(--color-secundario);
-            font-weight: bold;
+            color: #000;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .register a:hover,
+        .extra a:hover {
+            text-decoration: underline;
         }
 
         .alert {
-            background: #fff3f3;
-            color: #b91c1c;
-            padding: 0.8rem 1rem;
-            border-left: 4px solid var(--color-secundario);
-            border-radius: 5px;
+            background: #fafafa;
+            color: #222;
+            padding: 0.9rem 1rem;
+            border-left: 4px solid #000;
+            border-radius: 8px;
             margin-bottom: 1rem;
             font-size: 0.9rem;
+            border: 1px solid #ececec;
         }
     </style>
 </head>
@@ -182,9 +193,8 @@
 <body>
     <div class="auth-card">
         <div class="auth-header">
-            <img src="{{ asset('Logo.png') }}" alt="Logo Gestok" width="150">
+            <img src="{{ asset('Logo.png') }}" alt="Logo Gestok">
 
-            <p>@yield('subtitle', 'Inicio de sesión')</p>
         </div>
 
         <div class="auth-body">
