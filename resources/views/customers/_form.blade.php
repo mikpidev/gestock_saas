@@ -5,7 +5,7 @@
 
 
     <div class="col-md-6">
-        <select id="tipoDocumento" name="tipoDocumento" class="select2" required>
+        <select id="edit_tipoDocumento" name="tipoDocumento" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($tiposDocumento as $tipo)
             <option value="{{ $tipo->codigo }}"
@@ -31,8 +31,8 @@
     </div>
 
     <div class="col-md-6">
-        <input id="numDocumento" type="text" name="numDocumento" maxlength="14"
-            value="{{ old('numDocumento', $customer->numDocumento ?? '') }}" class="form-control" required>
+        <input id="edit_numDocumento" type="text" name="numDocumento" maxlength="14"
+            value="{{ old('numDocumento', $customer->numDocumento ?? '') }}" class="form-control">
         @error('numDocumento') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -46,7 +46,7 @@
     </div>
 
     <div class="col-md-6">
-        <input id="nrc" type="text" name="nrc" maxlength="10"
+        <input id="edit_nrc" type="text" name="nrc" maxlength="10"
             value="{{ old('nrc', $customer->nrc ?? '') }}" class="form-control">
         @error('nrc') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -57,7 +57,7 @@
         <label for="nombre">Nombre</label>
     </div>
     <div class="col-md-6">
-        <input id="nombre" type="text" name="nombre" value="{{ old('nombre', $customer->nombre ?? '') }}" class="form-control" required>
+        <input id="edit_nombre" type="text" name="nombre" value="{{ old('nombre', $customer->nombre ?? '') }}" class="form-control">
         @error('nombre') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -67,7 +67,7 @@
         <label for="nombreComercial">Nombre Comercial</label>
     </div>
     <div class="col-md-6">
-        <input id="nombreComercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
+        <input id="edit_nombreComercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
         @error('nombreComercial') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -81,7 +81,7 @@
         <label for="codActividad">Actividad Económica</label>
     </div>
     <div class="col-md-6">
-        <select id="codActividad" name="codActividad" class="select2" required>
+        <select id="edit_codActividad" name="codActividad" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($actividades as $act)
             <option value="{{ $act->codigo }}"
@@ -99,7 +99,7 @@
         <label for="descActividad">Descripción de Actividad</label>
     </div>
     <div class="col-md-6">
-        <input id="descActividad" type="text" name="descActividad"
+        <input id="edit_descActividad" type="text" name="descActividad"
             value="{{ old('descActividad', $customer->descActividad ?? '') }}" class="form-control">
         @error('descActividad') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -113,7 +113,7 @@
         <label for="direccion_departamento">Departamento</label>
     </div>
     <div class="col-md-6">
-        <select id="direccion_departamento" name="direccion_departamento" class="select2" required>
+        <select id="edit_direccion_departamento" name="direccion_departamento" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($departamentos as $dep)
             <option value="{{ $dep->codigo }}"
@@ -132,7 +132,7 @@
         <label for="direccion_municipio">Municipio</label>
     </div>
     <div class="col-md-6">
-        <select id="direccion_municipio" name="direccion_municipio" class="select2" required>
+        <select id="edit_direccion_municipio" name="direccion_municipio" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($municipios as $mun)
             <option value="{{ $mun->codigo }}"
@@ -151,7 +151,7 @@
         <label for="direccion_complemento">Dirección Complementaria</label>
     </div>
     <div class="col-md-6">
-        <input id="direccion_complemento" type="text" name="direccion_complemento"
+        <input id="edit_direccion_complemento" type="text" name="direccion_complemento"
             value="{{ old('direccion_complemento', $customer->direccion_complemento ?? '') }}" class="form-control">
         @error('direccion_complemento') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -165,7 +165,7 @@
         <label for="telefono">Teléfono</label>
     </div>
     <div class="col-md-6">
-        <input id="telefono" type="text" name="telefono" maxlength="15"
+        <input id="edit_telefono" type="text" name="telefono" maxlength="15"
             value="{{ old('telefono', $customer->telefono ?? '') }}" class="form-control">
         @error('telefono') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -179,7 +179,7 @@
         <label for="correo">Correo Electrónico</label>
     </div>
     <div class="col-md-6">
-        <input id="correo" type="email" name="correo"
+        <input id="edit_correo" type="email" name="correo"
             value="{{ old('correo', $customer->correo ?? '') }}" class="form-control">
         @error('correo') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -212,3 +212,55 @@
 
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('customersForm'); // ID del form de customers
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const responseDiv = document.getElementById('formResponse');
+            const actionUrl = form.action; // URL dinámica del form
+
+            fetch(actionUrl, {
+                    method: 'POST', // Laravel acepta POST + @method('PUT') si es edición
+                    headers: {
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.success) {
+                        responseDiv.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+
+                        // Cerrar modal si existe
+                        const modalEl = form.closest('.modal');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+
+                        // Limpiar formulario
+                        form.reset();
+
+                        // Opcional: actualizar tabla de stores
+                        if (typeof refreshStoresList === 'function') {
+                            refreshStoresList(result.store);
+                        }
+
+                    } else {
+                        responseDiv.innerHTML = `<div class="alert alert-danger">${result.message || 'Ocurrió un error'}</div>`;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    responseDiv.innerHTML = `<div class="alert alert-danger">Error al procesar la solicitud</div>`;
+                });
+        });
+    });
+</script>

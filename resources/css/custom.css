@@ -21,12 +21,14 @@
     --color-panel-texto: linear-gradient(135deg, #ff0000 0%, #af2828 100%);
 
     /* Graph Color Script */
-    --color-graph-primario: #ff0000;
-    --color-graph-secundario: #af2828;
+    --color-graph-primario: #FF6666;
+    --color-graph-secundario: #FF9999;
+
+    --color-doughnut-primer: #FF6666;
+    --color-doughnut-segundo: #FF9999;
+    --color-doughnut-tercero: #FFCCCC;
+
 }
-
-
-
 
 /* Header */
 
@@ -200,7 +202,6 @@ a:hover {
     cursor: pointer;
     transition: 0.2s;
 }
-
 
 #config-btn svg {
     vertical-align: middle;
@@ -655,11 +656,6 @@ tr:hover {
     background: #fafafa;
 }
 
-
-
-
-
-
 .badge {
     padding: 5px 8px;
     font-size: 11px;
@@ -862,10 +858,32 @@ tr:hover {
     cursor: pointer;
     font-weight: bold;
     width: 100%;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
 }
 
 .btn-create-sale:hover {
+    transform: translateY(-2px);
+    opacity: 0.92;
+}
+
+/* ===== Botón principal ===== */
+.btn-create-nc {
+    background: var(--color-degradado);
+    color: #fff;
+    border: none;
+    padding: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 15%;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.btn-create-nc:hover {
     transform: translateY(-2px);
     opacity: 0.92;
 }
@@ -907,5 +925,162 @@ tr:hover {
 
     .product-card.card img {
         height: 80px;
+    }
+}
+
+/* =========================
+       Notas de Credito Create
+    ========================= */
+
+/* =========================
+       Card principal
+    ========================= */
+.gestok-form-card {
+    background: #ffffff;
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #edf0f5;
+}
+
+.gestok-form-header {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc, #eef4ff);
+    border-bottom: 1px solid #edf0f5;
+}
+
+.gestok-form-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.gestok-form-header p {
+    margin-top: 0.35rem;
+    color: #64748b;
+}
+
+.gestok-form-body {
+    padding: 2rem;
+}
+
+/* =========================
+       Inputs
+    ========================= */
+label {
+    font-weight: 600;
+    margin-bottom: 0.45rem;
+    display: block;
+    color: #334155;
+}
+
+/* =========================
+       Tabla superior
+    ========================= */
+.contenedor-superior {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 1.5rem;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+}
+
+.contenedor-superior tr:first-child td:first-child {
+    border-top-left-radius: 18px;
+}
+
+.contenedor-superior tr:first-child td:last-child {
+    border-top-right-radius: 18px;
+}
+
+.contenedor-superior td,
+.contenedor-superior th {
+    padding: 0.9rem;
+    border-bottom: 1px solid #eef2f7;
+    font-size: 0.92rem;
+}
+
+.contenedor-superior tr:nth-child(odd) {
+    background: #fafcff;
+}
+
+.contenedor-superior tr[style] {
+    background: #f1f5f9 !important;
+    color: #334155;
+    font-weight: 700;
+}
+
+/* =========================
+       Productos
+    ========================= */
+.sale-details-section {
+    margin-top: 2rem;
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.details-table th {
+    background: #eef2ff;
+    color: #334155;
+    font-weight: 700;
+    padding: 0.9rem;
+}
+
+.details-table td {
+    padding: 0.9rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.details-table input {
+    border-radius: 12px;
+    border: 1px solid #dbe2ea;
+    padding: 0.55rem;
+    width: 100px;
+}
+
+/* =========================
+       Totales
+    ========================= */
+#totalsSummary {
+    background: linear-gradient(135deg, #f8fafc, #eef4ff) !important;
+    border: 1px solid #dbeafe;
+    border-radius: 18px !important;
+    padding: 1.2rem !important;
+    margin-top: 1.5rem !important;
+}
+
+/* =========================
+       Botones
+    ========================= */
+.gestok-form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+
+/* =========================
+       Responsive
+    ========================= */
+@media (max-width: 768px) {
+    .contenedor-superior,
+    .details-table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .gestok-form-body {
+        padding: 1rem;
     }
 }

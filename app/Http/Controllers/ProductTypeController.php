@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductType;
 use Illuminate\Http\Request;
 use App\Models\Store;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
 class ProductTypeController extends Controller
@@ -31,6 +32,15 @@ class ProductTypeController extends Controller
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
     }
+
+    //Normalizar Categoria (primera letra mayúscula, resto minúscula)
+
+    private function normalizeCategory($category)
+{
+    return Str::title(
+        mb_strtolower(trim($category))
+    );
+}
 
     /**
      * Display a listing of the resource.
@@ -122,6 +132,10 @@ class ProductTypeController extends Controller
                 ->with('error', 'Ya existe un tipo de producto con ese nombre en esta tienda.');
         }
 
+        // Normalizar categoría
+        $normalizedCategory = $this->normalizeCategory($request->category);
+
+
         
 
         // Crear el nuevo tipo de producto asociado a la tienda y compañía
@@ -129,7 +143,7 @@ class ProductTypeController extends Controller
             'name' => $request->name,
             'price' => $request->price,
             'stock' => $request->stock,
-            'category' => $request->category,
+            'category' => $normalizedCategory,
             'description' => $request->description,
             'store_id' => $store->id,
             'company_id' => $store->company_id,
@@ -180,15 +194,15 @@ class ProductTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Store $store, ProductType $productType)
+   public function update(Request $request, Store $store, ProductType $productType)
     {
 
         //validar acceso a la tienda
         $this->validateStoreAccess($store);
-        //validar que usuario pertenezca a esta tienda
-        if ($productType->store_id !== Auth::user()->store_id) {
+        //validar scope de usuario 
+        /*         if ($productType->store_id !== Auth::user()->store_id) {
             abort(404, 'Tipo de producto no encontrado en esta tienda.');
-        }
+        } */
 
 
 
@@ -214,14 +228,20 @@ class ProductTypeController extends Controller
             ]
         );
 
-        //actualizar
+        //actualizar producto solo de la tienda donde pertenece
+
+
         $productType->update([
+            'store_id' => $store->id,
             'name' => $request->name,
             'price' => $request->price,
             'stock' => $request->stock,
             'category' => $request->category,
             'description' => $request->description,
         ]);
+
+        //mostrar nueva info del producto
+        \Log::info('Tipo de producto actualizado', ['product_type_id' => $productType->id, 'store_id' => $store->id, 'user_id' => Auth::id()]);
 
 
         //regresar a vista

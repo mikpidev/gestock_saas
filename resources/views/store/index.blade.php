@@ -46,7 +46,7 @@
         <tbody id="storesTable">
             @forelse($stores as $store)
             <tr id="store-{{ $store->id }}">
-                <td><a href="{{ route('stores.show', $store->id) }}">{{ $store->store_name }}</a></td>
+                <td><a href="{{ route('stores.dashboard', $store->id) }}">{{ $store->store_name }}</a></td>
                 <td>{{ $store->manager }}</td>
                 <td>{{ ucfirst($store->status) }}</td>
                 <td>{{ $store->comments }}</td>

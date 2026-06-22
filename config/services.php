@@ -64,8 +64,8 @@ return [
         'username' => env('SMTP_OCID'),
         'password' => env('SMTP_PASSWORD'),
         'encryption' => env('SMTP_ENCRYPTION', 'tls'),
-        'from_email' => env('OCI_EMAIL_FROM', 'realmadrid.mi9u31@gmail.com'),
-        'from_name' => env('OCI_EMAIL_FROM_NAME', 'Villa Mercedes'),
+        'from_email' => env('MAIL_FROM_ADDRESS'),
+        'from_name' => env('MAIL_FROM_NAME', 'Villa Mercedes'),
     ],
     
 

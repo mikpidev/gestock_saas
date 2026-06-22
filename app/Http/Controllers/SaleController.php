@@ -120,10 +120,71 @@ class SaleController extends Controller
 
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
     {
-        $token = app(HaciendaAuthService::class)->getToken($store);
-        $consultaService->consultarSale($sale, $token);
 
-        return redirect()->back()->with('success', 'Estado DTE actualizado.');
+        try {
+
+            // Validar tiempo permitido
+            if ($sale->created_at->diffInHours(now()) > 48) {
+                return back()->with(
+                    'error',
+                    'El tiempo permitido para reenviar este DTE expiró.'
+                );
+            }
+
+            // No reenviar si ya está procesado
+            if ($sale->dte_status === 'PROCESADO') {
+                return back()->with(
+                    'error',
+                    'Este DTE ya fue procesado.'
+                );
+            }
+
+            app(\App\Http\Controllers\DTEController::class)
+                ->generarDTE($sale);
+
+
+            $token = app(HaciendaAuthService::class)
+                ->getToken($store);
+
+            $response = $consultaService
+                ->consultarSale($sale, $token);
+
+
+            $sale->dte_status = $response['estado'] ?? 'PENDIENTE';
+            $sale->save();
+
+
+            if ($sale->dte_status = 'PROCESADO') {
+                try {
+                    app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
+                } catch (\Throwable $e) {
+
+                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
+
+                        'sale_id' => $sale->id,
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+
+
+            return back()->with(
+                'success',
+                'DTE reenviado correctamente.'
+            );
+        } catch (\Throwable $e) {
+
+            \Log::error("Error reenviando DTE", [
+                'sale_id' => $sale->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
+        }
     }
 
 
@@ -247,7 +308,7 @@ class SaleController extends Controller
         }
         try {
             // Obtener token válido
-            $token = app(HaciendaAuthService::class)->getToken();
+            $token = app(HaciendaAuthService::class)->getToken($store);
 
             // Consultar DTE inmediatamente después de enviar
             $consultaService = new ConsultaService();
@@ -256,6 +317,22 @@ class SaleController extends Controller
             // Actualizar estado de la venta con el estado real
             $sale->dte_status = $response['estado'] ?? 'PENDIENTE';
             $sale->save();
+
+            
+            //enviar correo en automatico
+
+            if ($sale->dte_status = 'PROCESADO') {
+                try {
+                    app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
+                } catch (\Throwable $e) {
+
+                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
+
+                        'sale_id' => $sale->id,
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
 
             // Guardar response en sesión para mostrar en index
             session()->flash('dte_response', $response);
@@ -299,7 +376,7 @@ class SaleController extends Controller
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
         $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
-        
+
         // Mapeo de descripciones
         $tipoDteDescripcion = [
             '01' => 'Factura',

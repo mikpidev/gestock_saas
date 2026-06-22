@@ -290,6 +290,14 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     });
 
 
+    //Chart Routes
+    // Chart View
+    Route::get('/stores/{store}/dashboard', [StoreController::class, 'dashboard'])
+        ->name('stores.dashboard');
+    Route::get('/stores/{store}/dashboard-data', [StoreController::class, 'getChartData'])
+        ->name('stores.dashboard.data');
+
+
 
     //Bucket Test OCI
     Route::get('/oci-test', [\App\Http\Controllers\OCIController::class, 'uploadTest']);

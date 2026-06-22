@@ -49,37 +49,60 @@ class CreditNoteController extends Controller
         $authService = app(HaciendaAuthService::class);
 
         // Primero obtenemos la fecha del request (si no viene, usa hoy)
-        $fecha = $request->fecha ?? Carbon::today()->toDateString();
-
-        $token = $authService->getToken($store);
         $consultaService = new ConsultaService();
         $customers = Customer::where('store_id', $store->id)->get();
         $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
 
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->startOfDay();
+
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+        //obtener filtro clientes, codigo generacion y estado DTE para mostrar en el index
+
+        $customers_id = $request->customer_id;
+        $codigo_generacion_filter = $request->codigo_generacion;
+        $dte_status = $request->dte_status;
 
         // Filtramos ventas de ESTA tienda y de ESA fecha
         $creditNotes = CreditNote::with('customer')
             ->where('store_id', $store->id)
-            ->whereDate('created_at', $fecha)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
+            ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
+            ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
             ->orderByDesc('created_at')
             ->get();
 
-        // Solicitar lista de notas de crédito
+        // Solo ventas no procesadas
+        $pendingNC = $creditNotes->filter(function ($creditNotes) {
+            return !empty($creditNotes->codigo_generacion)
+                && $creditNotes->dte_status !== 'PROCESADO';
+        });
+        if ($pendingNC->isNotEmpty()) {
 
-        //Consultar estado de cada DTE y actualizar en base de datos
-        // Consultar DTE solo a las ventas filtradas
-        foreach ($creditNotes as $creditNote) {
-            if ($creditNote->dte_status !== 'PROCESADO') {
-                $consultaService->consultarNC($creditNote, $token);
+            try {
+                $token = $authService->getToken($store);
+            } catch (\Exception $e) {
+                $token = null;
+            }
+
+            if ($token) {
+                foreach ($pendingNC as $pendingNC) {
+                    $consultaService->consultarSale($creditNotes, $token);
+                }
             }
         }
 
 
 
-        return view('creditnotes.index', compact('store', 'creditNotes', 'fecha'));
+
+        return view('creditnotes.index', compact('store', 'creditNotes', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
-
-
 
 
     public function refreshDTE(Store $store, CreditNote $creditNote, ConsultaService $consultaService)
@@ -89,7 +112,6 @@ class CreditNoteController extends Controller
 
         return redirect()->back()->with('success', 'Estado DTE actualizado.');
     }
-
 
     /**
      * Show the form for creating a new resource.

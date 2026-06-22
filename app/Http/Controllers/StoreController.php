@@ -79,8 +79,116 @@ class StoreController extends Controller
             ->with('success', 'Tienda creada, ahora crea la información fiscal de la tienda.');
     }
 
+    public function getChartData(Request $request, Store $store)
+    {
+
+        //filtros
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->subDays(6)->startOfDay();
+
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+        //Filtrar por tipo de documento (Factura, CF, etc)
+        $documentType = $request->tipo_documento_id;
+
+        //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
+        $dte_status = 'APROBADA' ??  $request->dte_status;
+
+        // Base query con filtros aplicados
+
+        $baseQuery = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->when($dte_status, function ($query) use ($dte_status) {
+                $query->where('dte_status', $dte_status);
+            });
+
+        \Log::info("Base Query: " . $baseQuery->toSql(), [
+            'bindings' => $baseQuery->getBindings(),
+        ]);
+
+        // Chart Data
+
+        $chartData = (clone $baseQuery)
+            ->selectRaw("DATE(created_at) as date, SUM(total_amount) as total")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $totalSales = (clone $baseQuery)->sum('total_amount');
+        $totalCount = (clone $baseQuery)->count();
+        $salesTodayTotal = (clone $baseQuery)->whereDate('created_at', Carbon::today())->sum('total_amount');
+        $salesTodayCount = (clone $baseQuery)->whereDate('created_at', Carbon::today())->count();
+        $salesWeekTotal = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->sum('total_amount');
+        $salesWeekCount = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count();
+        $salesMonthTotal = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])->sum('total_amount');
+        $salesMonthCount = (clone $baseQuery)->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])->count();
+
+        $methodPaymentData = (clone $baseQuery)
+            ->selectRaw("
+                COUNT(CASE WHEN payment_method = 'Efectivo' THEN 1 END ) as efectivo,
+                COUNT(CASE WHEN payment_method = 'Tarjeta' THEN 1 END ) as tarjeta,
+                COUNT(CASE WHEN payment_method = 'Transferencia' THEN 1 END ) as transferencia,
+                SUM(total_amount) as total,
+                SUM(CASE WHEN payment_method = 'Efectivo' THEN total_amount ELSE 0 END) as monto_efectivo,
+                SUM(CASE WHEN payment_method = 'Tarjeta' THEN total_amount ELSE 0 END) as monto_tarjeta,
+                SUM(CASE WHEN payment_method = 'Transferencia' THEN total_amount ELSE 0 END) as monto_transferencia               
+            ")->first();
+
+        $dteSummary = (clone $baseQuery) 
+            ->selectRaw("
+                COUNT(CASE WHEN tipo_documento_id = 1 THEN 1 END) as factura,
+                COUNT(CASE WHEN tipo_documento_id = 2 THEN 1 END) as CCF,
+                COUNT(CASE WHEN tipo_documento_id = 10 THEN 1 END) as SE,
+                SUM(total_amount) as total,
+                SUM(CASE WHEN tipo_documento_id = 1 THEN total_amount ELSE 0 END) as monto_factura,
+                SUM(CASE WHEN tipo_documento_id = 2 THEN total_amount ELSE 0 END) as monto_CCF,
+                SUM(CASE WHEN tipo_documento_id = 10 THEN total_amount ELSE 0 END) as monto_SE 
+            ")->first();
+
+        
+        $dteAproved = (clone $baseQuery)->where('dte_status', 'APROBADA')->count();
+        $dteDeny = (clone $baseQuery)->where('dte_status', 'RECHAZADO')->count();
+        $dtePending = (clone $baseQuery)->where('dte_status', 'PENDIENTE')->count();
+        $dteFactura = (clone $baseQuery)->where('tipo_documento_id', '1')->count();
+        $dteCF = (clone $baseQuery)->where('tipo_documento_id', '2')->count();
+        $dteSE = (clone $baseQuery)->where('tipo_documento_id', '10')->count();
+
+        return response()->json([
+            'chartData' => $chartData,
+            'totalSales' => $totalSales,
+            'totalCount' => $totalCount,
+            'salesTodayTotal' => $salesTodayTotal,
+            'salesTodayCount' => $salesTodayCount,
+            'salesWeekTotal' => $salesWeekTotal,
+            'salesWeekCount' => $salesWeekCount,
+            'salesMonthTotal' => $salesMonthTotal,
+            'salesMonthCount' => $salesMonthCount,
+            'methodPaymentData' => $methodPaymentData,
+            'dteSummary' => $dteSummary,
+            'dteAproved' => $dteAproved,
+            'dteDeny' => $dteDeny,
+            'dtePending' => $dtePending,
+            'dteFactura' => $dteFactura,
+            'dteCF' => $dteCF,
+            'dteSE' => $dteSE,
+        ]);
+    }
+
+
+    public function dashboard(Store $store)
+    {
+        return view('store.dashboard', compact('store'));
+    }
+
     public function show(Store $store)
     {
+
         $user = Auth::user();
         if (!$user) {
             return redirect()->route('login');

@@ -18,10 +18,6 @@
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(180deg,
-                    #f8f8f8 0%,
-                    #efefef 45%,
-                    #dcdcdc 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -45,30 +41,35 @@
         }
 
         .auth-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
             padding: 0;
             overflow: hidden;
-            background: #000;
         }
 
         .auth-header img {
-            width: 100%;
+            width: 80%;
             display: block;
-            object-fit: cover;
-            margin: 0;
+            margin: 0 auto;
         }
 
         .auth-header h1 {
-            font-size: 1.8rem;
+            text-align: center;
+            font-size: 1rem;
             font-weight: bold;
             margin: 0;
             letter-spacing: 1px;
-            color: #fff;
+            color: var(--color-muted);
         }
 
         .auth-header p {
-            font-size: 0.9rem;
+            text-align: center;
+            font-size: 0.8rem;
             margin-top: 0.5rem;
-            color: #d1d1d1;
+            color: var(--color-muted);
         }
 
         .auth-body {
@@ -88,7 +89,7 @@
         input[type="password"],
         input[type="text"] {
             width: 100%;
-            padding: 0.8rem 0.9rem;
+            padding: 0.8rem 0.1rem;
             margin-bottom: 1rem;
             background: #fafafa;
             border: 1px solid #dcdcdc;
@@ -111,7 +112,7 @@
 
         .actions {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             margin-bottom: 1.2rem;
             color: var(--color-muted);
@@ -124,9 +125,7 @@
 
         .btn {
             width: 50%;
-            background: linear-gradient(180deg,
-                    #1a1a1a 0%,
-                    #000000 100%);
+            background: linear-gradient(135deg, #ff0000 0%, #af2828 100%);
             color: #fff;
             border: none;
             padding: 0.85rem 1.2rem;
@@ -139,9 +138,7 @@
         }
 
         .btn:hover {
-            background: linear-gradient(180deg,
-                    #2a2a2a 0%,
-                    #111111 100%);
+            background: linear-gradient(135deg, #ff0000 0%, #af2828 50%);
             transform: translateY(-1px);
             box-shadow: 0 10px 18px rgba(0, 0, 0, 0.15);
         }
@@ -190,10 +187,13 @@
     </style>
 </head>
 
-<body>
+<body background="{{ asset('bglogin.png') }}">
     <div class="auth-card">
         <div class="auth-header">
             <img src="{{ asset('Logo.png') }}" alt="Logo Gestok">
+            <h1>Bienvenido a Gestock</h1>
+            <p>Ingrese para continuar</p>
+
 
         </div>
 

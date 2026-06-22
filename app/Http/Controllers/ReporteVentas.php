@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductType;
+use App\Models\Store;
+
+
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -46,43 +49,57 @@ class ReporteVentas extends Controller
         $pdf = \PDF::loadView('reportes.ventas', compact('store', 'sales', 'saleDetails', 'productType'));
         return $pdf->download('reporte_ventas.pdf');
     }
-    public function dteReporte(Request $request, OciService $oci)
+    public function dteReporte(Request $request, Store $store, OCIService $oci)
     {
         ini_set('memory_limit', '1024M');
         set_time_limit(0);
-    
+
         $basePath = storage_path("app/dte_reportes");
         $tempPath = storage_path("app/dte_reportes/temp");
-        
+
         if (!is_dir($basePath)) {
             mkdir($basePath, 0777, true);
+            Log::info("Directorio base creado", ['path' => $basePath]);
         }
-        
+
         if (!is_dir($tempPath)) {
             mkdir($tempPath, 0777, true);
+            Log::info("Directorio temporal creado", ['path' => $tempPath]);
         }
-    
-        $zipPrincipalName = 'dtes_export_' . date('Y-m-d') . '.zip';
+
+        foreach (glob($tempPath . '/*') as $file) {
+
+            if (is_file($file)) {
+                unlink($file);
+                Log::info("Archivo temporal eliminado", ['file' => $file]);
+            }
+        }
+        $zipPrincipalName = 'dtes_export_' . date('Y-m-d') . '_' . time() . '.zip';
         $zipPrincipalPath = storage_path("app/dte_reportes/{$zipPrincipalName}");
-    
+
+
         $zipPrincipal = new \ZipArchive;
 
         $result = $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-        
+
         if ($result !== true) {
             \Log::error('No se pudo abrir el ZIP', [
                 'path' => $zipPrincipalPath,
                 'result' => $result
             ]);
-        
+
             return back()->with('error', 'No se pudo crear el archivo ZIP.');
         }
 
         //Inicializar consulta con relaciones necesarias para evitar N+1
-        $dateFrom = $request->input('dateFrom', now()->subDays(30)->toDateString());
-        $dateTo = $request->input('dateTo', now()->toDateString());
-    
+        $dateFrom = $request->dateFrom ? Carbon::parse($request->dateFrom)->startOfDay() : Carbon::now()->startOfDay();
+        $dateTo = $request->dateTo ? Carbon::parse($request->dateTo)->endOfDay() : Carbon::now()->endOfDay();
+        $storeId = $store->id;
+        //llamar store id para filtrar ventas
+
+
         $query = Sale::with([
+            'store',
             'store.taxInfo',
             'customer',
             'details.productType',
@@ -91,46 +108,58 @@ class ReporteVentas extends Controller
             'tipoDte'
         ])
             ->where(function ($q) {
-                $q->where('dte_status', 'PROCESADO')
-                  ->orWhere('dte_status', 'PENDIENTE');
+                $q->where('dte_status', 'PROCESADO');
             })
-            
-            ->whereBetween('sale_date', [$dateFrom, $dateTo]);
+
+            ->where('store_id', $storeId)
+            ->whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->where('environment', 'Production');
+        //logs para verificar las tiendas y fechas
+
+        \Log::info('DEBUG QUERY', [
+            'store_id' => $storeId,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+            'count' => $query->count()
+        ]);
+
 
         $query->chunk(40, function ($sales) use ($zipPrincipal) {
-    
+
             $saleIds = $sales->pluck('id');
-    
+
             $dteResponses = DteResponse::whereIn('sale_id', $saleIds)
                 ->get()
                 ->keyBy('sale_id');
-    
+
             foreach ($sales as $sale) {
-    
+
                 $dteResponse = $dteResponses[$sale->id] ?? null;
-    
+
                 $tipo = strtolower($sale->tipoDte->codigo ?? '');
-    
+
                 $tipoDteDescripcion = [
                     '01' => 'Factura',
                     '03' => 'Crédito Fiscal',
                     '14' => 'Factura Sujeto Excluido',
                 ];
-    
+
                 switch ($tipo) {
-    
+
                     case '01':
                         $json = $this->dteService->buildDTEJsonFE($sale);
                         break;
-    
+
                     case '03':
                         $json = $this->dteService->buildDTEJsonCF($sale);
                         break;
-    
+
                     case '14':
                         $json = $this->dteService->buildDTEJsonSE($sale);
                         break;
-    
+
                     default:
                         \Log::warning("Tipo DTE desconocido", [
                             "sale_id" => $sale->id,
@@ -138,31 +167,31 @@ class ReporteVentas extends Controller
                         ]);
                         continue 2;
                 }
-    
+
                 if ($dteResponse) {
                     $json['sello_recibido'] = $dteResponse->sello_recibido;
                 }
-    
+
                 $codigoGen = $sale->codigo_generacion;
-    
+
                 // Guardar JSON temporal
                 $jsonFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.json");
                 file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
-    
+
                 // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
                     . "?ambiente=01"
                     . "&codGen={$json['identificacion']['codigoGeneracion']}"
                     . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
-    
+
                 $renderer = new ImageRenderer(
                     new RendererStyle(150),
                     new SvgImageBackEnd()
                 );
-    
+
                 $writer = new Writer($renderer);
                 $qrImage = base64_encode($writer->writeString($urlQR));
-    
+
                 // Generar PDF
                 $pdf = Pdf::loadView('reportes.ventas', [
                     'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
@@ -173,56 +202,59 @@ class ReporteVentas extends Controller
                     'qrImage' => $qrImage,
                     'dteResponse' => $dteResponse
                 ]);
-    
+
                 $pdfFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.pdf");
                 $pdf->save($pdfFilename);
-    
+
                 // Agregar directo al ZIP principal
                 $zipIndividualName = "DTE_{$codigoGen}.zip";
                 $zipIndividualPath = storage_path("app/dte_reportes/temp/{$zipIndividualName}");
-                
+
                 $zipIndividual = new \ZipArchive;
                 $result = $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-                
+
                 if ($result !== true) {
                     \Log::error("No se pudo crear ZIP individual", [
                         "codigoGen" => $codigoGen
                     ]);
                     continue;
                 }
-                
+
                 $zipIndividual->addFile($jsonFilename, "dte_{$codigoGen}.json");
                 $zipIndividual->addFile($pdfFilename, "dte_{$codigoGen}.pdf");
-                
-                $zipIndividual->close();
-                
-                $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
-    
 
+                $zipIndividual->close();
+
+                $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
             }
         });
-    
+
         $zipPrincipal->close();
 
         // borrar temporales para no llenar disco
         //unlink($jsonFilename);
         //unlink($pdfFilename);
-    
+
+        if (!file_exists($zipPrincipalPath)) {
+
+            \Log::error("ZIP principal no existe", [
+                "path" => $zipPrincipalPath
+            ]);
+
+            return back()->with('error', 'No se pudo generar el ZIP.');
+        }
+
         \Log::info("ZIP principal creado", [
             "path" => $zipPrincipalPath,
             "size" => filesize($zipPrincipalPath)
         ]);
-    
-        if (!file_exists($zipPrincipalPath)) {
-            return back()->with('error', 'No se pudo generar el ZIP.');
-        }
-    
+
         // Subir a OCI
         $oci->uploadReportsToOCI(
             $zipPrincipalName,
             $zipPrincipalPath
         );
-    
+
         return response()->download($zipPrincipalPath)->deleteFileAfterSend(true);
     }
 
@@ -239,32 +271,46 @@ class ReporteVentas extends Controller
     }
 
 
-    public function dteReporteNC(OciService $oci) 
+    public function dteReporteNC(Request $request, Store $store, OCIService $oci)
     {
         ini_set('memory_limit', '1024M');
-        set_time_limit(120);
+        set_time_limit(0);
 
-        $basePath = storage_path("app/dtesNC_reportes/");
-        $tempPath = storage_path("app/dtesNC_reportes/temp/");
+        $basePath = storage_path("app/dteNC_reportes");
+        $tempPath = storage_path("app/dteNC_reportes/temp");
 
-        if (!file_exists($basePath)) mkdir($basePath, 0777, true);
-        if (!file_exists($tempPath)) mkdir($tempPath, 0777, true);
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0777, true);
+            Log::info("Directorio NC base creado", ['path' => $basePath]);
+        }
 
-        $zipPrincipalName = 'dtesNC_export_' . date('Y-m-d') . '.zip';
-        $zipPrincipalPath = $basePath . $zipPrincipalName;
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+            Log::info("Directorio NC temp creado", ['path' => $tempPath]);
+        }
+
+        foreach (glob($tempPath . '/*') as $file) {
+            if (is_file($file)) unlink($file);
+        }
+
+        $zipPrincipalName = 'dtesNC_export_' . date('Y-m-d') . '_' . time() . '.zip';
+        $zipPrincipalPath = storage_path("app/dteNC_reportes/{$zipPrincipalName}");
 
         $zipPrincipal = new \ZipArchive;
-        $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
         $result = $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
         if ($result !== true) {
-            \Log::error("ERROR al abrir ZIP principal", [
-                'path' => $zipPrincipalPath,
-                'error' => $result
-            ]);
-
-            return back()->with('error', 'No se pudo crear el archivo ZIP principal.');
+            return back()->with('error', 'No se pudo crear ZIP NC.');
         }
+
+        $dateFrom = $request->dateFrom
+            ? Carbon::parse($request->dateFrom)->startOfDay()
+            : Carbon::now()->startOfDay();
+
+        $dateTo = $request->dateTo
+            ? Carbon::parse($request->dateTo)->endOfDay()
+            : Carbon::now()->endOfDay();
 
         $query = CreditNote::with([
             'sale',
@@ -274,135 +320,103 @@ class ReporteVentas extends Controller
             'tipoDte'
         ])
             ->where('dte_status', 'PROCESADO')
-            ->whereDate('sale_date', '>=', now()->subDays(16));
+            ->where('store_id', $store->id)
+            ->whereBetween('sale_date', [$dateFrom, $dateTo]);
 
-        $query->chunk(110, function ($notasCredito) use ($basePath, $tempPath, $zipPrincipal, $oci) {
+        $query->chunk(40, function ($notas) use ($zipPrincipal, $tempPath) {
 
-            foreach ($notasCredito as $nc) {
+            foreach ($notas as $nc) {
 
-                $nc->load([
-                    'store.taxInfo',
-                    'sale',
-                    'customer',
-                    'creditNoteDetails.productType',
-                    'tipoDte'
-                ]);
+                $sale = $nc->sale;
 
-                $tipo = '05';
-                $tipoDteDescripcion = ['05' => 'Nota de Crédito'];
-                $sale = $nc->sale ?? (isset($nc->sale_id) ? \App\Models\Sale::find($nc->sale_id) : null);
+                $json = $this->dteService->buildDTEJsonNC($nc, $sale);
 
-                switch ($tipo) {
-                    case '05':
-                        $json = $this->dteService->buildDTEJsonNC($nc, $sale);
-                        break;
-
-                    default:
-                        \Log::warning("Tipo DTE desconocido", [
-                            "sale_id" => $nc->id,
-                            "tipo" => $tipo
-                        ]);
-                        continue 2;
-                }
-
-                // Código generación — usar el del JSON (más confiable)
                 $codigoGen = $json['identificacion']['codigoGeneracion'];
 
-                // Guardar JSON
-                $jsonFilename = "{$tempPath}/dte_{$codigoGen}.json";
-                file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
+                $jsonPath = "{$tempPath}/dte_{$codigoGen}.json";
+                file_put_contents($jsonPath, json_encode($json, JSON_PRETTY_PRINT));
 
-                // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
                     . "?ambiente=01"
-                    . "&codGen={$json['identificacion']['codigoGeneracion']}"
-                    . "&fechaEmi=" . date(
-                        'Y-m-d',
-                        strtotime($json['identificacion']['fecEmi'])
-                    );
+                    . "&codGen={$codigoGen}"
+                    . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
 
-                $renderer = new ImageRenderer(
-                    new RendererStyle(150),
-                    new SvgImageBackEnd()
-                );
+                $renderer = new ImageRenderer(new RendererStyle(150), new SvgImageBackEnd());
                 $writer = new Writer($renderer);
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
-                // PDF
-                $pdf = Pdf::loadView('Reportes.notascredito', [
-                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                    'dte'      => $json,
-                    'emisor'   => $json['emisor'],
+                $pdf = Pdf::loadView('reportes.notascredito', [
+                    'dte' => $json,
+                    'emisor' => $json['emisor'],
                     'receptor' => $json['receptor'],
-                    'resumen'  => $json['resumen'],
-                    'qrImage'  => $qrImage
+                    'resumen' => $json['resumen'],
+                    'qrImage' => $qrImage
                 ]);
 
-                $pdfFilename = "{$tempPath}/dte_{$codigoGen}.pdf";
-                $pdf->save($pdfFilename);
+                $pdfPath = "{$tempPath}/dte_{$codigoGen}.pdf";
+                $pdf->save($pdfPath);
 
-                // ZIP individual
-                $zipIndividualName = "DTE_{$codigoGen}.zip";
-                $zipIndividualPath = "{$tempPath}/{$zipIndividualName}";
+                $zipIndividualPath = "{$tempPath}/DTE_{$codigoGen}.zip";
 
-                $zipIndividual = new \ZipArchive;
-                $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+                $zip = new \ZipArchive;
+                if ($zip->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                    $zip->addFile($jsonPath, "dte_{$codigoGen}.json");
+                    $zip->addFile($pdfPath, "dte_{$codigoGen}.pdf");
+                    $zip->close();
+                }
 
-                $zipIndividual->addFile($jsonFilename, "dte_{$codigoGen}.json");
-                $zipIndividual->addFile($pdfFilename, "dte_{$codigoGen}.pdf");
-
-                $zipIndividual->close();
-
-                $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
-
-                \Log::info("DTE generado y enviado a OCI", [
-                    "credit_note_id" => $nc->id,
-                    "zip" => $zipIndividualPath
-                ]);
+                $zipPrincipal->addFile($zipIndividualPath, "DTE_{$codigoGen}.zip");
             }
         });
 
         $zipPrincipal->close();
 
-        // SUBIR ZIP FINAL A OCI
-        $oci->uploadReportsToOCI(
-            $zipPrincipalName,
-            $zipPrincipalPath,
-            "application/zip"
-        );
+        $oci->uploadReportsToOCI($zipPrincipalName, $zipPrincipalPath);
 
-        // DESCARGAR ZIP
         return response()->download($zipPrincipalPath)->deleteFileAfterSend(true);
     }
 
 
-    public function dteReporteND(OciService $oci)
+    public function dteReporteND(Request $request, Store $store, OCIService $oci)
     {
         ini_set('memory_limit', '1024M');
-        set_time_limit(120);
+        set_time_limit(0);
 
-        $basePath = storage_path("app/dtesND_reportes/");
-        $tempPath = storage_path("app/dtesND_reportes/temp/");
+        $basePath = storage_path("app/dteND_reportes");
+        $tempPath = storage_path("app/dteND_reportes/temp");
 
-        if (!file_exists($basePath)) mkdir($basePath, 0777, true);
-        if (!file_exists($tempPath)) mkdir($tempPath, 0777, true);
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0777, true);
+            Log::info("Directorio ND base creado", ['path' => $basePath]);
+        }
 
-        $zipPrincipalName = 'dtesND_export_' . date('Y-m-d') . '.zip';
-        $zipPrincipalPath = $basePath . $zipPrincipalName;
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+            Log::info("Directorio ND temp creado", ['path' => $tempPath]);
+        }
+
+        foreach (glob($tempPath . '/*') as $file) {
+            if (is_file($file)) unlink($file);
+        }
+
+        $zipPrincipalName = 'dtesND_export_' . date('Y-m-d') . '_' . time() . '.zip';
+        $zipPrincipalPath = storage_path("app/dteND_reportes/{$zipPrincipalName}");
 
         $zipPrincipal = new \ZipArchive;
-        $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-        
+
         $result = $zipPrincipal->open($zipPrincipalPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
         if ($result !== true) {
-            \Log::error("ERROR al abrir ZIP principal", [
-                'path' => $zipPrincipalPath,
-                'error' => $result
-            ]);
-
-            return back()->with('error', 'No se pudo crear el archivo ZIP principal.');
+            return back()->with('error', 'No se pudo crear ZIP ND.');
         }
+
+        $dateFrom = $request->dateFrom
+            ? Carbon::parse($request->dateFrom)->startOfDay()
+            : Carbon::now()->startOfDay();
+
+        $dateTo = $request->dateTo
+            ? Carbon::parse($request->dateTo)->endOfDay()
+            : Carbon::now()->endOfDay();
 
         $query = DebitNote::with([
             'sale',
@@ -412,104 +426,59 @@ class ReporteVentas extends Controller
             'tipoDte'
         ])
             ->where('dte_status', 'PROCESADO')
-            ->whereDate('sale_date', '>=', now()->subDays(16));
+            ->where('store_id', $store->id)
+            ->whereBetween('sale_date', [$dateFrom, $dateTo]);
 
-        $query->chunk(110, function ($notasDebito) use ($basePath, $tempPath, $zipPrincipal, $oci) {
+        $query->chunk(40, function ($notas) use ($zipPrincipal, $tempPath) {
 
-            foreach ($notasDebito as $nd) {
+            foreach ($notas as $nd) {
 
-                $nd->load([
-                    'store.taxInfo',
-                    'sale',
-                    'customer',
-                    'debitNoteDetails.productType',
-                    'tipoDte'
-                ]);
+                $sale = $nd->sale;
 
-                $tipo = '06';
-                $tipoDteDescripcion = ['06' => 'Nota de Debito'];
-                $sale = $nd->sale ?? (isset($nd->sale_id) ? \App\Models\Sale::find($nd->sale_id) : null);
+                $json = $this->dteService->buildDTEJsonND($nd, $sale);
 
-                switch ($tipo) {
-                    case '06':
-                        $json = $this->dteService->buildDTEJsonND($nd, $sale);
-                        break;
-
-                    default:
-                        \Log::warning("Tipo DTE desconocido", [
-                            "sale_id" => $nd->id,
-                            "tipo" => $tipo
-                        ]);
-                        continue 2;
-                }
-
-                // Código generación — usar el del JSON (más confiable)
                 $codigoGen = $json['identificacion']['codigoGeneracion'];
 
-                // Guardar JSON
-                $jsonFilename = "{$tempPath}/dte_{$codigoGen}.json";
-                file_put_contents($jsonFilename, json_encode($json, JSON_PRETTY_PRINT));
+                $jsonPath = "{$tempPath}/dte_{$codigoGen}.json";
+                file_put_contents($jsonPath, json_encode($json, JSON_PRETTY_PRINT));
 
-                // Generar QR
                 $urlQR = "https://admin.factura.gob.sv/consultaPublica"
-                    . "?ambiente=00"
-                    . "&codGen={$json['identificacion']['codigoGeneracion']}"
-                    . "&fechaEmi=" . date(
-                        'Y-m-d',
-                        strtotime($json['identificacion']['fecEmi'])
-                    );
+                    . "?ambiente=01"
+                    . "&codGen={$codigoGen}"
+                    . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
 
-                $renderer = new ImageRenderer(
-                    new RendererStyle(150),
-                    new SvgImageBackEnd()
-                );
+                $renderer = new ImageRenderer(new RendererStyle(150), new SvgImageBackEnd());
                 $writer = new Writer($renderer);
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
-                // PDF
-                $pdf = Pdf::loadView('Reportes.notasdebito', [
-                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                    'dte'      => $json,
-                    'emisor'   => $json['emisor'],
+                $pdf = Pdf::loadView('reportes.notasdebito', [
+                    'dte' => $json,
+                    'emisor' => $json['emisor'],
                     'receptor' => $json['receptor'],
-                    'resumen'  => $json['resumen'],
-                    'qrImage'  => $qrImage
+                    'resumen' => $json['resumen'],
+                    'qrImage' => $qrImage
                 ]);
 
-                $pdfFilename = "{$tempPath}/dte_{$codigoGen}.pdf";
-                $pdf->save($pdfFilename);
+                $pdfPath = "{$tempPath}/dte_{$codigoGen}.pdf";
+                $pdf->save($pdfPath);
 
-                // ZIP individual
-                $zipIndividualName = "DTE_{$codigoGen}.zip";
-                $zipIndividualPath = "{$tempPath}/{$zipIndividualName}";
+                $zipIndividualPath = "{$tempPath}/DTE_{$codigoGen}.zip";
 
-                $zipIndividual = new \ZipArchive;
-                $zipIndividual->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+                $zip = new \ZipArchive;
+                if ($zip->open($zipIndividualPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                    $zip->addFile($jsonPath, "dte_{$codigoGen}.json");
+                    $zip->addFile($pdfPath, "dte_{$codigoGen}.pdf");
+                    $zip->close();
+                }
 
-                $zipIndividual->addFile($jsonFilename, "dte_{$codigoGen}.json");
-                $zipIndividual->addFile($pdfFilename, "dte_{$codigoGen}.pdf");
-
-                $zipIndividual->close();
-
-                $zipPrincipal->addFile($zipIndividualPath, $zipIndividualName);
-
-                \Log::info("DTE generado y enviado a OCI", [
-                    "debit_note_id" => $nd->id,
-                    "zip" => $zipIndividualPath
-                ]);
+                $zipPrincipal->addFile($zipIndividualPath, "DTE_{$codigoGen}.zip");
             }
         });
 
         $zipPrincipal->close();
 
-        // SUBIR ZIP FINAL A OCI
-        $oci->uploadReportsToOCI(
-            $zipPrincipalName,
-            $zipPrincipalPath,
-            "application/zip"
-        );
+        $oci->uploadReportsToOCI($zipPrincipalName, $zipPrincipalPath);
 
-        // DESCARGAR ZIP
         return response()->download($zipPrincipalPath)->deleteFileAfterSend(true);
     }
 }

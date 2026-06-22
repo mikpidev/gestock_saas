@@ -88,15 +88,15 @@ class CustomersController extends Controller
         $this->validateStoreAccess($store);
 
         $request->validate([
-            'tipoDocumento' => 'required|string|max:2',
-            'numDocumento' => 'required|string|max:14|unique:customers,numDocumento',
+            'tipoDocumento' => 'nullable|string|max:2',
+            'numDocumento' => 'nullable|string|max:14',
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
-            'codActividad' => 'required|string|max:10',
+            'codActividad' => 'nullable|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'direccion_departamento' => 'required|string|max:2',
-            'direccion_municipio' => 'required|string|max:2',
+            'direccion_departamento' => 'nullable|string|max:2',
+            'direccion_municipio' => 'nullable|string|max:2',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
             'correo' => 'nullable|email|max:255',
@@ -178,15 +178,15 @@ class CustomersController extends Controller
         }
 
         $request->validate([
-            'tipoDocumento' => 'required|string|max:2',
-            'numDocumento' => 'required|string|max:14|unique:customers,numDocumento,'.$customer->id,
+            'tipoDocumento' => 'nullable|string|max:2',
+            'numDocumento' => 'nullable|string|max:14,'.$customer->id,
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
-            'codActividad' => 'required|string|max:10',
+            'codActividad' => 'nullable|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'direccion_departamento' => 'required|string|max:2',
-            'direccion_municipio' => 'required|string|max:2',
+            'direccion_departamento' => 'string|max:2',
+            'direccion_municipio' => 'string|max:2',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
             'correo' => 'nullable|email|max:255',

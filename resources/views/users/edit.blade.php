@@ -1,5 +1,5 @@
 <!--     formulario para la creacion de un usuario -->
-<form action="{{ route('stores.users.update', [$store->id, $user->id]) }}" method="POST">
+<form action="{{ route('stores.users.update', ['store' => $store->id, 'user' => $user->id]) }}" method="POST">
     @csrf
     @method('PUT')
     @include('users._form')

@@ -53,27 +53,62 @@ class DebitNoteController extends Controller
 
         $authService = app(HaciendaAuthService::class);
 
-        // Primero obtenemos la fecha del request (si no viene, usa hoy)
-        $fecha = $request->fecha ?? Carbon::today()->toDateString();
 
-        $token = $authService->getToken($store);
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
         $consultaService = new ConsultaService();
+        $customers = Customer::where('store_id', $store->id)->get();
+        $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
+
+
+        // Primero obtenemos la fecha del request (si no viene, usa hoy)
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->startOfDay();
+
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+        //obtener filtro clientes, codigo generacion y estado DTE para mostrar en el index
+
+        $customers_id = $request->customer_id;
+        $codigo_generacion_filter = $request->codigo_generacion;
+        $dte_status = $request->dte_status;
+
+
         // Filtramos ventas de ESTA tienda y de ESA fecha
         $debitNotes = DebitNote::with('customer')
             ->where('store_id', $store->id)
-            ->whereDate('created_at', $fecha)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
+            ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
+            ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
             ->orderByDesc('created_at')
             ->get();
 
-        //Consultar estado de cada DTE y actualizar en base de datos
-        // Consultar DTE solo a las ventas filtradas
-        foreach ($debitNotes as $debitNote) {
-            if ($debitNote->dte_status !== 'PROCESADO') {
-                $consultaService->consultarND($debitNote, $token);
+
+        // Solo ventas no procesadas
+        $pendingND = $debitNotes->filter(function ($debitNotes) {
+            return !empty($creditNotes->codigo_generacion)
+                && $creditNotes->dte_status !== 'PROCESADO';
+        });
+
+        if ($pendingND->isNotEmpty()) {
+
+            try {
+                $token = $authService->getToken($store);
+            } catch (\Exception $e) {
+                $token = null;
+            }
+
+            if ($token) {
+                foreach ($pendingND as $pendingND) {
+                    $consultaService->consultarSale($debitNotes, $token);
+                }
             }
         }
 
-        return view('debitnotes.index', compact('store', 'debitNotes', 'fecha'));
+        return view('debitnotes.index',compact('store', 'debitNotes', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
 
 
@@ -97,7 +132,7 @@ class DebitNoteController extends Controller
 
         $sales = $store->sales()
             ->with(['customer', 'details.productType'])
-            ->orderByDesc('sale_date')
+            ->orderBy('created_at', 'desc') // Ordena por fecha descendente
             ->get();
 
 

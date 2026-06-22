@@ -46,7 +46,7 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="customerTable">
             @forelse($customers as $customer)
             <tr>
                 <td><a href="{{ route('stores.customers.show', [$store->id, $customer->id]) }}">{{ $customer->nombre }}</a></td>
@@ -54,14 +54,31 @@
                 <td>{{ $customer->correo }}</td>
                 <td>{{ $customer->telefono }}</td>
                 <td class="text-center">
+
                     <div class="d-flex justify-content-center gap-1">
-                        {{-- Botón de editar --}}
-                        <a href="{{ route('stores.customers.edit', ['store' => $store->id, 'customer' => $customer->id]) }}"
-                            class="btn btn-sm btn-edit">
+
+                        <button class="btn btn-sm btn-edit editCustomersBtn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editCustomersModal"
+                            data-id="{{ $customer->id }}"
+                            data-tipoDocumento="{{ $customer->tipoDocumento }}"
+                            data-numDocumento="{{ $customer->numDocumento }}"
+                            data-nrc="{{ $customer->nrc }}"
+                            data-nombre="{{ $customer->nombre }}"
+                            data-nombreComercial="{{$customer->nombreComercial }}"
+                            data-codActividad="{{ $customer->codActividad }}"
+                            data-descActividad="{{ $customer->descActividad }}"
+                            data-direccion_departamento="{{ $customer->direccion_departamento }}"      
+                            data-direccion_municipio="{{ $customer->direccion_municipio }}"
+                            data-direccion_complemento="{{$customer->direccion_complemento }}"
+                            data-telefono="{{ $customer->telefono }}"
+                            data-correo="{{ $customer->correo }}"
+                            <i class="bi bi-pencil"></i>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
                                 <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
                             </svg>
-                        </a>
+                        </button>
+
                         {{-- Dropdown con engranaje --}}
                         <div class="dropdown">
                             <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -95,6 +112,26 @@
     </table>
 </div>
 
+<!-- Modal único de edición al final de la página -->
+<div class="modal fade" id="editCustomersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomersForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    @include('customers.edit') <!-- Reutiliza inputs -->
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 {{-- Botón para regresar a tiendas --}}
 <div class="mt-3">
     <a href="{{ route('stores.index') }}" class="btn btn-sm btn-back">
@@ -108,18 +145,26 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-        document.querySelectorAll('.editUserBtn').forEach(btn => {
+        const editModal = new bootstrap.Modal(document.getElementById('editCustomersModal'));
+        document.querySelectorAll('.editCustomersBtn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.dataset.id;
-                const form = document.getElementById('editUserForm');
-                form.action = `/users/${id}`; // URL dinámica
-                form.querySelector('#edit_name').value = btn.dataset.name;
-                form.querySelector('#edit_email').value = btn.dataset.email;
-                form.querySelector('#edit_new-password').value = btn.dataset.newPassword;
-                form.querySelector('#edit_confirm-password').value = btn.dataset.confirmPassword;
-                form.querySelector('#edit_role').value = btn.dataset.role;
+                const form = document.getElementById('editCustomersForm');
+                form.action = `customers/${id}`; // URL dinámica
+                form.querySelector('#edit_tipoDocumento').value = btn.dataset.tipoDocumento ?? '';
+                form.querySelector('#edit_numDocumento').value = btn.dataset.edit_numDocumento ?? '';
+                form.querySelector('#edit_nrc').value = btn.dataset.nrc ?? '';
+                form.querySelector('#edit_nombre').value = btn.dataset.nombre ?? '';
+                form.querySelector('#edit_nombreComercial').value = btn.dataset.nombreComercial ?? '';
+                form.querySelector('#edit_codActividad').value = btn.dataset.codActividad ?? '';
+                form.querySelector('#edit_descActividad').value = btn.dataset.descActividad ?? '';
+                form.querySelector('#edit_direccion_departamento').value = btn.dataset.direccion_departamento ?? '';
+                form.querySelector('#edit_direccion_municipio').value = btn.dataset.direccion_municipio ?? '';
+                form.querySelector('#edit_telefono').value = btn.dataset.telefono ?? '';
+                form.querySelector('#edit_correo').value = btn.dataset.correo ?? '';
 
+
+                
                 editModal.show();
             });
         });

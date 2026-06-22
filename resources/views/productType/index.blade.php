@@ -82,6 +82,7 @@
                             <button class="btn btn-sm btn-edit editProductTypeBtn"
                                 data-bs-toggle="modal"
                                 data-bs-target="#editProductTypeModal"
+                                data-store="{{ $store->id }}"
                                 data-id="{{ $productType->id }}"
                                 data-name="{{ $productType->name }}"
                                 data-price="{{ $productType->price }}"
@@ -157,15 +158,21 @@
         const editModal = new bootstrap.Modal(document.getElementById('editProductTypeModal'));
         document.querySelectorAll('.editProductTypeBtn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const id = btn.dataset.id;
+                const productTypeId  = btn.dataset.id;
+                const storeId = btn.dataset.store;
+
                 const form = document.getElementById('editProductTypeForm');
-                form.action = `/product-types/${id}`; // URL dinámica
+                form.action = `product_types/${productTypeId}`; // URL dinámica
                 form.querySelector('#edit_name').value = btn.dataset.name;
                 form.querySelector('#edit_price').value = btn.dataset.price;
                 form.querySelector('#edit_stock').value = btn.dataset.stock;
                 form.querySelector('#edit_category').value = btn.dataset.category;
                 form.querySelector('#edit_description').value = btn.dataset.description;
 
+
+                console.log("Store:", storeId);
+                console.log("Product:", productTypeId);
+                console.log("Action:", form.action);
                 editModal.show();
             });
         });

@@ -120,17 +120,46 @@
             font-size: 10px;
         }
 
-        .totales {
-            width: 260px;
-            margin-left: auto;
-            font-size: 11px;
+        .tabla-totales {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
         }
 
-        .fila-total {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
+        .tabla-totales th {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+            text-align: left;
         }
+
+        .tabla-totales td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+            text-align: right;
+        }
+
+
+        .tabla-otros {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .tabla-otros th {
+            background: #f0f0f0;
+            padding: 4px;
+            font-size: 10px;
+            text-align: left;
+        }
+
+        .tabla-otros td {
+            padding: 4px;
+            font-size: 10px;
+        }
+
 
         .divisor {
             border-top: 1px solid #ccc;
@@ -150,8 +179,7 @@
         <!-- ENCABEZADO -->
         <div class="encabezado">
             <div>
-                <img src="{{ asset($emisor['nombre'] . '_recortado.png') }}"
-                    style="width:150px; height:auto; display:inline-block;">
+                <img src="{{ asset('Logo_recortado.png') }}" style="width:150px; height:auto; display:inline-block;">
             </div>
 
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
@@ -177,7 +205,7 @@
                         </tr>
                         <tr>
                             <td class="etiqueta">Sello DTE:</td>
-                            <td>{{ $dteResponse->sello_recibido ?? 'N/A' }}</td>
+                            <td>{{ $dteResponse?->sello_recibido ?? 'N/A' }}</td>
                         </tr>
                     </table>
                 </td>
@@ -210,7 +238,7 @@
                         </tr>
                         <tr>
                             <td class="etiqueta">Actividad:</td>
-                            <td>{{ $emisor['nombreComercial'] ?? ' '}}</td>
+                            <td>{{ $emisor['descActividad'] ?? ' '}}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Dirección:</td>
@@ -241,7 +269,7 @@
                 </div>
                 <div class="columna">
                     <div class="etiqueta">Documento:</div>
-                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] }}</div>
+                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}</div>
                 </div>
                 <div class="columna">
                     <div class="etiqueta">NRC:</div>
@@ -283,7 +311,7 @@
             <tbody>
                 @foreach ($dte['cuerpoDocumento'] as $item)
                 <tr>
-                    <td>{{ number_format($item['cantidad'], 2) }}</td>
+                    <td>{{ number_format($item['cantidad']) }}</td>
                     <td style="text-align:left;">{{ $item['descripcion'] }}</td>
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
                     <td>$0.00</td>
@@ -291,42 +319,114 @@
                     <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
+
+                <tr>
+                    <td colspan="3" style="text-align:right;">
+                        Sumas:
+                    </td>
+                    <td>${{ number_format($resumen['totalNoSuj'] ?? 0, 2) }}</td>
+                    <td>${{ number_format($resumen['totalExenta'] ?? 0, 2) }}</td>
+                    <td>
+                        ${{ number_format($resumen['totalGravada'] ?? 0, 2) }}
+                    </td>
+                </tr>
             </tbody>
         </table>
 
-        <!-- TOTALES -->
-        <div class="totales">
-            <div class="fila-total"><span>SUMAS</span></div>
+        <div style="clear: both;"></div>
 
-            @php
-            $iva = 0;
 
-            if (!empty($resumen['totalIva'])) {
-            $iva = $resumen['totalIva'];
-            } elseif (!empty($resumen['tributos'])) {
-            foreach ($resumen['tributos'] as $tributo) {
-            if (($tributo['codigo'] ?? null) === '20') {
-            $iva = $tributo['valor'] ?? 0;
-            break;
-            }
-            }
-            }
-            @endphp
 
-            <div class="fila-total">
-                <span>IVA:</span>
-                <span>${{ number_format($iva, 2) }}</span>
-            </div>
+        <table class="tabla-totales">
 
-            <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }}</span></div>
-            <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'] ?? 0, 2) }}</strong></div>
-        </div>
+            <tr>
+                <th colspan="3" style="text-align:right;">Suma Total de Operaciones (IVA No Incluido): </th>
+                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
 
-        <p><strong>SON:</strong> {{ strtoupper($resumen['totalLetras']) }}</p>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas no sujetas:</th>
+                <td><span>${{ number_format($resumen['descuNoSuj'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas exentas: </th>
+                <td><span>${{ number_format($resumen['descuExenta'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas gravadas:</th>
+                <td><span>${{ number_format($resumen['descuGravada'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Impuesto al Valor Agregado 13%:</th>
+                <td><span>${{ number_format($resumen['totalIva'] ?? $resumen['tributos'][0]['valor'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Sub-Total: </th>
+                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">IVA Percibido: </th>
+                <td><span>${{ number_format($resumen['ivaPerci1'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">IVA Retenido: </th>
+                <td><span>${{ number_format($resumen['ivaRete1'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Monto Total de la Operacion (IVA Incluido): </th>
+                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Total Otros montos no afectados:</th>
+                <td><span>${{ number_format($resumen['totalNoGravado'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Total a Pagar:</th>
+                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+            </tr>
+            </tbody>
+        </table>
+        <div style="clear: both;"></div>
 
         <div class="divisor"></div>
 
+        <table class="tabla-otros">
+            <tbody>
+                <tr>
+                    <td>Valor en Letras:</td>
+                    <td>{{ strtoupper($resumen['totalLetras']) }} DOLARES AMERICANOS</td>
+                    <td>Condicion de la Operacion: </td>
+                    <td> {{ strtoupper($resumen['condicionOperacion'] == 1 ? 'Contado' : 'Crédito') }}
+                    </td>
+                </tr>
+
+                <tr>
+
+                </tr>
+
+                <tr>
+                    <td>Observaciones: </td>
+                    <td> @if(!empty($dteResponse['observaciones']))
+                        @foreach((array) $dteResponse['observaciones'] as $obs)
+                        {{ $obs }}<br>
+                        @endforeach
+                        @else
+                        Sin observaciones
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <div style="clear: both;"></div>
+
+
+
+
+
         <div class="pie">
+            <div class="divisor"></div>
             {{ $emisor['nombre'] }} - {{ $emisor['direccion']['complemento'] }} <br>
             Email: {{ $emisor['correo'] }}
         </div>

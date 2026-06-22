@@ -99,7 +99,7 @@
                 <form id="editUserForm" method="POST">
                     @csrf
                     @method('PUT')
-                    @include('users.edit') <!-- Reutiliza inputs -->
+                    @include('users._form') <!-- Reutiliza inputs -->
                 </form>
             </div>
         </div>
@@ -124,7 +124,7 @@
             btn.addEventListener('click', () => {
                 const id = btn.dataset.id;
                 const form = document.getElementById('editUserForm');
-                form.action = `/users/${id}`; // URL dinámica
+                form.action = `/stores/{{ $store->id }}/users/${id}`; // URL dinámica
                 form.querySelector('#edit_name').value = btn.dataset.name;
                 form.querySelector('#edit_email').value = btn.dataset.email;
                 form.querySelector('#edit_new-password').value = btn.dataset.newPassword;

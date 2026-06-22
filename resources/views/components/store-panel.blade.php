@@ -5,7 +5,7 @@
     <!-- Sidebar -->
     <div class="gestok-panel">
         @hasrole('superadmin|admin')
-        <a href="{{ route('stores.show', $store->id) }}">
+        <a href="{{ route('stores.dashboard', $store->id) }}">
             <i class="fas fa-box-open"></i> Dashboard
         </a>
         <a href="{{ route('stores.users.index', $store->id) }}">

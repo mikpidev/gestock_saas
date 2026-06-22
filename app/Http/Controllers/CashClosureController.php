@@ -78,7 +78,7 @@ class CashClosureController extends Controller
         ]);
 
         return redirect()
-            ->route('cash.closures.print', ['store' => $storeId, 'id' => $closure->id])
+            ->route('stores.cash.closures.index', ['store' => $storeId, 'id' => $closure->id])
             ->with('success', 'Corte de caja generado correctamente');
     }
 

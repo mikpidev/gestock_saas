@@ -12,31 +12,31 @@ use Illuminate\Http\Request;
 class MHAccessController extends Controller
 {
 
-// Validación de accesos
-private function validateStoreAccess(Store $store)
-{
-    $user = Auth::user();
-    if (!$user) {
-        return redirect()->route('login')->with('error', 'Por favor, inicia sesión.');
-    }
+    // Validación de accesos
+    private function validateStoreAccess(Store $store)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Por favor, inicia sesión.');
+        }
 
-    if ($user->hasRole('superadmin')) {
-        $companyId = session('selected_company_id');
-        if ($store->company_id != $companyId) {
+        if ($user->hasRole('superadmin')) {
+            $companyId = session('selected_company_id');
+            if ($store->company_id != $companyId) {
+                abort(403, 'No tienes permiso para acceder a esta tienda.');
+            }
+        } elseif ($user->hasRole('admin')) {
+            if ($store->company_id != $user->company_id) {
+                abort(403, 'No tienes permiso para acceder a esta tienda.');
+            }
+        } elseif ($user->hasRole('user')) {
+            if ($store->company_id != $user->company_id) {
+                abort(403, 'No tienes permiso para acceder a esta tienda.');
+            }
+        } else {
             abort(403, 'No tienes permiso para acceder a esta tienda.');
         }
-    } elseif ($user->hasRole('admin')) {
-        if ($store->company_id != $user->company_id) {
-            abort(403, 'No tienes permiso para acceder a esta tienda.');
-        }
-    } elseif ($user->hasRole('user')) {
-        if ($store->company_id != $user->company_id) {
-            abort(403, 'No tienes permiso para acceder a esta tienda.');
-        }
-    } else {
-        abort(403, 'No tienes permiso para acceder a esta tienda.');
     }
-}
 
     public function index()
     {
@@ -79,7 +79,7 @@ private function validateStoreAccess(Store $store)
 
         $mh_access = $store->mhAccess;
 
-        
+
         if (!$store) {
             return redirect()->back()->with('error', 'La tienda asociada no existe.');
         }
@@ -104,6 +104,13 @@ private function validateStoreAccess(Store $store)
             'password_pri' => 'nullable|string|max:255',
             'port_firma_digital' => 'nullable|integer',
         ]);
+
+        if (empty($validated['api_key'])) {
+            unset($validated['api_key']);
+        }
+        if (empty($validated['password_pri'])) {
+            unset($validated['password_pri']);
+        }
 
         $mhAccess->update($validated);
 

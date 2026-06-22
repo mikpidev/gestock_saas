@@ -72,19 +72,19 @@ class DocumentService
             "telefono" => "00000000",
             "correo" => "consumidor@final.com"
         ] : [
-            "tipoDocumento" => $customer->tipoDocumento ?? "36",
-            "numDocumento" => $customer->numDocumento ?? "00000000000000",
+            "tipoDocumento" => $customer->tipoDocumento,
+            "numDocumento" => $customer->numDocumento,
             "nrc" => $customer->nrc ?? null,
             "nombre" => $customer->nombre,
             "codActividad" => $customer->codActividad ?? null,
             "descActividad" => $customer->descActividad ?? null,
             "direccion" => [
-                "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                 "complemento" => $customer->direccion_complemento
             ],
             "telefono" => $customer->telefono ?? "00000000",
-            "correo" => $customer->correo ?? "cliente@prueba.com"
+            "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
         ];
 
         // Cuerpo documento
@@ -152,8 +152,8 @@ class DocumentService
                 "nombreComercial" => $storeTaxInfo->actividad_economica,
                 "tipoEstablecimiento" => "01",
                 "direccion" => [
-                    "departamento" =>  str_pad((string) ($storeTaxInfo->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                    "municipio" =>  str_pad((string) ($storeTaxInfo->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "departamento" =>  str_pad((string) ($storeTaxInfo->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio" =>  str_pad((string) ($storeTaxInfo->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $storeTaxInfo->direccion_fiscal,
                 ],
                 "telefono" => $storeTaxInfo->telefono,
@@ -192,13 +192,7 @@ class DocumentService
                 "numPagoElectronico" => null
             ],
             "extension" => null,
-            "apendice" => [
-                [
-                    "campo" => "observacionExtra",
-                    "etiqueta" => "Nota adicional",
-                    "valor" => "Factura generada en modo de prueba"
-                ]
-            ]
+            "apendice" => null
         ];
     }
 
@@ -252,11 +246,11 @@ class DocumentService
                 "numeroControl" => $sale->numero_control,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
                 "codigoGeneracionR" => null,
-                "tipoDocumento" => $customer->tipoDocumento ?? "36",
-                "numDocumento" => $customer->numDocumento ?? "00000000000000",
+                "tipoDocumento" => $customer->tipoDocumento,
+                "numDocumento" => $customer->numDocumento,
                 "nombre" => $customer->nombre,
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "motivo" => [
                 "tipoAnulacion" => 2,
@@ -384,12 +378,12 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "otrosDocumentos" => null,
             "ventaTercero" => null,
@@ -437,26 +431,8 @@ class DocumentService
                 ],
                 "numPagoElectronico" => null
             ],
-            "extension" => [
-                "nombEntrega" => "María López",
-                "docuEntrega" => "06141234-5",
-                "nombRecibe" => "Carlos Pérez",
-                "docuRecibe" => "06147895-6",
-                "observaciones" => "Gracias por su compra",
-                "placaVehiculo" => null
-            ],
-            "apendice" => [
-                [
-                    "campo" => "Caja",
-                    "etiqueta" => "Número de Caja",
-                    "valor" => "01"
-                ],
-                [
-                    "campo" => "Vendedor",
-                    "etiqueta" => "Nombre del Vendedor",
-                    "valor" => "Ana Torres"
-                ]
-            ]
+            "extension" => null,
+            "apendice" => null
         ];
     }
 
@@ -507,7 +483,7 @@ class DocumentService
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",
                 "nombre" => $customer->nombre,
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "motivo" => [
                 "tipoAnulacion" => 2,
@@ -596,12 +572,12 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "cuerpoDocumento" => $cuerpoDocumento,
             "resumen" => [
@@ -688,7 +664,7 @@ class DocumentService
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",
                 "nombre" => $customer->nombre,
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "motivo" => [
                 "tipoAnulacion" => 2,
@@ -800,12 +776,12 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "ventaTercero" => null,
             "cuerpoDocumento" => $cuerpoDocumento,
@@ -885,7 +861,7 @@ class DocumentService
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",
                 "nombre" => $customer->nombre,
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "motivo" => [
                 "tipoAnulacion" => 2,
@@ -996,12 +972,12 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                    "departamento" => str_pad((string) ($customer->direccion_departamento ?? "01"), 2, "0", STR_PAD_LEFT),
-                    "municipio"   => str_pad((string) ($customer->direccion_municipio ?? "01"), 2, "0", STR_PAD_LEFT),
+                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "ventaTercero" => null,
             "cuerpoDocumento" => $cuerpoDocumento,
@@ -1085,7 +1061,7 @@ class DocumentService
                 "numDocumento" => $customer->numDocumento ?? "00000000000000",
                 "nombre" => $customer->nombre,
                 "telefono" => $customer->telefono ?? "00000000",
-                "correo" => $customer->correo ?? "cliente@prueba.com"
+                "correo" => $customer->correo ?? "cliente@consumidorfinal.com"
             ],
             "motivo" => [
                 "tipoAnulacion" => 2,
