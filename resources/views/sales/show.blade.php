@@ -179,7 +179,7 @@
         <!-- ENCABEZADO -->
         <div class="encabezado">
             <div>
-                <img src="{{ asset( $store_name . '.png') }}" style="width:150px; height:auto; display:inline-block;">
+                <img src="{{ asset( $store . '.png') }}" style="width:150px; height:auto; display:inline-block;">
             </div>
 
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
