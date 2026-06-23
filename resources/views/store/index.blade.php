@@ -97,7 +97,7 @@
                 <form id="editStoreForm" method="POST">
                     @csrf
                     @method('PUT')
-                    @include('store.edit') <!-- Reutiliza inputs -->
+                    @include('store._form') <!-- Reutiliza inputs -->
                 </form>
             </div>
         </div>
