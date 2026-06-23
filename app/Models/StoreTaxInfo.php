@@ -47,13 +47,13 @@ class StoreTaxInfo extends Model
         return $this->belongsTo(CodActividad::class, 'codActividad', 'codigo');
     }
 
-    // Departamento (clave foránea: direccion_departamento → departamentos.id)
+    // Departamento
     public function departamento()
     {
         return $this->belongsTo(Departamento::class, 'direccion_departamento', 'codigo');
     }
 
-    // Municipio (clave foránea: direccion_municipio → municipios.id)
+    // Municipio
     public function municipio()
     {
         return $this->belongsTo(Municipio::class, 'direccion_municipio', 'codigo');

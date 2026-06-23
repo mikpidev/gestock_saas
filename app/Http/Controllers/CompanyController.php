@@ -26,7 +26,8 @@ class CompanyController extends Controller
         } else {
             abort(403, 'Acceso no autorizado.');
         }
-        //retorna lista de tiendas
+        
+        //retorna lista de Companias
         return view('company.index', compact('companies'));
     }
 

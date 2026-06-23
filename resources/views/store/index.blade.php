@@ -51,7 +51,7 @@
                 <td>{{ ucfirst($store->status) }}</td>
                 <td>{{ $store->comments }}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-edit editStoreBtn"
+                    <button class="btn btn-sm btn-edit gradient-text editStoreBtn"
                         data-bs-toggle="modal"
                         data-bs-target="#editStoreModal"
                         data-id="{{ $store->id }}"

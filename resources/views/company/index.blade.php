@@ -53,7 +53,7 @@
                 <td>{{ ucfirst($company->status) }}</td>
                 <td>{{ $company->comments }}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-edit editCompanyBtn"
+                    <button class="btn btn-sm  btn-edit  editCompanyBtn gradient-text"
                         data-id="{{ $company->id }}"
                         data-company_name="{{ $company->company_name }}"
                         data-address="{{ $company->address }}"
@@ -69,6 +69,7 @@
                         <h5 class="modal-title">Editar</h5>
 
                     </button>
+
                     <form action="{{ route('companies.destroy', $company->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta compañía?');">
                         @csrf
                         @method('DELETE')

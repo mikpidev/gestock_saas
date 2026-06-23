@@ -158,7 +158,6 @@ footer {
     background: var(--color-degradado);
 
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 
     background-clip: text;
     color: transparent;
@@ -246,7 +245,6 @@ a:hover {
 ============================ */
 
 .btn-edit {
-    color: var(--color-graph-secundario);
     border: 1px solid var(--color-acento);
     background-color: transparent;
     border-radius: 6px;
@@ -274,7 +272,6 @@ a:hover {
 ============================ */
 
 .btn-rm {
-    color: var(--color-graph-secundario);
     border: 1px solid var(--color-acento);
     background-color: transparent;
     border-radius: 6px;
