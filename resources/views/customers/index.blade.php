@@ -124,7 +124,7 @@
                 <form id="editCustomersForm" method="POST">
                     @csrf
                     @method('PUT')
-                    @include('customers.edit') <!-- Reutiliza inputs -->
+                    @include('customers._form') <!-- Reutiliza inputs -->
                 </form>
             </div>
         </div>
