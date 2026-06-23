@@ -365,8 +365,11 @@ class SaleController extends Controller
     }
 
 
-    public function show(string $codigo)
+    public function show(Store $store, string $codigo)
     {
+
+        $store_name = $store->store_name;
+
         $sale = Sale::with([
             'store.taxInfo',
             'customer',
@@ -420,6 +423,7 @@ class SaleController extends Controller
         return view('sales.show', [
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
             'dte'      => $json,
+            'store' => $store_name,
             'emisor'   => $json['emisor'],
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
