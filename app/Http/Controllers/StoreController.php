@@ -94,7 +94,7 @@ class StoreController extends Controller
         $documentType = $request->tipo_documento_id;
 
         //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
-        $dte_status = 'APROBADA' ??  $request->dte_status;
+        $dte_status = 'PROCESADO' ??  $request->dte_status;
 
         // Base query con filtros aplicados
 
