@@ -318,7 +318,7 @@ class SaleController extends Controller
             $sale->dte_status = $response['estado'] ?? 'PENDIENTE';
             $sale->save();
 
-            
+
             //enviar correo en automatico
 
             if ($sale->dte_status = 'PROCESADO') {
@@ -368,7 +368,6 @@ class SaleController extends Controller
     public function show(Store $store, string $codigo)
     {
 
-        $store_name = $store->store_name;
 
         $sale = Sale::with([
             'store.taxInfo',
@@ -379,6 +378,9 @@ class SaleController extends Controller
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
         $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
+
+        $store = $sale->store->store_name;
+
 
         // Mapeo de descripciones
         $tipoDteDescripcion = [
@@ -423,7 +425,7 @@ class SaleController extends Controller
         return view('sales.show', [
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
             'dte'      => $json,
-            'store' => $store_name,
+            'store' => $store,
             'emisor'   => $json['emisor'],
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
