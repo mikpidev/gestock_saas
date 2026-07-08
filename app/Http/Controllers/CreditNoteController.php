@@ -93,7 +93,7 @@ class CreditNoteController extends Controller
 
             if ($token) {
                 foreach ($pendingNC as $pendingNC) {
-                    $consultaService->consultarSale($creditNotes, $token);
+                    $consultaService->consultarNC($pendingNC, $token);
                 }
             }
         }
@@ -108,7 +108,8 @@ class CreditNoteController extends Controller
     public function refreshDTE(Store $store, CreditNote $creditNote, ConsultaService $consultaService)
     {
         $token = app(HaciendaAuthService::class)->getToken($store);
-        $consultaService->consultarNC($creditNote, $token);
+        $consultaService = new ConsultaService();
+        $response = $consultaService->consultarNC($creditNote, $token);
 
         return redirect()->back()->with('success', 'Estado DTE actualizado.');
     }

@@ -10,15 +10,16 @@ Alpine.start();
 
 Chart.register(...registerables);
 
-console.log("dashboard.js cargado");
-
 let salesChart;
 let paymentChart;
 let dteChart;
+let pagination;
 
-//getData Function All Data fro Charts
+//getData Function All Data for Charts
 
 function getData() {
+    console.log("dashboard.js cargado");
+
     $.ajax({
         url: `/stores/${window.storeId}/dashboard-data`,
         method: "GET",
@@ -30,7 +31,7 @@ function getData() {
         },
 
         success: function (data) {
-            console.log("getData ejecutado", data);
+            console.log("Dashboard data ejecutado", data);
 
             //Get Cards Data
             document.getElementById("salesTodayTotalCard").textContent =
@@ -118,6 +119,7 @@ function getData() {
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -229,11 +231,26 @@ function getData() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM listo");
-    getData();
+function getPaginationData() {
+    console.log("cargando pagination.js");
 
-    $("#from, #to").on("change", function () {
-        getData();
+    $.ajax({
+        url: `pagination-data`,
+        method: "GET",
+        dataType: "json",
+
+        data: {
+            //filtros
+            from: $("#from").val(),
+            to: $("#to").val(),
+        },
+
+        success: function (data) {
+            console.log("Obteniendo datos para la paginacion de ventas", data);
+        },
     });
-});
+}
+
+window.getData = getData;
+
+window.getPaginationData = getPaginationData;

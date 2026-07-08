@@ -38,6 +38,7 @@ Thumbs.db
 /storage/framework/views/*
 /storage/logs/*.log
 /bootstrap/cache/*
+/app/Jobs/GenerateTestSalesJob.php
 
 # Node.js, Vite & Tailwind
 node_modules/

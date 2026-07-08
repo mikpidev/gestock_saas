@@ -19,7 +19,6 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
 </head>
-
 <body>
     <!-- Header -->
     <header class="d-flex align-items-center justify-content-between mb-4">

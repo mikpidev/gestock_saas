@@ -103,7 +103,7 @@ class DebitNoteController extends Controller
 
             if ($token) {
                 foreach ($pendingND as $pendingND) {
-                    $consultaService->consultarSale($debitNotes, $token);
+                    $consultaService->consultarND($pendingND, $token);
                 }
             }
         }

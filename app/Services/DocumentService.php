@@ -524,7 +524,7 @@ class DocumentService
                 "cantidad" => (float) $detail->quantity,
                 "uniMedida" => 59,
                 "precioUni" => round((float) $detail->unit_price / 1.13, 2),
-                "montoDescu" => $discount_amount,
+                "montoDescu" => round($discount_amount, 2),
                 "compra" => round((float)$baseSinIVA, 2),
             ];
         })->toArray();

@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 
@@ -10,7 +11,7 @@
     <div class="card-header-custom">
         <h2>{{ $store->store_name }} — Ventas</h2>
         <a href="{{ route('stores.sales.create', $store->id) }}" class="btn-new">
-            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
             </svg> </a>
     </div>
@@ -186,7 +187,6 @@
                         </ul>
                     </div>
                 </td>
-
             </tr>
             @endforeach
 
@@ -196,6 +196,7 @@
     @endif
 
 </div>
+
 
 <!-- MODAL PARA VER DTE -->
 <div class="modal fade" id="modalDTE" tabindex="-1" aria-hidden="true">
@@ -233,10 +234,10 @@
             <div class="modal-body">
                 <form method="GET" class="filters">
                     <label>Desde:</label>
-                    <input type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
+                    <input id="from" type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
 
                     <label>Hasta:</label>
-                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }}">
+                    <input id="to" type="date" name="to" value="{{ request('to', now()->toDateString()) }}">
 
                     <label>Cliente:</label>
                     <select name="customer_id" class="form-control">
@@ -281,10 +282,10 @@
             <div class="modal-body">
                 <form method="GET" class="filter-bar" action="{{ route('reportes.ventas') }}">
                     <label>Desde:</label>
-                    <input type="date" name="from" value=" {{ $dateFrom }} ">
+                    <input type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
 
                     <label>Hasta:</label>
-                    <input type="date" name="to" value="{{ $dateTo }} ">
+                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }}">
 
 
                     <div class="modal-footer">
@@ -340,5 +341,12 @@
                     });
             }
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            getPaginationData();
+            $("#from, #to").on("change", function() {
+                getData();
+            });
+        });
     </script>
     @endsection

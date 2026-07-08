@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateTestSalesJob;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Customer;
@@ -20,9 +21,16 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
+use GuzzleHttp\Psr7\Query;
+use stdClass;
 
 class SaleController extends Controller
 {
+
+
+
+
+
     // Validación de accesos
     private function validateStoreAccess(Store $store)
     {
@@ -53,12 +61,15 @@ class SaleController extends Controller
 
     public function __construct(DocumentService $dteService)
     {
+
+        //DTE Service
         $this->dteService = $dteService;
     }
 
 
     public function index(Request $request, Store $store)
     {
+
 
         $authService = app(HaciendaAuthService::class);
 
@@ -114,8 +125,46 @@ class SaleController extends Controller
         }
 
 
-
         return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
+    }
+
+    //Pagination
+
+    public function getPaginationData(Request $request, Store $store)
+    {
+        $MAX = 25;
+
+        //filtros
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->subDays(6)->startOfDay();
+
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+
+        $baseQuery = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo]);
+
+        \Log::info("Base Query: " . $baseQuery->toSql(), [
+            'bindings' => $baseQuery->getBindings(),
+        ]);
+
+        //Get Pagination Data
+
+        $totalSales = (clone $baseQuery)->count();
+        $pages = ceil($totalSales / $MAX);
+
+        if ($pages < 1) {
+            $pages = 1;
+        }
+
+        return response()->json([
+            'totalSales' => $totalSales,
+            'pages' => $pages,
+        ]);
     }
 
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
@@ -362,6 +411,51 @@ class SaleController extends Controller
 
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente. El DTE se generará en breve.');
+    }
+
+    public function saleTest(Store $store)
+    {
+        $this->validateStoreAccess($store);
+        $customers = Customer::where('store_id', $store->id)->get();
+        $products = ProductType::where('store_id', $store->id)->get();
+
+        //Agrupar productos por categoria alfabeticamente para mostrar en el select del formulario de creación de venta
+        $categories = $products->groupBy('category')->sortKeys();
+        $tipoDocumentos = TipoDte::all();
+
+
+        return view('sales.salestest', compact('store', 'tipoDocumentos', 'customers', 'products', 'categories'));
+    }
+
+    public function generateTestSales(
+        Request $request,
+        Store $store
+    ) {
+        $this->validateStoreAccess($store);
+
+        $data = $request->validate([
+            'customers_id' => 'required|exists:customers,id',
+            'sale_date' => 'required|date',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'products' => 'required|array|min:1',
+            'products.*.id' => 'required|exists:product_types,id',
+            'products.*.quantity' => 'required|numeric|min:1',
+            'products.*.price' => 'required|numeric|min:0',
+            'tipo_documento_id' => 'required|exists:tipo_documento,id',
+            'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
+        ]);
+
+        GenerateTestSalesJob::dispatch(
+            $store,
+            $data,
+            25,//change this when it is need it this is only for LocalHost Environment
+            auth()->id()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Se inició la generación de las 90 ventas.'
+        ]);
     }
 
 

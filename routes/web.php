@@ -166,6 +166,10 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('stores/{store}/sales', [SaleController::class, 'index'])
         ->name('stores.sales.index');
 
+    // Paginacion de ventas
+    Route::get('stores/{store}/pagination-data', [SaleController::class, 'getPaginationData'])
+        ->name('stores.sales.data');
+
     // Formulario de creación de venta
     Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
         ->name('stores.sales.create');
@@ -297,7 +301,15 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('/stores/{store}/dashboard-data', [StoreController::class, 'getChartData'])
         ->name('stores.dashboard.data');
 
+    Route::get(
+        'stores/{store}/sales/salestest',
+        [SaleController::class, 'saleTest']
+    )->name('stores.sales.salestest');
 
+    Route::post(
+        '/stores/{store}/sales/test',
+        [SaleController::class, 'generateTestSales']
+    )->name('stores.sales.test');
 
     //Bucket Test OCI
     Route::get('/oci-test', [\App\Http\Controllers\OCIController::class, 'uploadTest']);

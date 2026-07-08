@@ -103,9 +103,7 @@ class StoreController extends Controller
             ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->when($documentType, function ($query) use ($documentType) {
                 $query->where('tipo_documento_id', $documentType);
-            })
-            ->when($dte_status, function ($query) use ($dte_status) {
-                $query->where('dte_status', $dte_status);
+
             });
 
         \Log::info("Base Query: " . $baseQuery->toSql(), [
@@ -152,7 +150,7 @@ class StoreController extends Controller
             ")->first();
 
         
-        $dteAproved = (clone $baseQuery)->where('dte_status', 'APROBADA')->count();
+        $dteAproved = (clone $baseQuery)->where('dte_status', 'PROCESADO')->count();
         $dteDeny = (clone $baseQuery)->where('dte_status', 'RECHAZADO')->count();
         $dtePending = (clone $baseQuery)->where('dte_status', 'PENDIENTE')->count();
         $dteFactura = (clone $baseQuery)->where('tipo_documento_id', '1')->count();
