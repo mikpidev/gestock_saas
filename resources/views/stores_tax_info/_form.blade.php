@@ -91,7 +91,8 @@
         <select id="direccion_departamento" name="direccion_departamento" class="select2" required>
             <option value="">Seleccione</option>
             @foreach($departamentos as $dep)
-            <option value="{{ $dep->id }}" {{ old('direccion_departamento', $storeTaxInfo->direccion_departamento ?? '') == $dep->id ? 'selected' : '' }}>
+            <option value="{{ $dep->codigo }}"
+                {{ old('direccion_departamento', $storeTaxInfo->direccion_departamento ?? '') == $dep->codigo ? 'selected' : '' }}>
                 {{ $dep->codigo }} - {{ $dep->nombre }}
             </option>
             @endforeach
@@ -110,7 +111,7 @@
         <select id="direccion_municipio" name="direccion_municipio" class="select2" required>
             <option value="">Seleccione</option>
             @foreach($municipios as $mun)
-            <option value="{{ $mun->id }}" {{ old('direccion_municipio', $storeTaxInfo->direccion_municipio ?? '') == $mun->id ? 'selected' : '' }}>
+            <option value="{{ $mun->codigo }}" {{ old('direccion_municipio', $storeTaxInfo->direccion_municipio ?? '') == $mun->codigo ? 'selected' : '' }}>
                 {{ $mun->codigo }} - {{ $mun->nombre }}
             </option>
             @endforeach
