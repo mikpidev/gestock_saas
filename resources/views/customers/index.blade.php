@@ -61,14 +61,14 @@
                             data-bs-toggle="modal"
                             data-bs-target="#editCustomersModal"
                             data-id="{{ $customer->id }}"
-                            data-tipoDocumento="{{ $customer->tipoDocumento }}"
-                            data-numDocumento="{{ $customer->numDocumento }}"
+                            data-tipodocumento="{{ $customer->tipoDocumento }}"
+                            data-numdocumento="{{ $customer->numDocumento }}"
                             data-nrc="{{ $customer->nrc }}"
                             data-nombre="{{ $customer->nombre }}"
-                            data-nombreComercial="{{$customer->nombreComercial }}"
+                            data-nombrecomercial="{{$customer->nombreComercial }}"
                             data-codActividad="{{ $customer->codActividad }}"
                             data-descActividad="{{ $customer->descActividad }}"
-                            data-direccion_departamento="{{ $customer->direccion_departamento }}"      
+                            data-direccion_departamento="{{ $customer->direccion_departamento }}"
                             data-direccion_municipio="{{ $customer->direccion_municipio }}"
                             data-direccion_complemento="{{$customer->direccion_complemento }}"
                             data-telefono="{{ $customer->telefono }}"
@@ -144,6 +144,30 @@
 
 
 <script>
+//validar en que modal se encuentra y aplicar select2 al modal correspondiente
+
+$(document).ready(function () {
+
+    $('#gestokModal').on('shown.bs.modal', function () {
+
+        $(this).find('.select2').select2({
+            width: '100%',
+            dropdownParent: $('#gestokModal')
+        });
+
+    });
+
+
+    $('#editCustomersModal').on('shown.bs.modal', function () {
+
+        $(this).find('.select2').select2({
+            width: '100%',
+            dropdownParent: $('#editCustomersModal')
+        });
+
+    });
+
+});
     document.addEventListener('DOMContentLoaded', () => {
         const editModal = new bootstrap.Modal(document.getElementById('editCustomersModal'));
         document.querySelectorAll('.editCustomersBtn').forEach(btn => {
@@ -151,20 +175,21 @@
                 const id = btn.dataset.id;
                 const form = document.getElementById('editCustomersForm');
                 form.action = `customers/${id}`; // URL dinámica
-                form.querySelector('#edit_tipoDocumento').value = btn.dataset.tipoDocumento ?? '';
-                form.querySelector('#edit_numDocumento').value = btn.dataset.edit_numDocumento ?? '';
+                form.querySelector('#edit_tipodocumento').value = btn.dataset.tipoDocumento ?? '';
+                form.querySelector('#edit_numdocumento').value = btn.dataset.numDocumento ?? '';
                 form.querySelector('#edit_nrc').value = btn.dataset.nrc ?? '';
                 form.querySelector('#edit_nombre').value = btn.dataset.nombre ?? '';
-                form.querySelector('#edit_nombreComercial').value = btn.dataset.nombreComercial ?? '';
-                form.querySelector('#edit_codActividad').value = btn.dataset.codActividad ?? '';
+                form.querySelector('#edit_nombrecomercial').value = btn.dataset.nombreComercial ?? '';
+                form.querySelector('#edit_codActividad').val(btn.dataset.codactividad ?? '')
+                    .trigger('change');
                 form.querySelector('#edit_descActividad').value = btn.dataset.descActividad ?? '';
-                form.querySelector('#edit_direccion_departamento').value = btn.dataset.direccion_departamento ?? '';
-                form.querySelector('#edit_direccion_municipio').value = btn.dataset.direccion_municipio ?? '';
+                form.querySelector('#edit_direccion_departamento').val(btn.dataset.direccion_departamento ?? '')
+                    .trigger('change');
+                form.querySelector('#edit_direccion_municipio').val(btn.dataset.direccion_municipio ?? '')
+                    .trigger('change');
                 form.querySelector('#edit_telefono').value = btn.dataset.telefono ?? '';
                 form.querySelector('#edit_correo').value = btn.dataset.correo ?? '';
 
-
-                
                 editModal.show();
             });
         });

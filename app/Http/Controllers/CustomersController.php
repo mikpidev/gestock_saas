@@ -91,7 +91,7 @@ class CustomersController extends Controller
             'tipoDocumento' => 'nullable|string|max:2',
             'numDocumento' => 'nullable|string|max:14',
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'string|max:255',
+            'nombre' => 'required|string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
             'codActividad' => 'nullable|string|max:10',
             'descActividad' => 'nullable|string|max:255',
@@ -102,23 +102,51 @@ class CustomersController extends Controller
             'correo' => 'nullable|email|max:255',
         ]);
 
-        Customer::create(array_merge(
-            $request->only([
-                'tipoDocumento',
-                'numDocumento',
-                'nrc',
-                'nombre',
-                'nombreComercial',
-                'codActividad',
-                'descActividad',
-                'direccion_departamento',
-                'direccion_municipio',
-                'direccion_complemento',
-                'telefono',
-                'correo',
-            ]),
-            ['store_id' => $store->id]
-        ));
+        $data = $request->only([
+            'tipoDocumento',
+            'numDocumento',
+            'nrc',
+            'nombre',
+            'nombreComercial',
+            'codActividad',
+            'descActividad',
+            'direccion_departamento',
+            'direccion_municipio',
+            'direccion_complemento',
+            'telefono',
+            'correo',
+        ]);
+
+        // Buscar el cliente incluyendo los eliminados
+        $customer = Customer::withTrashed()
+            ->where('store_id', $store->id)
+            ->where('tipoDocumento', $request->tipoDocumento)
+            ->where('numDocumento', $request->numDocumento)
+            ->first();
+
+        if ($customer) {
+
+            // Si está eliminado, restaurarlo y actualizar la información
+            if ($customer->trashed()) {
+
+                $customer->restore();
+                $customer->update($data);
+
+                return redirect()
+                    ->route('stores.customers.index', $store)
+                    ->with('success', 'Cliente restaurado exitosamente.');
+            }
+
+            // Si ya existe y está activo
+            return redirect()
+                ->route('stores.customers.index', $store)
+                ->with('error', 'El cliente ya existe en la tienda.');
+        }
+
+        // Si no existe, crearlo
+        Customer::create(array_merge($data, [
+            'store_id' => $store->id,
+        ]));
 
         return redirect()
             ->route('stores.customers.index', $store)
@@ -179,7 +207,7 @@ class CustomersController extends Controller
 
         $request->validate([
             'tipoDocumento' => 'nullable|string|max:2',
-            'numDocumento' => 'nullable|string|max:14,'.$customer->id,
+            'numDocumento' => 'nullable|string|max:14,' . $customer->id,
             'nrc' => 'nullable|string|max:10',
             'nombre' => 'string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
