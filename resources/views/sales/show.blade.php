@@ -179,7 +179,11 @@
         <!-- ENCABEZADO -->
         <div class="encabezado">
             <div>
-                <img src="{{ asset( $store . '.png') }}" style="width:150px; height:auto; display:inline-block;">
+                @if(file_exists(public_path($store . '.png')))
+                <img src="{{ asset($store . '.png') }}" style="width:150px;height:auto;">
+                @else
+                <img src="{{ asset($store . '.jpeg') }}" style="width:150px;height:auto;">
+                @endif
             </div>
 
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>

@@ -448,7 +448,7 @@ class SaleController extends Controller
         GenerateTestSalesJob::dispatch(
             $store,
             $data,
-            25,//change this when it is need it this is only for LocalHost Environment
+            25, //change this when it is need it this is only for LocalHost Environment
             auth()->id()
         );
 
@@ -459,10 +459,8 @@ class SaleController extends Controller
     }
 
 
-    public function show(Store $store, string $codigo)
+    public function show(string $codigo)
     {
-
-
         $sale = Sale::with([
             'store.taxInfo',
             'customer',
@@ -471,8 +469,7 @@ class SaleController extends Controller
             'debitNotes.debitNoteDetails.productType',
             'tipoDte'
         ])->where('codigo_generacion', $codigo)->firstOrFail();
-        $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
-
+        $dteResponse = DteResponse::where('sale_id', $sale->id)->latest()->first();
         $store = $sale->store->store_name;
 
 
@@ -485,11 +482,14 @@ class SaleController extends Controller
         ];
 
         $tipo = $sale->tipoDte->codigo ?? null;
+        $baseSinIVA = $sale->total_gravada - $sale->total_iva;
+
 
         // Construcción del JSON
         switch ($tipo) {
             case '01':
                 $json = $this->dteService->buildDTEJsonFE($sale);
+                //precio de la venta sin IVA
                 break;
             case '03':
                 $json = $this->dteService->buildDTEJsonCF($sale);
@@ -501,10 +501,25 @@ class SaleController extends Controller
                 abort(404, "Tipo DTE desconocido.");
         }
 
+        if ($tipo == '01') {
+            $json['resumen']['subTotal'] = $baseSinIVA;
+        }
+
+        $environment = $sale->store->environment ?? 'default';
+
+        if ($environment === 'Development') {
+            $env = '00';
+        } elseif ($environment === 'Production') {
+            $env = '01';
+        }
+
+
+
+
         // QR
         $urlQR =
             "https://admin.factura.gob.sv/consultaPublica"
-            . "?ambiente=00"
+            . "?ambiente={$env}"
             . "&codGen={$json['identificacion']['codigoGeneracion']}"
             . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
 
@@ -519,8 +534,8 @@ class SaleController extends Controller
         return view('sales.show', [
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
             'dte'      => $json,
-            'store' => $store,
             'emisor'   => $json['emisor'],
+            'store'    =>$store,
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
             'resumen'  => $json['resumen'],
