@@ -266,8 +266,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //Rutas reporte de ventas
     Route::get('/reportes/ventas/pdf', [ReporteVentas::class, 'index'])
         ->name('reportes.ventas.pdf');
-    Route::get('/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
-        ->name('reportes.ventas');
+Route::get('/stores/{store}/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
+    ->name('reportes.ventas');
     Route::get('/reportes/notascredito', [ReporteVentas::class, 'dteReporteNC'])
         ->name('reportes.notascredito');
     Route::get('/reportes/notasdebito', [ReporteVentas::class, 'dteReporteND'])

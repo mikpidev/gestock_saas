@@ -27,7 +27,7 @@
     <form action="{{ route('cash.closures.close', $store->id) }}" method="POST" class="mb-4">
         @csrf
         <input type="hidden" name="store_id" value="{{ $store->id }}"> {{-- Cambia según tu tienda --}}
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-edit">
             Crear corte de caja
         </button>
     </form>

@@ -264,14 +264,14 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="document.querySelector('.filters').submit()">Filtrar</button>
+                <button type="button" class="btn btn-edit" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-edit" onclick="document.querySelector('.filters').submit()">Filtrar</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal filtros -->
+<!-- Modal Reportes -->
 <div class="modal fade" id="reportes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -280,24 +280,28 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="GET" class="filter-bar" action="{{ route('reportes.ventas') }}">
+                <form method="GET"
+                    class="filter-bar"
+                    action="{{ route('reportes.ventas', ['store' => $store->id, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo]) }}">
+
                     <label>Desde:</label>
-                    <input type="date" name="from" value="{{ request('from', now()->toDateString()) }}">
+                    <input type="date" name="dateFrom" value="{{ $dateFrom }}">
 
                     <label>Hasta:</label>
-                    <input type="date" name="to" value="{{ request('to', now()->toDateString()) }}">
-
-
-                    <div class="modal-footer">
-                        <a href="{{ route('reportes.ventas', ['from' => $dateFrom, 'to' => $dateTo]) }}">
-                            <button type="button" class="btn btn-primary" onclick="document.querySelector('.filter-bar').submit()">Generar Reporte</button>
-                        </a>
-                    </div>
-                </form>
-
+                    <input type="date" name="dateTo" value="{{ $dateTo }}">
             </div>
+
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-edit">
+                    Generar Reporte
+                </button>
+            </div>
+            </form>
+
+
         </div>
     </div>
+</div>
 
     <script>
         function mostrarModalImpresion(url) {
