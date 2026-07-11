@@ -59,19 +59,19 @@ class ReporteVentas extends Controller
 
         if (!is_dir($basePath)) {
             mkdir($basePath, 0777, true);
-            Log::info("Directorio base creado", ['path' => $basePath]);
+            \Log::info("Directorio base creado", ['path' => $basePath]);
         }
 
         if (!is_dir($tempPath)) {
             mkdir($tempPath, 0777, true);
-            Log::info("Directorio temporal creado", ['path' => $tempPath]);
+            \Log::info("Directorio temporal creado", ['path' => $tempPath]);
         }
 
         foreach (glob($tempPath . '/*') as $file) {
 
             if (is_file($file)) {
                 unlink($file);
-                Log::info("Archivo temporal eliminado", ['file' => $file]);
+                \Log::info("Archivo temporal eliminado", ['file' => $file]);
             }
         }
         $zipPrincipalName = 'dtes_export_' . date('Y-m-d') . '_' . time() . '.zip';
