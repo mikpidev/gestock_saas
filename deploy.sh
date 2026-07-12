@@ -24,6 +24,9 @@ composer install --no-dev --optimize-autoloader
 echo "Running database migrations..."
 php artisan migrate --force
 
+echo "Compiling front-end"
+npm run build
+
 echo "Clearing and caching Laravel configurations..."
 php artisan optimize:clear
 
