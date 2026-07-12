@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\CorrelativoStore;
 use Illuminate\Validation\Rule;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
+use App\Models\TipoDocumento;
 use Carbon\Carbon;
 
 
@@ -64,6 +66,8 @@ class StoreController extends Controller
 
         $validated = $request->validate([
             'store_name' => 'required|max:200',
+            'establecimiento' => 'nullable|max:4',
+            'punto_venta' => 'nullable|max:4',
             'address'    => 'required',
             'phone'      => 'required|size:8',
             'manager'    => 'required|max:100',
@@ -74,6 +78,16 @@ class StoreController extends Controller
         ]);
 
         $store = $company->stores()->create($validated);
+        // Crear los correlativos
+        $tiposDocumento = TipoDocumento::all();
+
+        foreach ($tiposDocumento as $tipoDocumento) {
+            CorrelativoStore::create([
+                'store_id' => $store->id,
+                'tipo_documento_id' => $tipoDocumento->id,
+                'correlativo' => 0,
+            ]);
+        }
 
         return redirect()->route('store_tax_info.create', ['store' => $store->id])
             ->with('success', 'Tienda creada, ahora crea la información fiscal de la tienda.');
@@ -103,7 +117,6 @@ class StoreController extends Controller
             ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->when($documentType, function ($query) use ($documentType) {
                 $query->where('tipo_documento_id', $documentType);
-
             });
 
         \Log::info("Base Query: " . $baseQuery->toSql(), [
@@ -138,7 +151,7 @@ class StoreController extends Controller
                 SUM(CASE WHEN payment_method = 'Transferencia' THEN total_amount ELSE 0 END) as monto_transferencia               
             ")->first();
 
-        $dteSummary = (clone $baseQuery) 
+        $dteSummary = (clone $baseQuery)
             ->selectRaw("
                 COUNT(CASE WHEN tipo_documento_id = 1 THEN 1 END) as factura,
                 COUNT(CASE WHEN tipo_documento_id = 2 THEN 1 END) as CCF,
@@ -149,7 +162,7 @@ class StoreController extends Controller
                 SUM(CASE WHEN tipo_documento_id = 10 THEN total_amount ELSE 0 END) as monto_SE 
             ")->first();
 
-        
+
         $dteAproved = (clone $baseQuery)->where('dte_status', 'PROCESADO')->count();
         $dteDeny = (clone $baseQuery)->where('dte_status', 'RECHAZADO')->count();
         $dtePending = (clone $baseQuery)->where('dte_status', 'PENDIENTE')->count();
@@ -275,6 +288,8 @@ class StoreController extends Controller
         // Validación de los datos del formulario
         $validated = $request->validate([
             'store_name' => 'required|max:200',
+            'establecimiento' => 'nullable|max:4',
+            'punto_venta' => 'nullable|max:4',
             'address' => 'required',
             'phone' => 'required|size:8',
             'manager' => 'required|max:100',

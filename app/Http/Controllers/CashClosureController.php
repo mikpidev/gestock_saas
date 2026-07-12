@@ -103,7 +103,7 @@ class CashClosureController extends Controller
 
         // Obtener el cierre y asegurar que pertenece a la tienda
         $closure = CashClosure::with(['user:id,name', 'store:id,store_name'])
-            ->where('store_id', $store) // 👈 asegurar que es de la tienda correcta
+            ->where('store_id', $store) // asegurar que es de la tienda correcta
             ->findOrFail($id);
 
         // Obtener solo las ventas del cierre Y de la misma tienda

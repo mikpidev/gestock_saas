@@ -56,6 +56,8 @@
                         data-bs-target="#editStoreModal"
                         data-id="{{ $store->id }}"
                         data-store_name="{{ $store->store_name }}"
+                        data-establecimiento="{{ $store->establecimiento }}"
+                        data-punto_venta="{{ $store->punto_venta }}"
                         data-address="{{ $store->address }}"
                         data-phone="{{ $store->phone }}"
                         data-manager="{{ $store->manager }}"
@@ -113,6 +115,8 @@
                 const form = document.getElementById('editStoreForm');
                 form.action = `/stores/${id}`; // URL dinámica
                 form.querySelector('#edit_store_name').value = btn.dataset.store_name;
+                form.querySelector('#edit_establecimiento').value = btn.dataset.establecimiento;
+                form.querySelector('#edit_punto_venta').value = btn.dataset.punto_venta;
                 form.querySelector('#edit_address').value = btn.dataset.address;
                 form.querySelector('#edit_phone').value = btn.dataset.phone;
                 form.querySelector('#edit_manager').value = btn.dataset.manager;

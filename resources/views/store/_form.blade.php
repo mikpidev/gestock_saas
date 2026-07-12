@@ -14,6 +14,38 @@
             required>
     </div>
 </div>
+
+<!-- Nombre -->
+<div class="row mb-3 justify-content-center align-items-center">
+    <label for="store_name" class="col-sm-3 col-form-label">
+        Establecimiento
+    </label>
+
+    <div class="col-sm-6">
+        <input type="text"
+            name="establecimiento"
+            id="edit_establecimiento"
+            class="form-control"
+            required>
+    </div>
+</div>
+
+<!-- Nombre -->
+<div class="row mb-3 justify-content-center align-items-center">
+    <label for="store_name" class="col-sm-3 col-form-label">
+        Punto de Venta
+    </label>
+
+    <div class="col-sm-6">
+        <input type="text"
+            name="punto_venta"
+            id="edit_punto_venta"
+            class="form-control"
+            required>
+    </div>
+</div>
+
+
 <div class="row mb-3 justify-content-center align-items-center">
     <label for="address" class="col-sm-3 col-form-label">Dirección</label>
     <div class="col-sm-6">

@@ -11,6 +11,8 @@ class Store extends Model
     protected $fillable = [
         'company_id',
         'store_name',
+        'establecimiento',
+        'punto_venta',
         'address',
         'phone',
         'manager',
@@ -107,6 +109,12 @@ class Store extends Model
     public function debitNotes()
     {
         return $this->hasMany(DebitNote::class);
+    }
+
+    //relacion correlativo store
+    public function correlativoStores()
+    {
+        return $this->hasMany(CorrelativoStore::class, 'store_id'); 
     }
 
 }

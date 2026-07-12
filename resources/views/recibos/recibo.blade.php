@@ -25,7 +25,7 @@
             width: 100px;
             height: 100px;
         }
-        
+
 
 
         .linea {
@@ -56,8 +56,13 @@
 
         <!-- ENCABEZADO -->
         <div style="width:175px; height:100px; overflow:hidden; margin: 0 auto; text-align:center;">
-            <img src="{{ public_path('Logo_recortado.png') }}" style="width:100px; height:auto; display:inline-block;">
+            @if(file_exists(public_path($venta->store->store_name . '.png')))
+            <img src="{{ public_path($venta->store->store_name . '.png') }}" style="width:100px; height:auto; display:inline-block;">
+            @else
+            <img src="{{ public_path($venta->store->store_name . '.jpeg') }}" style="width:100px; height:auto; display:inline-block;">
+            @endif
         </div>
+
         <h3 style="margin:0; padding:0;">{{ $venta->store->store_name ?? 'Mi Tienda' }}</h3>
         <p class="small" style="margin:0; padding:0;">
             Dirección: {{ $venta->store->address ?? '' }}<br>
@@ -128,7 +133,7 @@
         <p class="totales">Descuento: -${{ number_format($venta->discount_amount, 2) }}</p>
         @endif
         <p class="totales">Total: ${{ number_format($venta->net_amount, 2) }}</p>
- 
+
 
         <div class="linea"></div>
 

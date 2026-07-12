@@ -24,6 +24,11 @@
             <i class="fas fa-plus"></i> Crear Acceso a Hacienda
         </a>
         @endif
+
+        <a href="{{ route('correlativos.edit', $store->id) }}"
+            class="btn btn-warning text-white">
+            <i class="fas fa-edit"></i> Editar Correlativo
+        </a>
     </div>
 
     <div class="card shadow-sm border-0 rounded-4">

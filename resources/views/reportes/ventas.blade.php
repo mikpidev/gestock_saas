@@ -168,14 +168,16 @@
 
         <!-- ENCABEZADO -->
         <div class="encabezado">
-            <div style="width:120px; height:120px; display:flex; justify-content:center; align-items:center; margin:0 auto;">
-                <img src="{{ public_path('Logo_recortado.png') }}"
-                    style="width:100%; height:100%; object-fit:contain;" />
+            <div>
+                @if(file_exists(public_path($store . '.png')))
+                <img src="{{ public_path($store . '.png') }}" style="width:150px;height:auto;">
+                @else
+                <img src="{{ public_path($store . '.jpeg') }}" style="width:150px;height:auto;">
+                @endif
             </div>
-
-
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
             <h2>{{ $tipoDteDescripcion }}</h2>
+
         </div>
 
         <div class="divisor"></div>

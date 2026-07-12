@@ -19,4 +19,11 @@ class TipoDte extends Model
     {
         return $this->hasMany(Sale::class, 'tipo_documento_id');
     }
+
+    //relacion correlativo store
+    public function correlativoStores()
+    {
+        return $this->hasMany(CorrelativoStore::class, 'tipo_documento_id');
+    }
+    
 }

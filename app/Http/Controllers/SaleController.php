@@ -103,7 +103,7 @@ class SaleController extends Controller
             ->orderByDesc('sale_date')
             ->get();
 
-
+            
         // Solo ventas no procesadas
         $pendingSales = $sales->filter(function ($sale) {
             return !empty($sale->codigo_generacion)
@@ -304,9 +304,11 @@ class SaleController extends Controller
         $total_iva = round($totalIva, 2);
 
         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
+        $establecimiento = $store->establecimiento;
+        $puntoVenta = $store->punto_venta;
 
         // Generar next invoice y número de control
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE);
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE,$establecimiento,$puntoVenta);
 
         // Crear la venta
         $sale = Sale::create([

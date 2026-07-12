@@ -12,7 +12,7 @@ class InvoiceNumber extends Model
     /**
      * Obtiene el siguiente número de factura y genera número de control + código de generación.
      */
-    public static function getNextNumber($storeId, $tipoDTE)
+    public static function getNextNumber($storeId, $tipoDTE, $establecimiento, $puntoVenta)
     {
         // Obtener último número
         $last = self::where('store_id', $storeId)->latest('number')->first();
@@ -21,12 +21,19 @@ class InvoiceNumber extends Model
         // Prefijo según tipo DTE
         $prefix = "DTE-{$tipoDTE}-";
 
-        // Parte central aleatoria
-        $partCentral = 'S' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT)
-                       . 'P' . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
+        // Parte central conformada por establecimiento y punto de venta
+        $partCentral = $establecimiento . $puntoVenta;
+        
+        //obtengo correlativo de la factura
 
-        // Parte final secuencial grande
-        $partFinal = str_pad(rand(0, 999999999999999), 15, '0', STR_PAD_LEFT);
+        $correlativo = CorrelativoStore::next(
+            $storeId,
+            $tipoDTE,
+        );
+
+
+        // Parte final secuencial grande basado en correlativo
+        $partFinal = str_pad($correlativo, 15, '0', STR_PAD_LEFT);
 
         // Combinar todo
         $numeroControl = $prefix . $partCentral . '-' . $partFinal;

@@ -50,7 +50,7 @@ class ReporteVentas extends Controller
         return $pdf->download('reporte_ventas.pdf');
     }
     public function dteReporte(Request $request, Store $store, OCIService $oci)
-    {
+    { 
         ini_set('memory_limit', '1024M');
         set_time_limit(0);
 
@@ -113,9 +113,10 @@ class ReporteVentas extends Controller
 
             ->where('store_id', $storeId)
             ->whereBetween('sale_date', [$dateFrom, $dateTo])
-            ->where('environment', 'Production');
+            ->where('environment', 'Development');
         //logs para verificar las tiendas y fechas
 
+        $storeName = $store->store_name;
         \Log::info('DEBUG QUERY', [
             'store_id' => $storeId,
             'dateFrom' => $dateFrom,
@@ -196,6 +197,7 @@ class ReporteVentas extends Controller
                 $pdf = Pdf::loadView('reportes.ventas', [
                     'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
                     'dte' => $json,
+                    'store' => $sale->store->store_name,
                     'emisor' => $json['emisor'],
                     'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
                     'resumen' => $json['resumen'],

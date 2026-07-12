@@ -185,7 +185,7 @@ a:hover {
 #config-btn {
     border: 1px solid var(--color-acento);
     background-color: transparent;
-    color: var(--color-graph-secundario);
+    color: #af2828;
     border-radius: 6px;
     padding: 0.4rem 0.8rem;
     cursor: pointer;
@@ -210,6 +210,44 @@ a:hover {
 }
 
 #config-btn:hover {
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
+    color: var(--color-black);
+    font-weight: 475;
+}
+
+/* ============================
+   BOTÓN De Descarga DTE
+============================ */
+
+#download-btn {
+    border: 1px solid var(--color-acento);
+    background-color: transparent;
+    color: #af2828;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#download-btn svg {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+    height: 1.8em;
+    width: 1.8em;
+}
+
+#download-btn:hover {
     background-color: var(--color-acento);
     border-color: var(--color-acento);
     color: var(--color-black);

@@ -119,72 +119,95 @@
                 </td>
 
                 <td class="actions">
-                    <div class="dropdown">
+                    <div class="d-flex justify-content-center align-items-center gap-2">
 
-                        <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
-                                <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c-.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z" />
-                            </svg>
-                        </button>
 
-                        <ul class="dropdown-menu">
+                            {{-- Descargar DTE --}}
+                            <form method="GET" action="{{ route('dte-download', [$store->id, $sale->id]) }}">
+                                @csrf
+                            <button id="download-btn" class="btn btn-outline-secondary btn-sm" type="submit" aria-expanded="false">
 
-                            {{-- Ver DTE --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="mostrarDTE('{{ route('dte.public', $sale->codigo_generacion) }}')">
-                                    <i class="bi bi-eye"></i> Ver DTE
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                    fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
+                                </svg>
+
+                            </button>
+                            </form>
+
+                            {{-- Configuración --}}
+                            <div class="dropdown">
+
+                                <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
+                                        <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c-.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z" />
+                                    </svg>
+
                                 </button>
-                            </li>
 
-                            {{-- Imprimir --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')">
-                                    <i class="bi bi-printer"></i> Imprimir
-                                </button>
-                            </li>
 
-                            {{-- Enviar correo --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="enviarDTEPorCorreo('{{ route('stores.email.send', [$store->id, $sale->id]) }}')">
-                                    <i class="bi bi-envelope"></i> Enviar correo
-                                </button>
-                            </li>
+                                <ul class="dropdown-menu">
 
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
+                                    {{-- Ver DTE --}}
+                                    <li>
+                                        <button class="dropdown-item"
+                                            onclick="mostrarDTE('{{ route('dte.public', $sale->codigo_generacion) }}')">
+                                            <i class="bi bi-eye"></i> Ver DTE
+                                        </button>
+                                    </li>
+                                    {{-- Imprimir --}}
+                                    <li>
+                                        <button class="dropdown-item"
+                                            onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $sale->id]) }}')">
+                                            <i class="bi bi-printer"></i> Imprimir
+                                        </button>
+                                    </li>
 
-                            {{-- Eliminar --}}
-                            @php
-                            $canDelete = $sale->created_at->greaterThan(now()->subHours(24));
-                            @endphp
+                                    {{-- Enviar correo --}}
+                                    <li>
+                                        <button class="dropdown-item"
+                                            onclick="enviarDTEPorCorreo('{{ route('stores.email.send', [$store->id, $sale->id]) }}')">
+                                            <i class="bi bi-envelope"></i> Enviar correo
+                                        </button>
+                                    </li>
 
-                            @if ($canDelete)
-                            <li>
-                                <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}"
-                                    method="POST"
-                                    onsubmit="return confirm('¿Eliminar venta?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="dropdown-item text-danger">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </button>
-                                </form>
-                            </li>
-                            @else
-                            <li>
-                                <span class="dropdown-item text-muted"
-                                    data-bs-toggle="tooltip"
-                                    title="No se puede eliminar ventas con más de 24 horas">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </span>
-                            </li>
-                            @endif
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
 
-                        </ul>
+                                    {{-- Eliminar --}}
+                                    @php
+                                    $canDelete = $sale->created_at->greaterThan(now()->subHours(24));
+                                    @endphp
+
+                                    @if ($canDelete)
+                                    <li>
+                                        <form action="{{ route('stores.sales.destroy', [$store->id, $sale->id]) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('¿Eliminar venta?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="dropdown-item text-danger">
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </form>
+                                    </li>
+                                    @else
+                                    <li>
+                                        <span class="dropdown-item text-muted"
+                                            data-bs-toggle="tooltip"
+                                            title="No se puede eliminar ventas con más de 24 horas">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </span>
+                                    </li>
+                                    @endif
+
+                                </ul>
+
+                            </div>
+
                     </div>
                 </td>
             </tr>
@@ -303,54 +326,66 @@
     </div>
 </div>
 
-    <script>
-        function mostrarModalImpresion(url) {
-            const w = window.open(url, '_blank', 'width=400,height=800');
-            w.onload = () => w.print();
+<script>
+    function mostrarModalImpresion(url) {
+        const w = window.open(url, '_blank', 'width=400,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function mostrarDTE(url) {
+        const w = window.open(url, '_blank', 'width=800,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function downloadDTE(url) {
+        const w = window.open(url, '_blank', 'width=800,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function enviarDTEPorCorreo(url) {
+        if (confirm('¿Enviar DTE por correo electrónico?')) {
+            fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.redirect) {
+                        window.location.href = data.redirect;
+                    }
+                });
         }
-        document.addEventListener("DOMContentLoaded", function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el)
-            })
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        getPaginationData();
+        $("#from, #to").on("change", function() {
+            getData();
         });
-
-
-        function mostrarDTE(url) {
-            const w = window.open(url, '_blank', 'width=800,height=800');
-            w.onload = () => w.print();
-        }
-        document.addEventListener("DOMContentLoaded", function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el)
-            })
-        });
-
-
-        function enviarDTEPorCorreo(url) {
-            if (confirm('¿Enviar DTE por correo electrónico?')) {
-                fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success && data.redirect) {
-                            window.location.href = data.redirect;
-                        }
-                    });
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            getPaginationData();
-            $("#from, #to").on("change", function() {
-                getData();
-            });
-        });
-    </script>
-    @endsection
+    });
+</script>
+@endsection

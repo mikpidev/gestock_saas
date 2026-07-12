@@ -16,6 +16,7 @@ use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\ActividadEconomicaController;
 use App\Http\Controllers\CashClosureController;
 use App\Http\Controllers\ContingenciaController;
+use App\Http\Controllers\CorrelativoStoreController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\DTEController;
@@ -101,6 +102,23 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('mh_access.update');
     Route::delete('/stores/{store}/mh-access/{mhAccess}', [MHAccessController::class, 'destroy'])
         ->name('mh_access.destroy');
+
+    //Rutas Correlativos
+    Route::get('/stores/{store}/correlativos/create', [CorrelativoStoreController::class, 'create'])
+        ->name('correlatvos.create');
+    Route::post('/stores/{store}/correlativos/store', [CorrelativoStoreController::class, 'store'])
+        ->name('correlatvios.store');
+    Route::get(
+        '/stores/{store}/correlativos/edit',
+        [CorrelativoStoreController::class, 'edit']
+    )->name('correlativos.edit');
+
+    Route::put(
+        '/stores/{store}/correlativos',
+        [CorrelativoStoreController::class, 'update']
+    )->name('correlativos.update');
+
+
 
     //rutas para usuarios
     Route::resource('stores.users', \App\Http\Controllers\UserController::class);
@@ -190,6 +208,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         ->name('dte.public');
 
 
+
+
     // Eliminar venta
     Route::delete('stores/{store}/sales/{sale}', [SaleController::class, 'destroy'])
         ->name('stores.sales.destroy');
@@ -207,6 +227,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     Route::get('/stores/{store}/sales/{sale}/reprint', [ReciboController::class, 'reprint'])
         ->name('ticket.reprint');
 
+    Route::get('/stores/{store}/sales/{sale}/download-dte', [ReciboController::class, 'downloadDTE'])
+        ->name('dte-download');
 
 
     Route::get('/catalogos/tipo-documento', [TipoDocumentoController::class, 'index'])->name('tipo_documento.index');
@@ -266,8 +288,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
     //Rutas reporte de ventas
     Route::get('/reportes/ventas/pdf', [ReporteVentas::class, 'index'])
         ->name('reportes.ventas.pdf');
-Route::get('/stores/{store}/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
-    ->name('reportes.ventas');
+    Route::get('/stores/{store}/reportes/ventas', [ReporteVentas::class, 'dteReporte'])
+        ->name('reportes.ventas');
     Route::get('/reportes/notascredito', [ReporteVentas::class, 'dteReporteNC'])
         ->name('reportes.notascredito');
     Route::get('/reportes/notasdebito', [ReporteVentas::class, 'dteReporteND'])
