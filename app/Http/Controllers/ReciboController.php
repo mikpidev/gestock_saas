@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Sale;
 use App\Models\Store;
+use App\Services\DocumentService;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -14,6 +15,13 @@ use BaconQrCode\Writer;
 
 class ReciboController extends Controller
 {
+
+    protected $dteService;
+
+    public function __construct(DocumentService $dteService)
+    {
+        $this->dteService = $dteService;
+    }
     /**
      * Genera y muestra el PDF del recibo.
      */
@@ -56,7 +64,7 @@ class ReciboController extends Controller
         $total = $venta->details->sum(fn($d) => $d->quantity * $d->subtotal);
 
         // Generar PDF usando la vista optimizada
-        $pdf = Pdf::loadView('recibos.recibo', compact('venta', 'dteResponse','logo', 'urlQR', 'qrImage', 'total'))
+        $pdf = Pdf::loadView('recibos.recibo', compact('venta', 'dteResponse', 'logo', 'urlQR', 'qrImage', 'total'))
             ->setPaper([0, 0, 226.77, 600], 'portrait');
 
         return $pdf->stream('recibo_' . $venta->id . '.pdf', ['Attachment' => false]);
@@ -126,11 +134,11 @@ class ReciboController extends Controller
             ->findOrFail($saleId);
 
 
-        $storeName = $baseQuery->store->store_name;
+        $store = $baseQuery->store->store_name;
 
         $sale = $baseQuery;
 
-        
+
         \Log::info("Base Query Sale", [
             'sale_id' => $sale->id,
             'Codigo de Generacion' => $sale->codigo_generacion,
@@ -139,55 +147,126 @@ class ReciboController extends Controller
 
 
         //Path para ventas app/store_name/dtes_export/month/day/year
-        $basePath = storage_path("app/{$storeName}/dtes_export/" . date("Y/m/d"));
-        /*         $tempPath = storage_path("app/{$storeName}/dtes_export/" . date("Y/m/d") . "/temp");
- */
+        $basePath = storage_path("app/{$store}/dtes_export/" . date("Y/m/d"));
+
         \Log::info("Verficando si Base Path existe", ['path' => $basePath]);
 
         if (!is_dir($basePath)) {
-            mkdir($basePath, 0777, true);
+            mkdir($basePath, 0775, true);
             \Log::info("Directorio base creado", ['path' => $basePath]);
-        }
-
-
-        /*         if (!is_dir($tempPath)) {
-            mkdir($tempPath, 0777, true);
-            \Log::info("Directorio temporal creado", ['path' => $tempPath]);
-        } */
-
-        //creamos Zip donde se guardara Json y PDF
-        $zipFileName = "DTE_{$sale->codigo_generacion}.zip";
-        $zipFilePath = $basePath . '/' . $zipFileName;
-
-
-        $zip = new \ZipArchive();
-        $result = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-
-
-        if ($result !== true) {
-            \Log::error('No se pudo abrir el ZIP', [
-                'path' => $zipFilePath,
-                'result' => $result
-            ]);
-
-            return back()->with('error', 'No se pudo crear el archivo ZIP.');
         }
 
         // Generamos JSON del DTE
 
-        $baseQuery->chunk(40, function ($sales) use ($zip){
-            
-        });
+        $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
+        // Mapeo de descripciones
+        $tipoDteDescripcion = [
+            '01' => 'Factura',
+            '03' => 'Crédito Fiscal',
+            '14' => 'Factura Sujeto Excluido',
+            // agregar los necesarios
+        ];
 
-        return response()->json(
-            [
-                'message' => "DTE Download Feature in process.",
-                'Base path' => $basePath,
-                'Codigo Generacion' => $sale->codigo_generacion,
-                'Zip File Name' => $zipFileName,
-                'Zip File Path' => $zipFilePath,
-            ],
-            200
+        $tipo = strtolower($sale->tipoDte->codigo ?? '');
+
+        switch ($tipo) {
+            case '01':
+                $json = $this->dteService->buildDTEJsonFE($sale);
+                break;
+
+            case '03':
+                $json = $this->dteService->buildDTEJsonCF($sale);
+                break;
+
+            case '14':
+                $json = $this->dteService->buildDTEJsonSE($sale);
+                break;
+
+            default:
+                abort(400, 'Tipo DTE desconocido');
+        }
+
+        if ($dteResponse) {
+            $json['sello_recibido'] = $dteResponse->sello_recibido;
+        }
+
+        $codigoGen = $sale->codigo_generacion;
+        $jsonContent = json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        // Generar QR
+        $urlQR = "https://admin.factura.gob.sv/consultaPublica"
+            . "?ambiente=01"
+            . "&codGen={$json['identificacion']['codigoGeneracion']}"
+            . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(150),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+        $qrImage = base64_encode($writer->writeString($urlQR));
+
+        // Generar PDF
+        $pdf = Pdf::loadView('recibos.pdf', [
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'dte'      => $json,
+            'emisor'   => $json['emisor'],
+            'store'    => $store,
+            //validar si es SE - pass sujetoExcluido en lugar de receptor
+            'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+            'resumen'  => $json['resumen'],
+            'qrImage'  => $qrImage,
+            'dteResponse' => $dteResponse
+        ]);
+
+        $pdfContent = $pdf->output();
+
+
+        // Crear ZIP individual
+        $zipIndividualName = "DTE_{$codigoGen}.zip";
+        $zipIndividualPath = $basePath . "/DTE_{$codigoGen}.zip";
+
+        if (file_exists($zipIndividualPath)) {
+            unlink($zipIndividualPath);
+        }
+        $zipIndividual = new \ZipArchive;
+
+        $result = $zipIndividual->open(
+            $zipIndividualPath,
+            \ZipArchive::CREATE
+        );
+
+        if ($result !== true) {
+            return back()->with('error', 'No se pudo crear el ZIP.');
+        }
+
+        $zipIndividual->addFromString(
+            "dte_{$codigoGen}.json",
+            $jsonContent,
+
+        );
+
+        $zipIndividual->addFromString(
+            "dte_{$codigoGen}.pdf",
+            $pdfContent
+        );
+
+        \Log::info("Data de descarga", [
+            'message' => "DTE Download Feature in process.",
+            'sale ID' => $sale->id,
+            'Base path' => $basePath,
+            'Codigo Generacion' => $sale->codigo_generacion,
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'emisor'   => $json['emisor'],
+            'store'    => $store,
+        ]);
+
+        $zipIndividual->close();
+
+        return response()->download(
+            $zipIndividualPath,
+            "DTE_{$codigoGen}.zip"
         );
     }
 }

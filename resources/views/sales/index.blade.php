@@ -351,10 +351,6 @@
     });
 
 
-    function downloadDTE(url) {
-        const w = window.open(url, '_blank', 'width=800,height=800');
-        w.onload = () => w.print();
-    }
     document.addEventListener("DOMContentLoaded", function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         tooltipTriggerList.map(function(el) {
