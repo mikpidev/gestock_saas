@@ -207,6 +207,9 @@
                 form.querySelector('#edit_correo').value =
                     btn.dataset.correo ?? '';
 
+                form.querySelector('#edit_direccion_complemento').value =
+                    btn.dataset.direccion_complemento ?? '';
+
 
                 const actividad = btn.dataset.codactividad ?? '';
 
