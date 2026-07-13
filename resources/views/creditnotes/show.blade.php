@@ -281,15 +281,16 @@
                 </div>
                 <div class="columna">
                     <div class="etiqueta">Dirección:</div>
-                    <div>{{ $receptor['direccion']['complemento'] }}</div>
+                    <div>{{ $receptor['direccion']['complemento'] }}, {{ $customer->municipio?->nombre }}, {{ $customer->departamento?->nombre }}</div>
                 </div>
-                <div class="columna">
-                    <div class="etiqueta">Departamento:</div>
-                    <div>{{ $receptor['direccion']['departamento'] }}</div>
-                </div>
+
                 <div class="columna">
                     <div class="etiqueta">Email:</div>
                     <div>{{ $receptor['correo'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Telefono:</div>
+                    <div>{{ $receptor['telefono'] }}</div>
                 </div>
             </div>
         </div>
@@ -299,6 +300,29 @@
             <div><strong>Fecha:</strong> {{ $dte['identificacion']['fecEmi'] }}</div>
             <div><strong>N° Factura:</strong> {{ $dte['numeroFactura'] ?? '' }}</div>
         </div>
+
+        <!-- Documento Relacionado -->
+
+        <table class="tabla-productos">
+            <thead>
+                <th colspan="3" style="text-align:center;">Documento Relacionado</th>
+
+                <tr>
+                    <th>Tipo de Documento</th>
+                    <th style="text-align:left;">N° de Documento </th>
+                    <th>Fecha de Documento</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($documentoRelacionado as $doc)
+                <tr>
+                    <td>{{ $doc['tipoDocumento'] ?? '' }}</td>
+                    <td>{{ $doc['numeroDocumento'] ?? '' }}</td>
+                    <td>{{ $doc['fechaEmision'] ?? '' }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
         <!-- PRODUCTOS -->
         <table class="tabla-productos">

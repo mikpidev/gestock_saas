@@ -5,7 +5,7 @@
 
 
     <div class="col-md-6">
-        <select id="edit_tipoDocumento" name="tipoDocumento" class="select2 form-control">
+        <select id="edit_tipodocumento" name="tipoDocumento" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($tiposDocumento as $tipo)
             <option value="{{ $tipo->codigo }}"
@@ -31,7 +31,7 @@
     </div>
 
     <div class="col-md-6">
-        <input id="edit_numDocumento" type="text" name="numDocumento" maxlength="14"
+        <input id="edit_numdocumento" type="text" name="numDocumento" maxlength="14"
             value="{{ old('numDocumento', $customer->numDocumento ?? '') }}" class="form-control">
         @error('numDocumento') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -67,7 +67,7 @@
         <label for="nombreComercial">Nombre Comercial</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_nombreComercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
+        <input id="edit_nombrecomercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
         @error('nombreComercial') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -81,7 +81,7 @@
         <label for="codActividad">Actividad Económica</label>
     </div>
     <div class="col-md-6">
-        <select id="edit_codActividad" name="codActividad" class="select2 form-control">
+        <select id="edit_codactividad" name="codActividad" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($actividades as $act)
             <option value="{{ $act->codigo }}"
@@ -90,7 +90,8 @@
             </option>
             @endforeach
         </select>
-        @error('codActividad') <div class="text-danger">{{ $message }}</div> @enderror
+        @error('codActividad') 
+        <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
 
@@ -100,7 +101,7 @@
         <label for="descActividad">Descripción de Actividad</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_descActividad" type="text" name="descActividad"
+        <input id="edit_descactividad" type="text" name="descActividad"
             value="{{ old('descActividad', $customer->descActividad ?? '') }}" class="form-control">
         @error('descActividad') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -108,41 +109,64 @@
 
 
 {{-- Departamento --}}
-
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="direccion_departamento">Departamento</label>
+        <label for="edit_departamento_id">Departamento</label>
     </div>
+
     <div class="col-md-6">
-        <select id="edit_direccion_departamento" name="direccion_departamento" class="select2 form-control">
+        <select
+            id="edit_departamento_id"
+            name="departamento_id"
+            class="select2 form-control">
+
             <option value="">Seleccione</option>
+
             @foreach($departamentos as $dep)
-            <option value="{{ $dep->codigo }}"
-                {{ old('direccion_departamento', $customer->direccion_departamento ?? '') == $dep->codigo ? 'selected' : '' }}>
+            <option
+                value="{{ $dep->id }}"
+                {{ old('departamento_id', $customer->departamento_id ?? '') == $dep->id ? 'selected' : '' }}>
                 {{ $dep->codigo }} - {{ $dep->nombre }}
             </option>
             @endforeach
+
         </select>
-        @error('direccion_departamento') <div class="text-danger">{{ $message }}</div> @enderror
+
+        @error('departamento_id')
+        <div class="text-danger">{{ $message }}</div>
+        @enderror
     </div>
 </div>
+
 
 {{-- Municipio --}}
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="direccion_municipio">Municipio</label>
+        <label for="edit_municipio_id">Municipio</label>
     </div>
+
     <div class="col-md-6">
-        <select id="edit_direccion_municipio" name="direccion_municipio" class="select2 form-control">
+        <select
+            id="edit_municipio_id"
+            name="municipio_id"
+            class="select2 form-control">
+
             <option value="">Seleccione</option>
+
             @foreach($municipios as $mun)
-            <option value="{{ $mun->codigo }}"
-                {{ old('direccion_municipio', $customer->direccion_municipio ?? '') == $mun->codigo ? 'selected' : '' }}>
+            <option
+                value="{{ $mun->id }}"
+                {{ old('municipio_id', $customer->municipio_id ?? '') == $mun->id ? 'selected' : '' }}>
                 {{ $mun->codigo }} - {{ $mun->nombre }}
             </option>
             @endforeach
+
         </select>
-        @error('direccion_municipio') <div class="text-danger">{{ $message }}</div> @enderror
+
+        @error('municipio_id')
+        <div class="text-danger">{{ $message }}</div>
+        @enderror
+
     </div>
 </div>
 
@@ -224,7 +248,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('customersForm'); // ID del form de customers
         if (!form) return;

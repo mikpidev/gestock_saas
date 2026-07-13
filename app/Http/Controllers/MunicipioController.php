@@ -13,9 +13,12 @@ class MunicipioController extends Controller
     }
 
     // Para obtener municipios por departamento (útil en el formulario)
-    public function byDepartamento($codigo)
+    public function byDepartamento($departamentoId)
     {
-        $municipios = Municipio::where('codigo_departamento', $codigo)->get();
+        $municipios = Municipio::where('departamento_id', $departamentoId)
+            ->orderBy('nombre')
+            ->get();
+
         return response()->json($municipios);
     }
 }

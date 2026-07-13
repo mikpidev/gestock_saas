@@ -115,6 +115,7 @@ class StoreController extends Controller
         $baseQuery = Sale::query()
             ->where('store_id', $store->id)
             ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', $dte_status)
             ->when($documentType, function ($query) use ($documentType) {
                 $query->where('tipo_documento_id', $documentType);
             });
@@ -164,7 +165,14 @@ class StoreController extends Controller
 
 
         $dteAproved = (clone $baseQuery)->where('dte_status', 'PROCESADO')->count();
-        $dteDeny = (clone $baseQuery)->where('dte_status', 'RECHAZADO')->count();
+        $dteDeny = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', 'RECHAZADO')
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->count();
         $dtePending = (clone $baseQuery)->where('dte_status', 'PENDIENTE')->count();
         $dteFactura = (clone $baseQuery)->where('tipo_documento_id', '1')->count();
         $dteCF = (clone $baseQuery)->where('tipo_documento_id', '2')->count();

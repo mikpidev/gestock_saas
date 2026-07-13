@@ -473,6 +473,8 @@ class SaleController extends Controller
         ])->where('codigo_generacion', $codigo)->firstOrFail();
         $dteResponse = DteResponse::where('sale_id', $sale->id)->latest()->first();
         $store = $sale->store->store_name;
+        $emisor = $sale->store->taxInfo;
+
 
 
         // Mapeo de descripciones
@@ -536,7 +538,8 @@ class SaleController extends Controller
         return view('sales.show', [
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
             'dte'      => $json,
-            'emisor'   => $json['emisor'],
+            //'emisor'   => $json['emisor'],
+            'emisor' => $emisor,
             'store'    =>$store,
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],

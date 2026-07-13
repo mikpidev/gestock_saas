@@ -17,8 +17,8 @@ class Customer extends Model
         'codActividad',
         'descActividad',
         'nombreComercial',
-        'direccion_departamento',
-        'direccion_municipio',
+        'departamento_id',
+        'municipio_id',
         'direccion_complemento',
         'telefono',
         'correo',
@@ -58,21 +58,13 @@ class Customer extends Model
         return $this->belongsTo(CodActividad::class, 'codActividad', 'codigo');
     }
 
-    // Departamento
     public function departamento()
     {
-        return $this->belongsTo(Departamento::class, 'direccion_departamento', 'codigo');
+        return $this->belongsTo(Departamento::class, 'departamento_id', 'id');
     }
 
-    // Municipio
     public function municipio()
     {
-        return $this->belongsTo(Municipio::class, 'direccion_municipio', 'codigo');
+        return $this->belongsTo(Municipio::class, 'municipio_id', 'id');
     }
-
-
-    
-
-
-
 }

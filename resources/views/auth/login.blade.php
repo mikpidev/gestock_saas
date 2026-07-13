@@ -13,17 +13,23 @@
     <input id="password" type="password" name="password" required>
 
     <div class="actions">
-<!--         <label>
+        <!--         <label>
             <input type="checkbox" name="remember"> Recuérdame
         </label> -->
         <button type="submit" class="btn">Ingresar</button>
     </div>
 
-<!--     @if (Route::has('password.request'))
+    <!--     @if (Route::has('password.request'))
         <div style="margin-top: 1rem;">
             <a href="{{ route('password.request') }}" class="link">¿Olvidaste tu contraseña?</a>
         </div>
     @endif -->
+
+    @if(session('error'))
+    <div class="alert alert-warning">
+        {{ session('error') }}
+    </div>
+    @endif
 </form>
 
 

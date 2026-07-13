@@ -5,7 +5,7 @@
 
 <div class="card-table">
     <div class="card-header-custom">
-        <h2>{{ $store->store_name }} — Ventas</h2>
+        <h2>{{ $store->store_name }} — Notas de Credito</h2>
         <a href="{{ route('stores.creditnotes.create', $store->id) }}" class="btn-new">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
@@ -98,10 +98,6 @@
 
                 <td class="actions">
                     <div class="dropdown">
-                        <!-- <a href="{{ route('stores.creditnotes.show', [$store->id, $creditNote->id]) }}"
-                            class="btn btn-info">
-                            Ver
-                        </a> -->
 
 
                         <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -114,7 +110,7 @@
                             {{-- Ver DTE --}}
                             <li>
                                 <button class="dropdown-item"
-                                    onclick="mostrarDTE('{{ route('dte.public', $creditNote->codigo_generacion) }}')">
+                                    onclick="mostrarDTE('{{ route('dte.public.nc', $creditNote->codigo_generacion) }}')">
                                     <i class="bi bi-eye"></i> Ver DTE
                                 </button>
                             </li>
@@ -302,7 +298,8 @@
         function mostrarDTE(url) {
             const w = window.open(url, '_blank', 'width=800,height=800');
             w.onload = () => w.print();
-        }
+        } 
+
         document.addEventListener("DOMContentLoaded", function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             tooltipTriggerList.map(function(el) {

@@ -8,19 +8,34 @@ use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Customer;
+use App\Models\DteResponseNC;
 use App\Models\ProductType;
 use App\Models\InvoiceNumber;
 use App\Models\Store;
 use App\Models\TipoDte;
 use App\Services\ConsultaService;
+use App\Services\DocumentService;
 use App\Services\HaciendaAuthService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 
 class CreditNoteController extends Controller
 {
+
+    protected $dteService;
+
+    public function __construct(DocumentService $dteService)
+    {
+
+        //DTE Service
+        $this->dteService = $dteService;
+    }
 
     // Validación de accesos
     private function validateStoreAccess(Store $store)
@@ -309,15 +324,80 @@ class CreditNoteController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(CreditNote $creditNote, Store $store)
+    public function show(string $codigo)
     {
-        //Validar acceso a la tienda
 
-        $this->validateStoreAccess($store);
-        if ($creditNote->store_id != $store->id) abort(403, 'No puedes ver una NC de otra tienda.');
+        $creditNote = CreditNote::with([
+            'store.taxInfo',
+            'customer',
+            'creditNoteDetails.productType',
+            'tipoDte'
+        ])->where('codigo_generacion', $codigo)->firstOrFail();
 
-        $creditNote->load('customer', 'sale', 'user');
-        return view('credit_notes.show', compact('creditNote', 'store'));
+        //llamar Sale / Documento Relacionado
+        $sale = Sale::with(['customer', 'details', 'details.productType'])->findOrFail($creditNote['sale_id']);
+
+
+        $dteRespone = DteResponseNC::where('credit_note_id', $creditNote->id)->latest()->first();
+        $store = $creditNote->store->store_name;
+
+        $tipoDteDescripcion = ["05" => 'Nota de Credito'];
+        $tipo = "05" ?? null;
+        $emisor = $creditNote->store->taxInfo;
+        $customer = $creditNote->customer;
+
+
+        $json = $this->dteService->buildDTEJsonNC($creditNote, $sale);
+
+        $environment = $sale->store->environment ?? 'default';
+
+        if ($environment === 'Development') {
+            $env = '00';
+        } elseif ($environment === 'Production') {
+            $env = '01';
+        }
+
+        // QR
+        $urlQR =
+            "https://admin.factura.gob.sv/consultaPublica"
+            . "?ambiente={$env}"
+            . "&codGen={$json['identificacion']['codigoGeneracion']}"
+            . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(150),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+        $qrImage = base64_encode($writer->writeString($urlQR));
+
+
+/*         \Log::info("Data PDF: ", [
+            'emisor' => $emisor,
+
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'dte' => $json,
+            'emisor' => $json['emisor'],
+            'store' => $store,
+            'receptor' => $json['receptor'],
+            'resumen' => $json['resumen'],
+            'dteResponse' => $dteRespone, 
+        ]); */
+
+        return view('creditnotes.show', [
+            'customer' => $customer,
+
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'dte' => $json,
+            'emisor' => $emisor,
+            'store' => $store,
+            'receptor' => $json['receptor'],
+            'documentoRelacionado' => $json['documentoRelacionado'],
+            'resumen' => $json['resumen'],
+            'dteResponse' => $dteRespone,
+            'qrImage'  => $qrImage,
+        ]);
     }
 
     /**

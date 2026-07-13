@@ -16,12 +16,12 @@ class Departamento extends Model
 
     public function municipios()
     {
-        return $this->hasMany(Municipio::class, 'codigo_departamento', 'codigo');
+        return $this->hasMany(Municipio::class);
     }
 
     public function customers()
     {
-        return $this->hasMany(Customer::class, 'direccion_departamento', 'codigo');
+        return $this->hasMany(Customer::class, 'departamento_id');
     }
 
     

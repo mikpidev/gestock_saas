@@ -8,7 +8,7 @@
     <h2></h2>
     <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#gestokModal" title="Crear Cliente" style="margin-right: 75px;">
         <i class="bi bi-plus-circle"></i>
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
         </svg>
     </button>
@@ -66,13 +66,13 @@
                             data-nrc="{{ $customer->nrc }}"
                             data-nombre="{{ $customer->nombre }}"
                             data-nombrecomercial="{{$customer->nombreComercial }}"
-                            data-codActividad="{{ $customer->codActividad }}"
-                            data-descActividad="{{ $customer->descActividad }}"
-                            data-direccion_departamento="{{ $customer->direccion_departamento }}"
-                            data-direccion_municipio="{{ $customer->direccion_municipio }}"
+                            data-codactividad="{{ $customer->codActividad }}"
+                            data-descactividad="{{ $customer->descActividad }}"
+                            data-departamento_id="{{ $customer->departamento_id }}"
+                            data-municipio_id="{{ $customer->municipio_id }}"
                             data-direccion_complemento="{{$customer->direccion_complemento }}"
                             data-telefono="{{ $customer->telefono }}"
-                            data-correo="{{ $customer->correo }}"
+                            data-correo="{{ $customer->correo }}">
                             <i class="bi bi-pencil"></i>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
                                 <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
@@ -144,55 +144,132 @@
 
 
 <script>
-//validar en que modal se encuentra y aplicar select2 al modal correspondiente
+    $(document).ready(function() {
 
-$(document).ready(function () {
-
-    $('#gestokModal').on('shown.bs.modal', function () {
-
-        $(this).find('.select2').select2({
-            width: '100%',
-            dropdownParent: $('#gestokModal')
-        });
-
-    });
-
-
-    $('#editCustomersModal').on('shown.bs.modal', function () {
-
-        $(this).find('.select2').select2({
+        $('#editCustomersModal .select2').select2({
             width: '100%',
             dropdownParent: $('#editCustomersModal')
         });
 
     });
 
-});
+
     document.addEventListener('DOMContentLoaded', () => {
-        const editModal = new bootstrap.Modal(document.getElementById('editCustomersModal'));
+
+        const editModal = new bootstrap.Modal(
+            document.getElementById('editCustomersModal')
+        );
+
+
         document.querySelectorAll('.editCustomersBtn').forEach(btn => {
+
             btn.addEventListener('click', () => {
+
+                console.log(btn.dataset);
+
                 const id = btn.dataset.id;
                 const form = document.getElementById('editCustomersForm');
-                form.action = `customers/${id}`; // URL dinámica
-                form.querySelector('#edit_tipodocumento').value = btn.dataset.tipoDocumento ?? '';
-                form.querySelector('#edit_numdocumento').value = btn.dataset.numDocumento ?? '';
-                form.querySelector('#edit_nrc').value = btn.dataset.nrc ?? '';
-                form.querySelector('#edit_nombre').value = btn.dataset.nombre ?? '';
-                form.querySelector('#edit_nombrecomercial').value = btn.dataset.nombreComercial ?? '';
-                form.querySelector('#edit_codActividad').val(btn.dataset.codactividad ?? '')
+
+
+                form.action = `customers/${id}`;
+
+
+                form.querySelector('#edit_tipodocumento').value =
+                    btn.dataset.tipodocumento ?? '';
+
+                const tipodocumento = btn.dataset.tipodocumento ?? '';
+
+
+                $(form).find('#edit_tipodocumento')
+                    .val(tipodocumento)
                     .trigger('change');
-                form.querySelector('#edit_descActividad').value = btn.dataset.descActividad ?? '';
-                form.querySelector('#edit_direccion_departamento').val(btn.dataset.direccion_departamento ?? '')
+
+                form.querySelector('#edit_numdocumento').value =
+                    btn.dataset.numdocumento ?? '';
+
+                form.querySelector('#edit_nrc').value =
+                    btn.dataset.nrc ?? '';
+
+                form.querySelector('#edit_nombre').value =
+                    btn.dataset.nombre ?? '';
+
+                form.querySelector('#edit_nombrecomercial').value =
+                    btn.dataset.nombrecomercial ?? '';
+
+
+                form.querySelector('#edit_descactividad').value =
+                    btn.dataset.descactividad ?? '';
+
+
+                form.querySelector('#edit_telefono').value =
+                    btn.dataset.telefono ?? '';
+
+                form.querySelector('#edit_correo').value =
+                    btn.dataset.correo ?? '';
+
+
+                const actividad = btn.dataset.codactividad ?? '';
+
+                $(form)
+                    .find('#edit_codactividad')
+                    .val(actividad)
                     .trigger('change');
-                form.querySelector('#edit_direccion_municipio').val(btn.dataset.direccion_municipio ?? '')
+
+
+                // Departamento
+                const departamentoId = btn.dataset.departamento_id ?? '';
+
+                $(form).find('#edit_departamento_id')
+                    .val(departamentoId)
                     .trigger('change');
-                form.querySelector('#edit_telefono').value = btn.dataset.telefono ?? '';
-                form.querySelector('#edit_correo').value = btn.dataset.correo ?? '';
+
+
+
+                const municipioId = btn.dataset.municipio_id ?? '';
+
+                $(form).find('#edit_municipio_id')
+                    .val(municipioId)
+                    .trigger('change');
+
+
+                if (departamentoId) {
+
+                    $.get(`/catalogos/municipios/${departamentoId}`, function(municipios) {
+
+                        const select = $('#edit_municipio_id');
+
+                        select.empty();
+
+                        select.append(
+                            '<option value="">Seleccione</option>'
+                        );
+
+
+                        municipios.forEach(function(m) {
+
+                            select.append(`
+                        <option value="${m.id}">
+                            ${m.codigo} - ${m.nombre}
+                        </option>
+                    `);
+
+                        });
+
+
+                        select.val(municipioId)
+                            .trigger('change');
+
+                    });
+
+                }
+
 
                 editModal.show();
+
             });
+
         });
+
     });
 </script>
 
