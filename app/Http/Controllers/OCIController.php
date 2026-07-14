@@ -119,6 +119,8 @@ class OCIController extends Controller
                 'tipoDte'
             ]);
 
+            $storeName = $sale->store->store_name;
+
             // Validar email cliente
             $to = $sale->customer->correo ?? null;
 
@@ -176,6 +178,7 @@ class OCIController extends Controller
                     '14' => 'Factura Sujeto Excluido',
                 ][$tipo] ?? 'Documento',
                 'dte'      => $json,
+                'store' => $storeName,
                 'emisor'   => $json['emisor'],
                 'receptor' => $tipo === '14'
                     ? $json['sujetoExcluido']
