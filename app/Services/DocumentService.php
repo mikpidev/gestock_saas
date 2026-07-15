@@ -292,11 +292,7 @@ class DocumentService
             $precioConIva = round((float) $detail->unit_price, 4);
 
             // Precio SIN IVA (MH exige esto) 
-            if ($precioConIva < 1) {
-                $precioSinIva = round($precioConIva / 1.13, 2);
-            } else {
-                $precioSinIva = round($precioConIva / 1.13, 4);
-            }
+            $precioSinIva = round($precioConIva / 1.13, 8);
 
             $descuento = round((float) ($discount_amount ?? 0), 2);
 
@@ -321,7 +317,7 @@ class DocumentService
                 "descripcion" => $detail->productType->name,
                 "cantidad" => $cantidad,
                 "uniMedida" => 59,
-                "precioUni" => round($precioSinIva, 2),
+                "precioUni" => $precioSinIva,
                 "montoDescu" => $descuento,
                 "ventaNoSuj" => 0.00,
                 "ventaExenta" => 0.00,
@@ -378,8 +374,8 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
-                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
@@ -572,8 +568,8 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
-                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
@@ -776,8 +772,8 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
-                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
@@ -972,8 +968,8 @@ class DocumentService
                 "codActividad" => $customer->codActividad ?? null,
                 "descActividad" => $customer->descActividad ?? null,
                 "direccion" => [
-                "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
-                "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "departamento" => str_pad((string) ($customer->departamento->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
+                    "municipio"   => str_pad((string) ($customer->municipio->codigo ?? "01"), 2, "0", STR_PAD_LEFT),
                     "complemento" => $customer->direccion_complemento
                 ],
                 "telefono" => $customer->telefono ?? "00000000",
