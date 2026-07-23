@@ -23,7 +23,7 @@ class InvoiceNumber extends Model
 
         // Parte central conformada por establecimiento y punto de venta
         $partCentral = $establecimiento . $puntoVenta;
-        
+
         //obtengo correlativo de la factura
 
         $correlativo = CorrelativoStore::next(
@@ -51,6 +51,23 @@ class InvoiceNumber extends Model
         ]);
 
         return $invoice;
+    }
+
+    public static function getCGVoidNumber($storeId)
+    {
+        $last = self::where('store_id', $storeId)->latest('number')->first();
+
+        $nextNumber = $last ? $last->number + 1 : 1;
+
+        return self::create([
+            'store_id' => $storeId,
+            'number' => $nextNumber,
+            'used' => true,
+            'numero_control' => null,
+            'codigo_generacion' => strtoupper(Str::uuid()->toString()),
+        ]);
+
+        
     }
 
     public function sale()
