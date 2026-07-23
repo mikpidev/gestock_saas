@@ -221,7 +221,7 @@ class DocumentService
                 "ambiente" => $environment,
                 //"tipoDte" => "03",
                 // "numeroControl" => $sale->numero_control,
-                "codigoGeneracion" => $voidNumber,
+                "codigoGeneracion" => $voidNumber->codigo_generacion,
                 //"tipoModelo" => 1,
                 // "tipoOperacion" => 1,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
