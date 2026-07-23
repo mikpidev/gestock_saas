@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
+use App\Models\InvoiceNumber;
 use App\Models\VoidDTE;
 use App\Models\VoidNC;
 use App\Models\VoidND;
@@ -212,13 +213,15 @@ class DocumentService
             ->first()?->sello_recibido;
 
         $environment = $sale->environment == 'Production' ? '01' : '00';
+        $voidNumber = InvoiceNumber::getCGVoidNumber($sale->store->id);
+
         return [
             "identificacion" => [
                 "version" => 3,
                 "ambiente" => $environment,
                 //"tipoDte" => "03",
                 // "numeroControl" => $sale->numero_control,
-                "codigoGeneracion" => $sale->codigo_generacion,
+                "codigoGeneracion" => $voidNumber,
                 //"tipoModelo" => 1,
                 // "tipoOperacion" => 1,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
