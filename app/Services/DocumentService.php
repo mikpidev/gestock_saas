@@ -451,11 +451,14 @@ class DocumentService
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
 
+        $voidNumber = InvoiceNumber::getCGVoidNumber($sale->store->id);
+
+
         return [
             "identificacion" => [
                 "version" => 3,
                 "ambiente" => $environment,
-                "codigoGeneracion" => $void->codigo_generacion,
+                "codigoGeneracion" => $voidNumber->codigo_generacion,
                 "fecEmi" => $sale->sale_date->format('Y-m-d'),
                 "horEmi" => now()->format('H:i:s'),
                 "fusion" => null
@@ -630,12 +633,14 @@ class DocumentService
             ->where('estado', 'PROCESADO') // solo DTE exitosos
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
+        $voidNumber = InvoiceNumber::getCGVoidNumber($sale->store->id);
+
 
         return [
             "identificacion" => [
                 "version" => 2,
                 "ambiente" => $environment,
-                "codigoGeneracion" => $void->codigo_generacion,
+                "codigoGeneracion" => $voidNumber->codigo_generacion,
                 "fecAnula" => $void->void_date->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
             ],
@@ -827,12 +832,14 @@ class DocumentService
             ->where('estado', 'PROCESADO') // solo DTE exitosos
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
+        $voidNumber = InvoiceNumber::getCGVoidNumber($sale->store->id);
+
 
         return [
             "identificacion" => [
                 "version" => 2,
                 "ambiente" => $environment,
-                "codigoGeneracion" => $void->codigo_generacion,
+                "codigoGeneracion" => $voidNumber->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
             ],
@@ -1027,12 +1034,14 @@ class DocumentService
             ->where('estado', 'PROCESADO') // solo DTE exitosos
             ->orderBy('created_at', 'asc') // tomar el primero, que es la venta original
             ->first()?->sello_recibido;
+        $voidNumber = InvoiceNumber::getCGVoidNumber($sale->store->id);
+
 
         return [
             "identificacion" => [
                 "version" => 2,
                 "ambiente" => $environment,
-                "codigoGeneracion" => $void->codigo_generacion,
+                "codigoGeneracion" => $voidNumber->codigo_generacion,
                 "fecAnula" => Carbon::parse($void->void_date)->format('Y-m-d'),
                 "horAnula" => now()->format('H:i:s'),
             ],
