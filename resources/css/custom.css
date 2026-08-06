@@ -92,24 +92,83 @@ header .navbar-brand {
 
 /* Botones */
 .btn-primary {
-    background-color: var(--color-primario);
-    border-color: var(--color-primario);
+    background: var(--color-primario);
+    color: #1a1a1a;
+
+    border: 1px solid var(--color-bordes);
+    border-radius: 10px;
+
+    display: inline-flex;
+    align-items: right;
+    justify-content: right;
+    gap: 0.45rem;
+
+    font-weight: 400;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .btn-primary:hover {
-    background-color: var(--color-secundario);
+    background: var(--color-acento);
     border-color: var(--color-acento);
+
+    color: var(--color-acento);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .btn-secondary {
-    background-color: var(--color-fondo);
-    color: var(--color-acento);
-    border: 2px solid var(--color-acento);
+    background: var(--color-primario);
+    color: #1a1a1a;
+
+    border: 1px solid var(--color-bordes);
+    border-radius: 10px;
+
+    display: inline-flex;
+    align-items: right;
+    justify-content: right;
+    gap: 0.45rem;
+
+    font-weight: 400;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .btn-secondary:hover {
-    background-color: var(--color-acento);
-    color: #fff;
+    background: var(--color-acento);
+    border-color: var(--color-acento);
+
+    color: var(--color-acento);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* Tarjetas */
@@ -207,6 +266,33 @@ a:hover {
     margin-right: 0.25rem;
     height: 1.8em;
     width: 1.8em;
+}
+
+.date-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+
+    padding: 6px 12px;
+
+    font-size: 12px;
+    color: #333;
+
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.date-filter-btn:hover {
+    border-color: #aaa;
+    background: #fafafa;
+}
+
+.date-filter-btn svg {
+    color: #555;
 }
 
 .card-approved {
