@@ -5,8 +5,10 @@
 PROJECT_PATH="/mnt/c/gestock_saas" 
 echo "PATH: $PROJECT_PATH"
 
-#We collect the DB credentials from the .env file
 
+#We collect the DB credentials from the .env file\
+echo "$(date +%y-%m-%d-%H-%M-%S) - Starting Automatic MySQL Database Backup script..."
+echo ""
 #Specify the values that are needed to connet to the DB
 
 DB_CONNECTION=$(grep '^DB_CONNECTION=' "$PROJECT_PATH/.env" | cut -d '=' -f2)
@@ -17,6 +19,7 @@ DB_USERNAME=$(grep '^DB_USERNAME' "$PROJECT_PATH/.env" | cut -d '=' -f2)
 DB_PASSWORD=$(grep '^DB_PASSWORD' "$PROJECT_PATH/.env" | cut -d '=' -f2)
 
 echo "retrieving DB credentials from  .env files..."
+echo ""
 
 echo "DB_CONNECTION: $DB_CONNECTION"
 echo "DB_HOST: $DB_HOST"
@@ -24,6 +27,7 @@ echo "DB_PORT: $DB_PORT"
 echo "DB_DATABASE: $DB_DATABASE"
 echo "DB_USERNAME: $DB_USERNAME"
 echo "DB_PASSWORD: $DB_PASSWORD"
+echo ""
 
 
 #Set BU Directory
@@ -34,15 +38,17 @@ if [ ! -d "$BU_DIR" ]
 then
     mkdir -p "$BU_DIR"
     echo "Backup directory created at: $BU_DIR"
+    echo ""
+
 else
     echo "Backup directory already exists at: $BU_DIR"
+    echo ""
+
 fi
 
 #create GZ file for MySQL Dump
 
 TIME_STAMP=$(date +%y-%m-%d)
-
-echo "TIMESTAMP: $TIME_STAMP" 
 
 BU_File="$BU_DIR/gestock_BU_$TIME_STAMP.sql.gz"
 
@@ -50,12 +56,17 @@ if [ ! -f "$BU_File" ]
 then
     touch "$BU_File"
     echo "Backup file created at: $BU_File"
+    echo ""
+
 else
     echo "Backup file already exists at: $BU_File"
+    echo ""
 fi
 
 #Generate MySQL Dump, compress it using gzip and save it to the BU_DIR/BU_File.sql.gz 
 echo "Starting MySQL database backup..."
+echo ""
+
 mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" | gzip > "$BU_File"
 
 if [ $? -eq 0 ]; then

@@ -23,7 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /backup
-/bash_scripts/gestockbackup.sh
+#/bash_scripts/gestockbackup.sh
 
 
 # Laravel & PHP
