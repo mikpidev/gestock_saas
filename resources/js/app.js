@@ -14,6 +14,8 @@ let salesChart;
 let paymentChart;
 let dteChart;
 let pagination;
+let topProducts;
+let peakHoursChart = null;
 
 //getData Function All Data for Charts
 
@@ -32,6 +34,25 @@ function getData() {
 
         success: function (data) {
             console.log("Dashboard data ejecutado", data);
+
+            //Get Tables Data
+            console.log(data.topProducts);
+
+            let html = "";
+
+            data.topProducts.forEach((product, index) => {
+                html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${product.product_type.name}</td>
+                <td>${product.total_sold}</td>
+                <td>${"$" + product.total}</td>
+
+            </tr>
+        `;
+            });
+
+            $("#topProductsTable tbody").html(html);
 
             //Get Cards Data
             document.getElementById("salesTodayTotalCard").textContent =
@@ -58,11 +79,21 @@ function getData() {
 
             //Labels Val
             const salesLabels = data.chartData.map((item) => item.date);
+            const peakHoursLabels = Array.from(
+                { length: 24 },
+                (_, hour) => `${hour.toString().padStart(2, "0")}:00`,
+            );
+
             const paymentLabels = ["Efectivo", "tarjeta", "Transferencia"];
             const dteLabels = ["Factura", "CCF", "SE"];
 
             //Data Vals
             const salesData = data.chartData.map((item) => Number(item.total));
+            const peakHoursData = Array.from({ length: 24 }, (_, hour) => {
+                const item = data.peakHours.find((sale) => sale.hour === hour);
+
+                return item ? item.total_sales : 0;
+            });
 
             const methodPaymentData = [
                 Number(data.methodPaymentData.efectivo),
@@ -100,38 +131,175 @@ function getData() {
                 dteChart.destroy();
             }
 
+            const peakHoursctx = document
+                .getElementById("peakHoursChart")
+                .getContext("2d");
+
+            if (peakHoursChart) {
+                peakHoursChart.destroy();
+            }
+
             //Sales Bar Chart
 
             salesChart = new Chart(salesCtx, {
                 type: "bar",
+
                 data: {
                     labels: salesLabels,
+
+                    datasets: [
+                        {
+                            data: salesData,
+
+                            backgroundColor: function (context) {
+                                const chart = context.chart;
+                                const { ctx, chartArea } = chart;
+
+                                if (!chartArea) return "#ff0000";
+
+                                const gradient = ctx.createLinearGradient(
+                                    0,
+                                    chartArea.bottom,
+                                    0,
+                                    chartArea.top,
+                                );
+
+                                gradient.addColorStop(0, "#ff0000");
+                                gradient.addColorStop(1, "#FF6666");
+
+                                return gradient;
+                            },
+
+                            borderWidth: 0,
+
+                            borderRadius: 25,
+
+                            borderSkipped: false,
+
+                            barThickness: 12,
+
+                            maxBarThickness: 14,
+                        },
+                    ],
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+
+                        tooltip: {
+                            backgroundColor: "#1F2937",
+
+                            titleColor: "#fff",
+
+                            bodyColor: "#fff",
+
+                            padding: 12,
+
+                            callbacks: {
+                                label(context) {
+                                    return "$" + Number(context.raw).toFixed(2);
+                                },
+                            },
+                        },
+                    },
+
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                            },
+
+                            border: {
+                                display: false,
+                            },
+
+                            ticks: {
+                                color: "#6B7280",
+
+                                font: {
+                                    size: 12,
+                                    weight: "500",
+                                },
+                            },
+                        },
+
+                        y: {
+                            beginAtZero: true,
+
+                            border: {
+                                display: false,
+                            },
+
+                            grid: {
+                                color: "#EEF2F7",
+
+                                drawBorder: false,
+                            },
+
+                            ticks: {
+                                color: "#9CA3AF",
+
+                                padding: 10,
+
+                                callback(value) {
+                                    return "$" + value;
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            //Peak Hour
+            peakHoursChart = new Chart(peakHoursctx, {
+                type: "line",
+                data: {
+                    labels: peakHoursLabels,
                     datasets: [
                         {
                             label: "Ventas",
-                            data: salesData,
-                            backgroundColor: "#FF6666",
-                            borderColor: "#ff0000",
-                            borderWidth: 1,
-                            borderRadius: 30,
+                            data: peakHoursData,
+                            tension: 0.35,
+                            fill: true,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderColor: "#FF6666",
+                            backgroundColor: "rgb(255 204 204)",
                         },
                     ],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
+
+                    plugins: {
+                        legend: {
+                            display: false,
                         },
                     },
 
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    return "$" + Number(context.raw).toFixed(2);
-                                },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                            },
+                            title: {
+                                display: true,
+                                text: "Ventas",
+                            },
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Hora del día",
                             },
                         },
                     },
@@ -145,21 +313,52 @@ function getData() {
 
                 data: {
                     labels: paymentLabels,
+
                     datasets: [
                         {
-                            label: "Metodos de Pago",
+                            label: "Métodos de Pago",
+
                             data: methodPaymentData,
+
+                            backgroundColor: [
+                                "#ff0000", 
+                                "#FF6666", 
+                                "#FF9999", 
+                            ],
+
+                            borderColor: "#ffffff",
+                            borderWidth: 3,
+
+                            hoverOffset: 12,
                         },
                     ],
                 },
+
                 options: {
                     responsive: true,
+                    cutout: "68%",
 
                     plugins: {
                         legend: {
-                            position: "top",
+                            position: "bottom",
+
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: "circle",
+                                padding: 20,
+                                font: {
+                                    size: 13,
+                                    weight: "600",
+                                },
+                            },
                         },
+
                         tooltip: {
+                            backgroundColor: "#1F2937",
+                            titleColor: "#fff",
+                            bodyColor: "#fff",
+                            padding: 12,
+
                             callbacks: {
                                 label: function (context) {
                                     const labels = [
@@ -182,7 +381,6 @@ function getData() {
                     },
                 },
             });
-
             //DTE Summary Doughnut Chart
 
             dteChart = new Chart(dteCtx, {
@@ -190,34 +388,62 @@ function getData() {
 
                 data: {
                     labels: dteLabels,
+
                     datasets: [
                         {
                             label: "DTE Conteo",
                             data: dteSummaryData,
+
+                            backgroundColor: [
+                                "#ff0000", 
+                                "#FF6666", 
+                                "#FF9999", 
+                            ],
+
+                            borderColor: "#FFFFFF",
+                            borderWidth: 3,
+                            hoverOffset: 12,
                         },
                     ],
                 },
 
                 options: {
                     responsive: true,
+                    cutout: "68%",
 
                     plugins: {
                         legend: {
-                            position: "top",
+                            position: "bottom",
+
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: "circle",
+                                padding: 18,
+                                font: {
+                                    size: 13,
+                                    weight: "600",
+                                },
+                            },
                         },
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const labels = ["Factura", "CCF", "SE"];
 
-                                const amounts = [
-                                    data.dteSummary.monto_factura,
-                                    data.dteSummary.monto_CCF,
-                                    data.dteSummary.monto_SE,
-                                ];
+                        tooltip: {
+                            backgroundColor: "#1F2937",
+                            titleColor: "#FFFFFF",
+                            bodyColor: "#FFFFFF",
+                            padding: 12,
 
-                                return `${labels[context.dataIndex]}: ${context.raw} cantidad ($${amounts[context.dataIndex]})`;
+                            callbacks: {
+                                label: function (context) {
+                                    const labels = ["Factura", "CCF", "SE"];
+
+                                    const amounts = [
+                                        data.dteSummary.monto_factura,
+                                        data.dteSummary.monto_CCF,
+                                        data.dteSummary.monto_SE,
+                                    ];
+
+                                    return `${labels[context.dataIndex]}: ${context.raw} cantidad ($${amounts[context.dataIndex]})`;
+                                },
                             },
                         },
                     },

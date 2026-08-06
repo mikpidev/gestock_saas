@@ -9,10 +9,10 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
+use App\Models\SaleDetail;
 use App\Models\TipoDocumento;
 use Carbon\Carbon;
-
-
+use Illuminate\Support\Facades\DB;
 
 class StoreController extends Controller
 {
@@ -124,6 +124,37 @@ class StoreController extends Controller
             'bindings' => $baseQuery->getBindings(),
         ]);
 
+        // Top 10 Productos 
+        $topProducts = SaleDetail::select(
+            'product_type_id',
+            DB::raw('SUM(quantity) as total_sold'),
+            DB::raw('SUM(subtotal) as total')
+        )
+            ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $store->id)
+            ->whereBetween('sales.created_at', [$dateFrom, $dateTo])
+            ->where('sales.dte_status', $dte_status)
+            ->groupBy('product_type_id')
+            ->orderByDesc('total_sold')
+            ->with('productType')
+            ->take(10)
+            ->get();
+
+        // Peak Hours
+
+        $peakHours = Sale::select(
+            DB::raw("HOUR(CONVERT_TZ(created_at, '+00:00', '-06:00')) as hour"),
+            DB::raw('COUNT(*) as total_sales'),
+            DB::raw('SUM(total_amount) as total_amount')
+        )
+            ->where('store_id', $store->id)
+            ->whereBetween('sales.created_at', [$dateFrom, $dateTo]) // filtras por la fecha de venta
+            ->where('sales.dte_status', $dte_status)
+            ->groupBy('hour')
+            ->orderByDesc('total_sales')
+            ->limit(5)
+            ->get();
+
         // Chart Data
 
         $chartData = (clone $baseQuery)
@@ -196,6 +227,8 @@ class StoreController extends Controller
             'dteFactura' => $dteFactura,
             'dteCF' => $dteCF,
             'dteSE' => $dteSE,
+            'topProducts' => $topProducts,
+            'peakHours' => $peakHours,
         ]);
     }
 
