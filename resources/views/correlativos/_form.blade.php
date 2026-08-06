@@ -20,43 +20,45 @@
 </div>
 
 
-@foreach($correlativos as $correlativo)
+@foreach($tiposDte as $tipo)
+    @php
+        $correlativo = $correlativos[$tipo->id] ?? null;
+    @endphp
 
-<div class="row mb-3 justify-content-center align-items-center">
+    <div class="row mb-3 justify-content-center align-items-center">
 
-    <label class="col-sm-3 col-form-label">
-        Tipo de Documento
-    </label>
+        <label class="col-sm-3 col-form-label">
+            Tipo de Documento
+        </label>
 
-    <div class="col-sm-3">
-        <input type="text"
-            class="form-control"
-            value="{{ $correlativo->tipoDte->nombre ?? 'Sin nombre' }}"
-            readonly>
+        <div class="col-sm-3">
+            <input type="text"
+                class="form-control"
+                value="{{ $tipo->nombre }}"
+                readonly>
+        </div>
+
+        <label class="col-sm-2 col-form-label">
+            Correlativo
+        </label>
+
+        <div class="col-sm-2">
+            <input type="hidden"
+                name="correlativos[{{ $loop->index }}][tipo_documento_id]"
+                value="{{ $tipo->id }}">
+
+            <input type="hidden"
+                name="correlativos[{{ $loop->index }}][id]"
+                value="{{ $correlativo->id ?? '' }}">
+
+            <input type="number"
+                name="correlativos[{{ $loop->index }}][correlativo]"
+                class="form-control"
+                value="{{ $correlativo->correlativo ?? 0 }}"
+                min="0">
+        </div>
+
     </div>
-
-
-    <label class="col-sm-2 col-form-label">
-        Correlativo
-    </label>
-
-    <div class="col-sm-2">
-
-        <input type="hidden"
-            name="correlativos[{{ $loop->index }}][id]"
-            value="{{ $correlativo->id }}">
-
-        <input type="number"
-            name="correlativos[{{ $loop->index }}][correlativo]"
-            class="form-control"
-            value="{{ $correlativo->correlativo }}"
-            min="0"
-            required>
-
-    </div>
-
-</div>
-
 @endforeach
 
 <button type="submit" class="btn">

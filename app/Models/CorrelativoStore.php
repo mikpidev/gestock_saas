@@ -19,7 +19,10 @@ class CorrelativoStore extends Model
     public static function next($storeId, $codigoDte)
     {
         $tipo = TipoDte::where('codigo', $codigoDte)->firstOrFail();
-
+        \Log::info('Antes de CorrelativoStore::next', [
+            'storeId' => $storeId,
+            'tipoDte' => $tipo,
+        ]);
         return DB::transaction(function () use ($storeId, $tipo) {
 
             $correlativo = self::where('store_id', $storeId)
@@ -28,7 +31,12 @@ class CorrelativoStore extends Model
                 ->firstOrFail();
 
             $correlativo->increment('correlativo');
+            \Log::info('DB Transaction::next', [
+                'storeId' => $storeId,
+                'tipoDte' => $tipo,
+                'correlativo' => $correlativo,
 
+            ]);
             return $correlativo->correlativo;
         });
     }

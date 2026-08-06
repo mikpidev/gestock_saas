@@ -264,6 +264,8 @@
                 products: Object.values(cart)
             };
 
+            console.log('Payload:', payload);
+
 
             fetch("{{ route('stores.sales.store', $store->id) }}", {
                 method: 'POST',

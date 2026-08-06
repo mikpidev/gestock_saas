@@ -103,7 +103,7 @@ class SaleController extends Controller
             ->orderByDesc('sale_date')
             ->get();
 
-            
+
         // Solo ventas no procesadas
         $pendingSales = $sales->filter(function ($sale) {
             return !empty($sale->codigo_generacion)
@@ -303,12 +303,32 @@ class SaleController extends Controller
         $total_gravada = round($totalGravada, 2);
         $total_iva = round($totalIva, 2);
 
+        \Log::info('Venta SE Antes de Seleccionar SE');
         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
+
+        \Log::info('Venta SE Despues de Seleccionar SE', [
+            'tipoDTE' => $tipoDTE
+        ]);
+
         $establecimiento = $store->establecimiento;
+
+        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'establecimiento' => $establecimiento
+        ]);
+
         $puntoVenta = $store->punto_venta;
 
+        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'puntoVenta' => $puntoVenta
+        ]);
+
         // Generar next invoice y número de control
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE,$establecimiento,$puntoVenta);
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
+
+        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'invoiceNumber' => $invoiceNumber
+        ]);
+
 
         // Crear la venta
         $sale = Sale::create([
@@ -332,6 +352,11 @@ class SaleController extends Controller
             'invoice_number' => $invoiceNumber->number,
             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
             'environment' => $store->environment ?? 'Production'
+        ]);
+
+        \Log::info('Venta creada', [
+            'id' => $sale->id,
+            'tipoDTE' => $sale->tipo_documento_id,
         ]);
 
         // Crear detalles
@@ -540,7 +565,7 @@ class SaleController extends Controller
             'dte'      => $json,
             //'emisor'   => $json['emisor'],
             'emisor' => $emisor,
-            'store'    =>$store,
+            'store'    => $store,
             //validar si es SE - pass sujetoExcluido en lugar de receptor
             'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
             'resumen'  => $json['resumen'],

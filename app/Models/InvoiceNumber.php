@@ -25,11 +25,20 @@ class InvoiceNumber extends Model
         $partCentral = $establecimiento . $puntoVenta;
 
         //obtengo correlativo de la factura
-
+        \Log::info('Antes de CorrelativoStore::next', [
+            'storeId' => $storeId,
+            'tipoDTE' => $tipoDTE,
+        ]);
         $correlativo = CorrelativoStore::next(
             $storeId,
             $tipoDTE,
         );
+
+        $correlativo = CorrelativoStore::next($storeId, $tipoDTE);
+
+        \Log::info('Después de CorrelativoStore::next', [
+            'correlativo' => $correlativo,
+        ]);
 
 
         // Parte final secuencial grande basado en correlativo
@@ -66,8 +75,6 @@ class InvoiceNumber extends Model
             'numero_control' => null,
             'codigo_generacion' => strtoupper(Str::uuid()->toString()),
         ]);
-
-        
     }
 
     public function sale()

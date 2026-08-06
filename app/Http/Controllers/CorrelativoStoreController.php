@@ -13,14 +13,15 @@ class CorrelativoStoreController extends Controller
     public function edit($storeId)
     {
         $store = Store::findOrFail($storeId);
-
+        $tiposDte = TipoDte::all();
         $correlativos = CorrelativoStore::where('store_id', $storeId)
             ->with('tipoDte')
-            ->get();
+            ->get()
+            ->keyBy('tipo_documento_id');
 
 
 
-        return view('correlativos.edit', compact('store', 'correlativos'));
+        return view('correlativos.edit', compact('store', 'tiposDte', 'correlativos'));
     }
 
 
@@ -30,18 +31,26 @@ class CorrelativoStoreController extends Controller
         $store = Store::findOrFail($storeId);
 
         $validatedData = $request->validate([
-            'correlativos.*.id' => 'required|exists:correlativo_stores,id',
-            'correlativos.*.correlativo' => 'required|integer|min:0',
+            'correlativos.*.id' => 'nullable|exists:correlativo_stores,id',
+            'correlativos.*.tipo_documento_id' => 'required|exists:tipo_documento,id',
+
+            'correlativos.*.correlativo' => 'integer|min:0',
         ]);
 
 
         foreach ($validatedData['correlativos'] as $correlativoData) {
-
-            CorrelativoStore::where('id', $correlativoData['id'])
-                ->where('store_id', $store->id)
-                ->update([
+            CorrelativoStore::updateOrCreate(
+                [
+                    'store_id' => $store->id,
+                    'tipo_documento_id' => $correlativoData['tipo_documento_id'],
+                ],
+                [
                     'correlativo' => $correlativoData['correlativo'],
-                ]);
+                ]
+            );
+        }
+
+        foreach ($request->correlativos as $item) {
         }
 
 
