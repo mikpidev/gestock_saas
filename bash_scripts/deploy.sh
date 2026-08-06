@@ -36,6 +36,7 @@ php artisan optimize || true
 echo "Setting permissions..."
 chown -R www-data:www-data $PROJECT_PATH #adjust path if necessary
 chmod -R 775 $PROJECT_PATH/storage $PROJECT_PATH/bootstrap/cache #adjust path if necessary
+chmod +x $PROJECT_PATH/bash_scripts/gestockbackup.sh
 
 echo "Checking Apache server status..."
 systemctl is-active apache2 || echo "Apache is not running or inactive"
