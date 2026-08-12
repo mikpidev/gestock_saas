@@ -29,10 +29,6 @@ class InvoiceNumber extends Model
             'storeId' => $storeId,
             'tipoDTE' => $tipoDTE,
         ]);
-        $correlativo = CorrelativoStore::next(
-            $storeId,
-            $tipoDTE,
-        );
 
         $correlativo = CorrelativoStore::next($storeId, $tipoDTE);
 

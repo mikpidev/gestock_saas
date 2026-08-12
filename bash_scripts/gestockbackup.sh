@@ -29,7 +29,6 @@ echo "DB_USERNAME: $DB_USERNAME"
 echo "DB_PASSWORD: $DB_PASSWORD"
 echo ""
 
-
 #Set BU Directory
 
 BU_DIR="$PROJECT_PATH/backup" #Change this based on your project structure
