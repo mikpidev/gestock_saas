@@ -158,7 +158,7 @@ class ReciboController extends Controller
 
         // Generamos JSON del DTE
 
-        $dteResponse = DteResponse::where('sale_id', $sale->id)->first();
+        $dteResponse = DteResponse::where('sale_id', $sale->id)->latest()->first();
         // Mapeo de descripciones
         $tipoDteDescripcion = [
             '01' => 'Factura',

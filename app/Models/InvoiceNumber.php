@@ -30,6 +30,7 @@ class InvoiceNumber extends Model
             'tipoDTE' => $tipoDTE,
         ]);
 
+
         $correlativo = CorrelativoStore::next($storeId, $tipoDTE);
 
         \Log::info('Después de CorrelativoStore::next', [

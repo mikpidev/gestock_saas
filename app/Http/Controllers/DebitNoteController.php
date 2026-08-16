@@ -108,7 +108,7 @@ class DebitNoteController extends Controller
             }
         }
 
-        return view('debitnotes.index',compact('store', 'debitNotes', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
+        return view('debitnotes.index', compact('store', 'debitNotes', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
 
 
@@ -166,8 +166,13 @@ class DebitNoteController extends Controller
         // Calcular totales basados en los items a a debitar
         $totales = $this->calcularTotalesNotaDebito($data['items'], $sale);
 
+        $establecimiento = $store->establecimiento;
+
+
+        $puntoVenta = $store->punto_venta;
+
         // Obtener el correlativo
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE);
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
 
 
 

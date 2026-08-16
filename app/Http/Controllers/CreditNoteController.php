@@ -172,8 +172,16 @@ class CreditNoteController extends Controller
         // Calcular totales basados en los items a acreditar
         $totales = $this->calcularTotalesNotaCredito($data['items'], $sale);
 
+        $establecimiento = $store->establecimiento;
+
+        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'establecimiento' => $establecimiento
+        ]);
+
+        $puntoVenta = $store->punto_venta;
+
         // Obtener el correlativo
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE);
+        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
 
 
 
@@ -373,7 +381,7 @@ class CreditNoteController extends Controller
         $qrImage = base64_encode($writer->writeString($urlQR));
 
 
-/*         \Log::info("Data PDF: ", [
+        /*         \Log::info("Data PDF: ", [
             'emisor' => $emisor,
 
             'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
