@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <title> DTE {{ $dte['identificacion']['numeroControl'] ?? '' }} </title>
+<div id="dte-print-area">
 
     <style>
         * {
@@ -13,12 +6,6 @@
             padding: 0;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
-        }
-
-        body {
-            background: white;
-            padding: 0;
-            margin: 0;
         }
 
         .documento {
@@ -47,7 +34,6 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
-            padding: 0;
         }
 
         .contenedor-superior td {
@@ -70,9 +56,13 @@
             font-size: 10.5px;
         }
 
+        .qr {
+            text-align: center;
+        }
+
         .qr img {
-            width: 100px;
-            height: auto;
+            width: 120px;
+            height: 120px;
             display: block;
             margin: 0 auto;
         }
@@ -130,17 +120,46 @@
             font-size: 10px;
         }
 
-        .totales {
-            width: 260px;
-            margin-left: auto;
-            font-size: 11px;
+        .tabla-totales {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
         }
 
-        .fila-total {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
+        .tabla-totales th {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+            text-align: left;
         }
+
+        .tabla-totales td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 10px;
+            text-align: right;
+        }
+
+
+        .tabla-otros {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .tabla-otros th {
+            background: #f0f0f0;
+            padding: 4px;
+            font-size: 10px;
+            text-align: left;
+        }
+
+        .tabla-otros td {
+            padding: 4px;
+            font-size: 10px;
+        }
+
 
         .divisor {
             border-top: 1px solid #ccc;
@@ -153,34 +172,26 @@
             color: #555;
             margin-top: 10px;
         }
-
-        @page {
-            margin: 20px 25px;
-        }
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
 
-</head>
-
-<body>
     <div class="documento">
 
         <!-- ENCABEZADO -->
         <div class="encabezado">
             <div>
                 @if(file_exists(public_path($store . '.png')))
-                <img src="{{ public_path($store . '.png') }}" style="width:150px;height:auto;">
+                <img src="{{ asset($store . '.png') }}" style="width:150px;height:auto;">
                 @else
-                <img src="{{ public_path($store . '.jpeg') }}" style="width:150px;height:auto;">
+                <img src="{{ asset($store . '.jpeg') }}" style="width:150px;height:auto;">
                 @endif
             </div>
+
             <h1>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h1>
             <h2>{{ $tipoDteDescripcion }}</h2>
-
         </div>
 
         <div class="divisor"></div>
+
 
         <!-- SUPERIOR -->
         <table class="contenedor-superior">
@@ -198,53 +209,52 @@
                         </tr>
                         <tr>
                             <td class="etiqueta">Sello DTE:</td>
-                            <td>{{ $dteResponse->sello_recibido ?? 'N/A' }}</td>
+                            <td>{{ $dteResponse?->sello_recibido ?? 'N/A' }}</td>
                         </tr>
                     </table>
                 </td>
 
                 <!-- QR -->
-                <td>
-                    <div style="text-align:center;">
-                        <div style="width:120px; height:120px; display:flex; justify-content:center; align-items:center; margin:0 auto;">
-                            @if ($qrImage)
-                            <img src="data:image/svg+xml;base64,{{ $qrImage }}"
-                                style="width:100%; height:100%; object-fit:contain;" />
-                            @endif
-                        </div>
-                    </div>
+                <td style="width:16%;" class="qr">
+                    <!-- QR -->
+                    @if ($qrImage)
+                    <img src="data:image/svg+xml;base64,{{ $qrImage }}"
+                        alt="QR" style="width:140px; margin-top:10px;">
+                    @else
+                    <p style="color:red;">QR no disponible</p>
+                    @endif
                 </td>
 
-                <!-- INFO EMPRESA -->
+                <!-- EMPRESA -->
                 <td style="width:42%;">
                     <table class="tabla-info">
                         <tr>
                             <td class="etiqueta">Razón Social:</td>
-                            <td>{{ $emisor['nombre'] }}</td>
+                            <td>{{ $emisor->razon_social }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NIT:</td>
-                            <td>{{ $emisor['nit'] }}</td>
+                            <td>{{ $emisor->nit }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NRC:</td>
-                            <td>{{ $emisor['nrc'] }}</td>
+                            <td>{{$emisor->nrc }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Actividad:</td>
-                            <td>{{ $emisor['nombreComercial'] ?? ' ' }}</td>
+                            <td>{{ $emisor->actividad_economica ?? ' '}}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Dirección:</td>
-                            <td>{{ $emisor['direccion']['complemento'] }}</td>
+                            <td>{{ $emisor->direccion_fiscal }}, {{$emisor->municipio?->nombre}}, {{$emisor->departamento?->nombre}}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Teléfono:</td>
-                            <td>{{ $emisor['telefono'] }}</td>
+                            <td>{{ $emisor->telefono }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Correo:</td>
-                            <td>{{ $emisor['correo'] }}</td>
+                            <td>{{ $emisor->email}}</td>
                         </tr>
                     </table>
                 </td>
@@ -263,7 +273,7 @@
                 </div>
                 <div class="columna">
                     <div class="etiqueta">Documento:</div>
-                    <div>{{ $receptor['numDocumento'] ?? 'N/A' }}</div>
+                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}</div>
                 </div>
                 <div class="columna">
                     <div class="etiqueta">NRC:</div>
@@ -305,7 +315,7 @@
             <tbody>
                 @foreach ($dte['cuerpoDocumento'] as $item)
                 <tr>
-                    <td>{{ number_format($item['cantidad'], 2) }}</td>
+                    <td>{{ number_format($item['cantidad']) }}</td>
                     <td style="text-align:left;">{{ $item['descripcion'] }}</td>
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
                     <td>$0.00</td>
@@ -313,47 +323,117 @@
                     <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
+
+                <tr>
+                    <td colspan="3" style="text-align:right;">
+                        Sumas:
+                    </td>
+                    <td>${{ number_format($resumen['totalNoSuj'] ?? 0, 2) }}</td>
+                    <td>${{ number_format($resumen['totalExenta'] ?? 0, 2) }}</td>
+                    <td>
+                        ${{ number_format($resumen['totalGravada'] ?? 0, 2) }}
+                    </td>
+                </tr>
             </tbody>
         </table>
 
-        <!-- TOTALES -->
-        <div class="totales">
-            <div class="fila-total"><span>SUMAS:</span><span>${{ number_format($resumen['subTotalVentas'] ?? 0, 2) }}</span></div>
+        <div style="clear: both;"></div>
 
-            @php
-            $iva = 0;
 
-            if (!empty($resumen['totalIva'])) {
-            $iva = $resumen['totalIva'];
-            } elseif (!empty($resumen['tributos'])) {
-            foreach ($resumen['tributos'] as $tributo) {
-            if (($tributo['codigo'] ?? null) === '20') {
-            $iva = $tributo['valor'] ?? 0;
-            break;
-            }
-            }
-            }
-            @endphp
 
-            <div class="fila-total">
-                <span>IVA:</span>
-                <span>${{ number_format($iva, 2) }}</span>
-            </div>
-            <div class="fila-total"><span>SUBTOTAL:</span><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }}</span></div>
-            <div class="fila-total"><strong>TOTAL:</strong><strong>${{ number_format($resumen['totalPagar'] ?? 0, 2) }}</strong></div>
-        </div>
+        <table class="tabla-totales">
 
-        <p><strong>SON:</strong> {{ strtoupper($resumen['totalLetras']) }}</p>
+            <tr>
+                <th colspan="3" style="text-align:right;">Suma Total de Operaciones (IVA No Incluido): </th>
+                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
+
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas no sujetas:</th>
+                <td><span>${{ number_format($resumen['descuNoSuj'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas exentas: </th>
+                <td><span>${{ number_format($resumen['descuExenta'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Descuento global a ventas gravadas:</th>
+                <td><span>${{ number_format($resumen['descuGravada'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Impuesto al Valor Agregado 13%:</th>
+                <td><span>${{ number_format($resumen['totalIva'] ?? $resumen['tributos'][0]['valor'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Sub-Total: </th>
+                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">IVA Percibido: </th>
+                <td><span>${{ number_format($resumen['ivaPerci1'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">IVA Retenido: </th>
+                <td><span>${{ number_format($resumen['ivaRete1'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Monto Total de la Operacion (IVA Incluido): </th>
+                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Total Otros montos no afectados:</th>
+                <td><span>${{ number_format($resumen['totalNoGravado'] ?? 0, 2) }} </span></td>
+            </tr>
+            <tr>
+                <th colspan="3" style="text-align:right;">Total a Pagar:</th>
+                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+            </tr>
+            </tbody>
+        </table>
+        <div style="clear: both;"></div>
 
         <div class="divisor"></div>
 
+        <table class="tabla-otros">
+            <tbody>
+                <tr>
+                    <td>Valor en Letras:</td>
+                    <td>{{ strtoupper($resumen['totalLetras']) }} DOLARES AMERICANOS</td>
+                    <td>Condicion de la Operacion: </td>
+                    <td> {{ strtoupper($resumen['condicionOperacion'] == 1 ? 'Contado' : 'Crédito') }}
+                    </td>
+                </tr>
+
+                <tr>
+
+                </tr>
+
+                <tr>
+                    <td>Observaciones: </td>
+                    <td> @if(!empty($dteResponse['observaciones']))
+                        @foreach((array) $dteResponse['observaciones'] as $obs)
+                        {{ $obs }}<br>
+                        @endforeach
+                        @else
+                        Sin observaciones
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <div style="clear: both;"></div>
+
+
+
+
+
         <div class="pie">
-            {{ $emisor['nombre'] }} - {{ $emisor['direccion']['complemento'] }} <br>
-            Email: {{ $emisor['correo'] }}
+            <div class="divisor"></div>
+            {{ $emisor->nombre }} <br>
+            Email: {{ $emisor->email }}
         </div>
 
     </div>
-
-</body>
-
-</html>
+</div>
