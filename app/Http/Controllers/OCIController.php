@@ -218,7 +218,143 @@ class OCIController extends Controller
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.sales.index', $store->id),
             ]);
+        } catch (\Throwable $e) {
 
+            Log::error('Error enviando DTE por correo', [
+                'sale_id' => $sale->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'No se pudo enviar el correo'
+            ], 500);
+        }
+    }
+
+    public function emailVoidSend(Store $store, Sale $sale)
+    {
+        try {
+
+
+            // (opcional pero recomendado)
+            if ($sale->store_id !== $store->id) {
+                return response()->json([
+                    'error' => 'La venta no pertenece a la tienda'
+                ], 403);
+            }
+
+            $sale->load([
+                'store.taxInfo',
+                'customer',
+                'details.productType',
+                'creditNotes.creditNoteDetails.productType',
+                'debitNotes.debitNoteDetails.productType',
+                'tipoDte'
+            ]);
+
+            // Crear registro de VoidDTE
+            $void = $sale->voids()->create([
+                'codigo_generacion' => $sale->codigo_generacion,
+                'void_date' => now(),
+                'desc' => 'Anulación FE'
+            ]);
+
+            $storeName = $sale->store->store_name;
+
+            // Validar email cliente
+            $to = $sale->customer->correo ?? null;
+
+            if (!$to) {
+                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                return response()->json([
+                    'error' => 'El cliente no tiene correo'
+                ], 422);
+            }
+
+            // 🔹 Tipo DTE
+            $tipo = $sale->tipoDte->codigo ?? null;
+
+            switch ($tipo) {
+                case '01':
+                    $json = $this->dteService->buildDTEJsonVoidFE($sale, $void);
+                    break;
+                case '03':
+                    $json = $this->dteService->buildDTEJsonVoidCF($sale, $void);
+                    break;
+                case '14':
+                    $json = $this->dteService->buildDTEJsonVoidSE($sale, $void);
+                    break;
+                default:
+                    return response()->json([
+                        'error' => 'Tipo DTE no soportado'
+                    ], 400);
+            }
+
+            // 🔹 JSON en memoria
+            $jsonContent = json_encode(
+                $json,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            );
+
+            // 🔹 QR
+            $urlQR = "https://admin.factura.gob.sv/consultaPublica"
+                . "?ambiente=00"
+                . "&codGen={$json['identificacion']['codigoGeneracion']}"
+                . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(150),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+            $qrImage = base64_encode($writer->writeString($urlQR));
+
+            // 🔹 PDF en memoria
+            $pdf = Pdf::loadView('reportes.voidsales', [
+                'tipoDteDescripcion' => [
+                    '01' => 'Factura',
+                    '03' => 'Crédito Fiscal',
+                    '14' => 'Factura Sujeto Excluido',
+                ][$tipo] ?? 'Documento',
+                'dte'      => $json,
+                'store' => $storeName,
+                'emisor'   => $json['emisor'],
+                'documento'  => $json['documento'],
+                'motivo' => $json['motivo'],
+            ]);
+
+            $pdfBinary = $pdf->output();
+
+            // 🔹 Adjuntos (SIN archivos físicos)
+            $attachments = [
+                [
+                    'data' => $pdfBinary,
+                    'name' => "DTE_{$sale->codigo_generacion}.pdf",
+                    'mime' => 'application/pdf',
+                ],
+                [
+                    'data' => $jsonContent,
+                    'name' => "DTE_{$sale->codigo_generacion}.json",
+                    'mime' => 'application/json',
+                ],
+            ];
+
+            // 🔹 Envío por OCI
+            $subject = "Documento Tributario Electrónico {$sale->codigo_generacion}";
+            $body = "Estimado(a) {$sale->customer->nombre}, adjunto encontrará su comprobante electrónico.";
+
+            $this->ociService->emailSubmissionToOCI(
+                $to,
+                $subject,
+                $body,
+                $attachments
+            );
+            return response()->json([
+                'success' => true,
+                'message' => 'Correo enviado correctamente',
+                'redirect' => route('stores.sales.index', $store->id),
+            ]);
         } catch (\Throwable $e) {
 
             Log::error('Error enviando DTE por correo', [

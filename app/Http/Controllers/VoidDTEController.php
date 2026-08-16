@@ -93,11 +93,6 @@ class VoidDTEController extends Controller
                 'response' => $haciendaResponse
             ]);
 
-            // Guardar info del DTE de anulación en la venta
-            $sale->update([
-                'dte_codigo' => $sale->codigo_generacion,
-                'dte_estado' => $haciendaResponse['estado'] ?? 'PENDING'
-            ]);
 
             return response()->json($haciendaResponse);
         } catch (\Throwable $th) {

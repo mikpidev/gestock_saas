@@ -80,6 +80,15 @@
             margin-bottom: 5px;
         }
 
+        .receptor .datos {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .receptor .columna {
+            width: 50%;
+            margin-bottom: 5px;
+        }
 
         .receptor .etiqueta {
             font-weight: bold;
@@ -171,9 +180,9 @@
         <div class="encabezado">
             <div>
                 @if(file_exists(public_path($store . '.png')))
-                <img src="{{ public_path($store . '.png') }}" style="width:150px;height:auto;">
+                <img src="{{ asset($store . '.png') }}" style="width:150px;height:auto;">
                 @else
-                <img src="{{ public_path($store . '.jpeg') }}" style="width:150px;height:auto;">
+                <img src="{{ asset($store . '.jpeg') }}" style="width:150px;height:auto;">
                 @endif
             </div>
 
@@ -221,31 +230,31 @@
                     <table class="tabla-info">
                         <tr>
                             <td class="etiqueta">Razón Social:</td>
-                            <td>{{ $emisor['nombre'] }}</td>
+                            <td>{{ $emisor->razon_social }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NIT:</td>
-                            <td>{{ $emisor['nit'] }}</td>
+                            <td>{{ $emisor->nit }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NRC:</td>
-                            <td>{{ $emisor['nrc'] }}</td>
+                            <td>{{$emisor->nrc }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Actividad:</td>
-                            <td>{{ $emisor['descActividad'] ?? ' '}}</td>
+                            <td>{{ $emisor->actividad_economica ?? ' '}}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Dirección:</td>
-                            <td>{{ $emisor['direccion']['complemento'] }}</td>
+                            <td>{{ $emisor->direccion_fiscal }}, {{$emisor->municipio?->nombre}}, {{$emisor->departamento?->nombre}}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Teléfono:</td>
-                            <td>{{ $emisor['telefono'] }}</td>
+                            <td>{{ $emisor->telefono }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Correo:</td>
-                            <td>{{ $emisor['correo'] }}</td>
+                            <td>{{ $emisor->email}}</td>
                         </tr>
                     </table>
                 </td>
@@ -256,47 +265,33 @@
 
         <!-- RECEPTOR -->
         <div class="receptor">
-
             <h3>RECEPTOR</h3>
-
-            <table style="width:100%; border-collapse:collapse;">
-                <tr>
-                    <td style="width:50%; padding:3px;">
-                        <strong>Nombre:</strong><br>
-                        {{ $receptor['nombre'] }}
-                    </td>
-
-                    <td style="width:50%; padding:3px;">
-                        <strong>Documento:</strong><br>
-                        {{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td style="padding:3px;">
-                        <strong>NRC:</strong><br>
-                        {{ $receptor['nrc'] ?? 'N/A' }}
-                    </td>
-
-                    <td style="padding:3px;">
-                        <strong>Dirección:</strong><br>
-                        {{ $receptor['direccion']['complemento'] ?? 'N/A' }}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td style="padding:3px;">
-                        <strong>Departamento:</strong><br>
-                        {{ $receptor['direccion']['departamento'] ?? 'N/A' }}
-                    </td>
-
-                    <td style="padding:3px;">
-                        <strong>Email:</strong><br>
-                        {{ $receptor['correo'] ?? 'N/A' }}
-                    </td>
-                </tr>
-            </table>
-
+            <div class="datos">
+                <div class="columna">
+                    <div class="etiqueta">Nombre:</div>
+                    <div>{{ $receptor['nombre'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Documento:</div>
+                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">NRC:</div>
+                    <div>{{ $receptor['nrc'] ?? 'N/A' }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Dirección:</div>
+                    <div>{{ $receptor['direccion']['complemento'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Departamento:</div>
+                    <div>{{ $receptor['direccion']['departamento'] }}</div>
+                </div>
+                <div class="columna">
+                    <div class="etiqueta">Email:</div>
+                    <div>{{ $receptor['correo'] }}</div>
+                </div>
+            </div>
         </div>
 
         <!-- DETALLES -->
@@ -436,8 +431,8 @@
 
         <div class="pie">
             <div class="divisor"></div>
-            {{ $emisor['nombre'] }} - {{ $emisor['direccion']['complemento'] }} <br>
-            Email: {{ $emisor['correo'] }}
+            {{ $emisor->nombre }} <br>
+            Email: {{ $emisor->email }}
         </div>
 
     </div>
