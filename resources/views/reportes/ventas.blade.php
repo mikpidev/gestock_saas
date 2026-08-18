@@ -227,34 +227,36 @@
 
                 <!-- EMPRESA -->
                 <td style="width:42%;">
+                    <!-- INFO EMPRESA -->
+                <td style="width:42%;">
                     <table class="tabla-info">
                         <tr>
                             <td class="etiqueta">Razón Social:</td>
-                            <td>{{ $emisor->razon_social }}</td>
+                            <td>{{ $emisor['nombre'] }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NIT:</td>
-                            <td>{{ $emisor->nit }}</td>
+                            <td>{{ $emisor['nit'] }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">NRC:</td>
-                            <td>{{$emisor->nrc }}</td>
+                            <td>{{ $emisor['nrc'] }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Actividad:</td>
-                            <td>{{ $emisor->actividad_economica ?? ' '}}</td>
+                            <td>{{ $emisor['nombreComercial'] ?? ' ' }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Dirección:</td>
-                            <td>{{ $emisor->direccion_fiscal }}, {{$emisor->municipio?->nombre}}, {{$emisor->departamento?->nombre}}</td>
+                            <td>{{ $emisor['direccion']['complemento'] }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Teléfono:</td>
-                            <td>{{ $emisor->telefono }}</td>
+                            <td>{{ $emisor['telefono'] }}</td>
                         </tr>
                         <tr>
                             <td class="etiqueta">Correo:</td>
-                            <td>{{ $emisor->email}}</td>
+                            <td>{{ $emisor['correo'] }}</td>
                         </tr>
                     </table>
                 </td>
@@ -265,175 +267,187 @@
 
         <!-- RECEPTOR -->
         <div class="receptor">
+
             <h3>RECEPTOR</h3>
-            <div class="datos">
-                <div class="columna">
-                    <div class="etiqueta">Nombre:</div>
-                    <div>{{ $receptor['nombre'] }}</div>
-                </div>
-                <div class="columna">
-                    <div class="etiqueta">Documento:</div>
-                    <div>{{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}</div>
-                </div>
-                <div class="columna">
-                    <div class="etiqueta">NRC:</div>
-                    <div>{{ $receptor['nrc'] ?? 'N/A' }}</div>
-                </div>
-                <div class="columna">
-                    <div class="etiqueta">Dirección:</div>
-                    <div>{{ $receptor['direccion']['complemento'] }}</div>
-                </div>
-                <div class="columna">
-                    <div class="etiqueta">Departamento:</div>
-                    <div>{{ $receptor['direccion']['departamento'] }}</div>
-                </div>
-                <div class="columna">
-                    <div class="etiqueta">Email:</div>
-                    <div>{{ $receptor['correo'] }}</div>
-                </div>
+
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td style="width:50%; padding:3px;">
+                        <strong>Nombre:</strong><br>
+                        {{ $receptor['nombre'] }}
+                    </td>
+
+                    <td style="width:50%; padding:3px;">
+                        <strong>Documento:</strong><br>
+                        {{ $receptor['numDocumento'] ?? $receptor['nit'] ?? 'N/A' }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:3px;">
+                        <strong>NRC:</strong><br>
+                        {{ $receptor['nrc'] ?? 'N/A' }}
+                    </td>
+
+                    <td style="padding:3px;">
+                        <strong>Dirección:</strong><br>
+                        {{ $receptor['direccion']['complemento'] ?? 'N/A' }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:3px;">
+                        <strong>Departamento:</strong><br>
+                        {{ $receptor['direccion']['departamento'] ?? 'N/A' }}
+                    </td>
+
+                    <td style="padding:3px;">
+                        <strong>Email:</strong><br>
+                        {{ $receptor['correo'] ?? 'N/A' }}
+                    </td>
+                </tr>
+            </table>
+
+            <!-- DETALLES -->
+            <div class="detalles-factura">
+                <div><strong>Fecha:</strong> {{ $dte['identificacion']['fecEmi'] }}</div>
+                <div><strong>N° Factura:</strong> {{ $dte['numeroFactura'] ?? '' }}</div>
             </div>
-        </div>
 
-        <!-- DETALLES -->
-        <div class="detalles-factura">
-            <div><strong>Fecha:</strong> {{ $dte['identificacion']['fecEmi'] }}</div>
-            <div><strong>N° Factura:</strong> {{ $dte['numeroFactura'] ?? '' }}</div>
-        </div>
+            <!-- PRODUCTOS -->
+            <table class="tabla-productos">
+                <thead>
+                    <tr>
+                        <th>Cant.</th>
+                        <th style="text-align:left;">Descripción</th>
+                        <th>P.Unit</th>
+                        <th>NoSuj.</th>
+                        <th>Exenta</th>
+                        <th>Gravada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($dte['cuerpoDocumento'] as $item)
+                    <tr>
+                        <td>{{ number_format($item['cantidad']) }}</td>
+                        <td style="text-align:left;">{{ $item['descripcion'] }}</td>
+                        <td>${{ number_format($item['precioUni'], 2) }}</td>
+                        <td>$0.00</td>
+                        <td>$0.00</td>
+                        <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
+                    </tr>
+                    @endforeach
 
-        <!-- PRODUCTOS -->
-        <table class="tabla-productos">
-            <thead>
-                <tr>
-                    <th>Cant.</th>
-                    <th style="text-align:left;">Descripción</th>
-                    <th>P.Unit</th>
-                    <th>NoSuj.</th>
-                    <th>Exenta</th>
-                    <th>Gravada</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($dte['cuerpoDocumento'] as $item)
-                <tr>
-                    <td>{{ number_format($item['cantidad']) }}</td>
-                    <td style="text-align:left;">{{ $item['descripcion'] }}</td>
-                    <td>${{ number_format($item['precioUni'], 2) }}</td>
-                    <td>$0.00</td>
-                    <td>$0.00</td>
-                    <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
-                </tr>
-                @endforeach
+                    <tr>
+                        <td colspan="3" style="text-align:right;">
+                            Sumas:
+                        </td>
+                        <td>${{ number_format($resumen['totalNoSuj'] ?? 0, 2) }}</td>
+                        <td>${{ number_format($resumen['totalExenta'] ?? 0, 2) }}</td>
+                        <td>
+                            ${{ number_format($resumen['totalGravada'] ?? 0, 2) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-                <tr>
-                    <td colspan="3" style="text-align:right;">
-                        Sumas:
-                    </td>
-                    <td>${{ number_format($resumen['totalNoSuj'] ?? 0, 2) }}</td>
-                    <td>${{ number_format($resumen['totalExenta'] ?? 0, 2) }}</td>
-                    <td>
-                        ${{ number_format($resumen['totalGravada'] ?? 0, 2) }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div style="clear: both;"></div>
+            <div style="clear: both;"></div>
 
 
 
-        <table class="tabla-totales">
-
-            <tr>
-                <th colspan="3" style="text-align:right;">Suma Total de Operaciones (IVA No Incluido): </th>
-                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
-
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas no sujetas:</th>
-                <td><span>${{ number_format($resumen['descuNoSuj'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas exentas: </th>
-                <td><span>${{ number_format($resumen['descuExenta'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas gravadas:</th>
-                <td><span>${{ number_format($resumen['descuGravada'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Impuesto al Valor Agregado 13%:</th>
-                <td><span>${{ number_format($resumen['totalIva'] ?? $resumen['tributos'][0]['valor'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Sub-Total: </th>
-                <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">IVA Percibido: </th>
-                <td><span>${{ number_format($resumen['ivaPerci1'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">IVA Retenido: </th>
-                <td><span>${{ number_format($resumen['ivaRete1'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Monto Total de la Operacion (IVA Incluido): </th>
-                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Total Otros montos no afectados:</th>
-                <td><span>${{ number_format($resumen['totalNoGravado'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Total a Pagar:</th>
-                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
-            </tr>
-            </tbody>
-        </table>
-        <div style="clear: both;"></div>
-
-        <div class="divisor"></div>
-
-        <table class="tabla-otros">
-            <tbody>
-                <tr>
-                    <td>Valor en Letras:</td>
-                    <td>{{ strtoupper($resumen['totalLetras']) }} DOLARES AMERICANOS</td>
-                    <td>Condicion de la Operacion: </td>
-                    <td> {{ strtoupper($resumen['condicionOperacion'] == 1 ? 'Contado' : 'Crédito') }}
-                    </td>
-                </tr>
+            <table class="tabla-totales">
 
                 <tr>
+                    <th colspan="3" style="text-align:right;">Suma Total de Operaciones (IVA No Incluido): </th>
+                    <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
 
                 </tr>
-
                 <tr>
-                    <td>Observaciones: </td>
-                    <td> @if(!empty($dteResponse['observaciones']))
-                        @foreach((array) $dteResponse['observaciones'] as $obs)
-                        {{ $obs }}<br>
-                        @endforeach
-                        @else
-                        Sin observaciones
-                        @endif
-                    </td>
+                    <th colspan="3" style="text-align:right;">Descuento global a ventas no sujetas:</th>
+                    <td><span>${{ number_format($resumen['descuNoSuj'] ?? 0, 2) }} </span></td>
                 </tr>
-            </tbody>
-        </table>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Descuento global a ventas exentas: </th>
+                    <td><span>${{ number_format($resumen['descuExenta'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Descuento global a ventas gravadas:</th>
+                    <td><span>${{ number_format($resumen['descuGravada'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Impuesto al Valor Agregado 13%:</th>
+                    <td><span>${{ number_format($resumen['totalIva'] ?? $resumen['tributos'][0]['valor'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Sub-Total: </th>
+                    <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">IVA Percibido: </th>
+                    <td><span>${{ number_format($resumen['ivaPerci1'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">IVA Retenido: </th>
+                    <td><span>${{ number_format($resumen['ivaRete1'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Monto Total de la Operacion (IVA Incluido): </th>
+                    <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Total Otros montos no afectados:</th>
+                    <td><span>${{ number_format($resumen['totalNoGravado'] ?? 0, 2) }} </span></td>
+                </tr>
+                <tr>
+                    <th colspan="3" style="text-align:right;">Total a Pagar:</th>
+                    <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+                </tr>
+                </tbody>
+            </table>
+            <div style="clear: both;"></div>
 
-
-        <div style="clear: both;"></div>
-
-
-
-
-
-        <div class="pie">
             <div class="divisor"></div>
-            {{ $emisor->nombre }} <br>
-            Email: {{ $emisor->email }}
-        </div>
 
+            <table class="tabla-otros">
+                <tbody>
+                    <tr>
+                        <td>Valor en Letras:</td>
+                        <td>{{ strtoupper($resumen['totalLetras']) }} DOLARES AMERICANOS</td>
+                        <td>Condicion de la Operacion: </td>
+                        <td> {{ strtoupper($resumen['condicionOperacion'] == 1 ? 'Contado' : 'Crédito') }}
+                        </td>
+                    </tr>
+
+                    <tr>
+
+                    </tr>
+
+                    <tr>
+                        <td>Observaciones: </td>
+                        <td> @if(!empty($dteResponse['observaciones']))
+                            @foreach((array) $dteResponse['observaciones'] as $obs)
+                            {{ $obs }}<br>
+                            @endforeach
+                            @else
+                            Sin observaciones
+                            @endif
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+            <div style="clear: both;"></div>
+
+
+
+
+
+            <div class="pie">
+                <div class="divisor"></div>
+                {{ $emisor['nombre'] }} ?? ' '}} <br>
+                Email: {{ $receptor['correo']  ?? ' ' }}
+            </div>
+
+        </div>
     </div>
-</div>

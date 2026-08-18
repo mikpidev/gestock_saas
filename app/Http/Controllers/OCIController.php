@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DteResponse;
 use Illuminate\Http\Request;
 use App\Services\OCIService;
 use Illuminate\Support\Facades\Log;
@@ -131,6 +132,9 @@ class OCIController extends Controller
                 ], 422);
             }
 
+            $dteResponse = DteResponse::where('sale_id', $sale->id)->latest()->first();
+
+
             // 🔹 Tipo DTE
             $tipo = $sale->tipoDte->codigo ?? null;
 
@@ -148,6 +152,10 @@ class OCIController extends Controller
                     return response()->json([
                         'error' => 'Tipo DTE no soportado'
                     ], 400);
+            }
+
+            if ($dteResponse) {
+                $json['sello_recibido'] = $dteResponse->sello_recibido;
             }
 
             // 🔹 JSON en memoria
@@ -184,7 +192,9 @@ class OCIController extends Controller
                     ? $json['sujetoExcluido']
                     : $json['receptor'],
                 'resumen'  => $json['resumen'],
-                'qrImage'  => $qrImage
+                'qrImage'  => $qrImage,
+                'dteResponse' => $dteResponse
+
             ]);
 
             $pdfBinary = $pdf->output();
@@ -218,7 +228,6 @@ class OCIController extends Controller
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.sales.index', $store->id),
             ]);
-
         } catch (\Throwable $e) {
 
             Log::error('Error enviando DTE por correo', [
