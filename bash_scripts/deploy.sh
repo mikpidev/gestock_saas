@@ -22,7 +22,7 @@ echo "Installing PHP dependencies with Composer..."
 composer install --no-dev --optimize-autoloader
 
 echo "Running database migrations..."
-php artisan migrate --force
+php artisan migrate
 
 echo "Compiling front-end"
 npm run build
