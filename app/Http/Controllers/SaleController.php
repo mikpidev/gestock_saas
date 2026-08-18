@@ -107,9 +107,7 @@ class SaleController extends Controller
         // Solo ventas no procesadas
         $pendingSales = $sales->filter(function ($sale) {
             return !empty($sale->codigo_generacion)
-                && in_array($sale->dte_status, [
-                    'PENDIENTE',
-                ]);
+                && $sale->dte_status !== 'PROCESADO';
         });
         if ($pendingSales->isNotEmpty()) {
 
@@ -640,42 +638,20 @@ class SaleController extends Controller
             return redirect()->back()->withErrors('No se puede anular una venta con más de 24 horas de antigüedad.');
         }
 
-
-        \Log::info('Venta actualizada después de anulación', [
-            'sale_id' => $sale->id,
-            'dte_status' => $sale->dte_status,
-        ]);
-
-
-
-
         try {
             // Llamar al VoidDTEController para generar la anulación
-            app(\App\Http\Controllers\VoidDTEController::class);
-            //$response = $voidController->voidDTE($sale);
+            $voidController = app(\App\Http\Controllers\VoidDTEController::class);
+            $response = $voidController->voidDTE($sale);
 
-            /*             if (($response->getData()->estado ?? '') !== 'PROCESADO') {
+            if (($response->getData()->estado ?? '') !== 'PROCESADO') {
                 return redirect()->back()->withErrors('Hacienda no confirmó la anulación.');
-            } */
-
-            $sale->dte_status = 'INVALIDADO';
-            $sale->save();
-
-            //enviar correo en automatico
-
-            if ($sale->dte_status == 'INVALIDADO') {
-                try {
-                    app(\App\Http\Controllers\OCIController::class)->emailVoidSend($store, $sale);
-                } catch (\Throwable $e) {
-
-                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
-
-                        'sale_id' => $sale->id,
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                }
             }
 
+            // Soft delete solo si Hacienda respondió correctamente
+            $sale->delete();
+
+            return redirect()->route('stores.sales.index', $store->id)
+                ->with('success', 'Venta anulada correctamente.');
         } catch (\Throwable $th) {
             \Log::error('Error anulando venta: ' . $th->getMessage(), [
                 'sale_id' => $sale->id,
@@ -684,10 +660,5 @@ class SaleController extends Controller
 
             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
         }
-
-
-
-        return redirect()->route('stores.sales.index', $store->id)
-            ->with('success', 'Venta anulada correctamente.');
     }
 }
