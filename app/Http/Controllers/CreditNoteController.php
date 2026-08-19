@@ -120,13 +120,72 @@ class CreditNoteController extends Controller
     }
 
 
-    public function refreshDTE(Store $store, CreditNote $creditNote, ConsultaService $consultaService)
+    public function refreshDTE(Store $store, CreditNote $creditNote, Sale $sale, ConsultaService $consultaService)
     {
-        $token = app(HaciendaAuthService::class)->getToken($store);
-        $consultaService = new ConsultaService();
-        $response = $consultaService->consultarNC($creditNote, $token);
+  try {
 
-        return redirect()->back()->with('success', 'Estado DTE actualizado.');
+            // Validar tiempo permitido
+            if ($creditNote->created_at->diffInHours(now()) > 48) {
+                return back()->with(
+                    'error',
+                    'El tiempo permitido para reenviar este DTE expiró.'
+                );
+            }
+
+            // No reenviar si ya está procesado
+            if ($creditNote->dte_status === 'PROCESADO') {
+                return back()->with(
+                    'error',
+                    'Este DTE ya fue procesado.'
+                );
+            }
+
+            app(\App\Http\Controllers\DTEController::class)
+                ->generarDTECreditNote($creditNote, $sale);
+
+
+            $token = app(HaciendaAuthService::class)
+                ->getToken($store);
+
+            $response = $consultaService
+                ->consultarNC($creditNote, $token);
+
+
+            $creditNote->dte_status = $response['estado'] ?? 'PENDIENTE';
+            $creditNote->save();
+
+
+            if ($creditNote->dte_status = 'PROCESADO') {
+                try {
+                    app(\App\Http\Controllers\OCIController::class)->emailSend($store, $creditNote);
+                } catch (\Throwable $e) {
+
+                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
+
+                        'sale_id' => $creditNote->id,
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+
+
+            return back()->with(
+                'success',
+                'DTE reenviado correctamente.'
+            );
+        } catch (\Throwable $e) {
+
+            \Log::error("Error reenviando DTE", [
+                'creditNote_id' => $creditNote->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
+        }
     }
 
     /**
