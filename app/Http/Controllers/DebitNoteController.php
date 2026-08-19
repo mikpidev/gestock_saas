@@ -239,7 +239,7 @@ class DebitNoteController extends Controller
         //Consultar si DTE fue aceptado antes de redirigir
         try {
             // Obtener token válido
-            $token = app(HaciendaAuthService::class)->getToken();
+            $token = app(HaciendaAuthService::class)->getToken($store);
 
             // Consultar DTE inmediatamente después de enviar
             $consultaService = new ConsultaService();
