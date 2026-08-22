@@ -22,6 +22,7 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use GuzzleHttp\Psr7\Query;
+use Illuminate\Support\Facades\DB;
 use stdClass;
 
 class SaleController extends Controller
@@ -101,7 +102,8 @@ class SaleController extends Controller
             ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
             ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
             ->orderByDesc('sale_date')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
 
         // Solo ventas no procesadas
@@ -128,44 +130,6 @@ class SaleController extends Controller
         return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
     }
 
-    //Pagination
-
-    public function getPaginationData(Request $request, Store $store)
-    {
-        $MAX = 25;
-
-        //filtros
-        $dateFrom = $request->from
-            ? Carbon::parse($request->from)->startOfDay()
-            : Carbon::today()->subDays(6)->startOfDay();
-
-        $dateTo = $request->to
-            ? Carbon::parse($request->to)->endOfDay()
-            : Carbon::today()->endOfDay();
-
-
-        $baseQuery = Sale::query()
-            ->where('store_id', $store->id)
-            ->whereBetween('created_at', [$dateFrom, $dateTo]);
-
-        \Log::info("Base Query: " . $baseQuery->toSql(), [
-            'bindings' => $baseQuery->getBindings(),
-        ]);
-
-        //Get Pagination Data
-
-        $totalSales = (clone $baseQuery)->count();
-        $pages = ceil($totalSales / $MAX);
-
-        if ($pages < 1) {
-            $pages = 1;
-        }
-
-        return response()->json([
-            'totalSales' => $totalSales,
-            'pages' => $pages,
-        ]);
-    }
 
     public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaService)
     {
