@@ -74,6 +74,24 @@ class InvoiceNumber extends Model
         ]);
     }
 
+    public static function getContingenciaNumber($storeId)
+    {
+        $last = self::where('store_id', $storeId)->latest('number')->first();
+
+        $nextNumber = $last ? $last->number + 1 : 1;
+
+        return self::create([
+            'store_id' => $storeId,
+            'number' => $nextNumber,
+            'used' => true,
+            'numero_control' => null,
+            'codigo_generacion' => strtoupper(Str::uuid()->toString()),
+        ]);
+    }
+
+
+
+
     public function sale()
     {
         return $this->hasOne(Sale::class);

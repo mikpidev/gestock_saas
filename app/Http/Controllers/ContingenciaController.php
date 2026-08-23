@@ -65,10 +65,8 @@ class ContingenciaController extends Controller
             $request->fecha_inicio . ' ' . $request->hora_inicio
         );
 
-         $establecimiento = $store->establecimiento; 
-         $puntoVenta = $store->punto_venta;
 
-        $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $request->tipo_contingencia, $establecimiento, $puntoVenta);
+        $invoiceNumber = InvoiceNumber::getContingenciaNumber($store->id, $request->tipo_contingencia);
 
 
         Contingencia::create([
