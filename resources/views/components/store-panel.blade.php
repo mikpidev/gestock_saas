@@ -1,6 +1,3 @@
-
-
-
 <div class="gestok-container">
     <!-- Sidebar -->
     <div class="gestok-panel">
@@ -33,8 +30,10 @@
         <a href="{{ route('stores.debitnotes.index', $store->id) }}">
             <i class="fas fa-file-invoice-dollar"></i> Notas de Débito
         </a>
+        <a href="{{ route('contingencias.index', $store->id) }}">
+            <i class="fas fa-file-invoice-dollar"></i> Contingencia
+        </a>
         @endhasrole
     </div>
 
 </div>
-
