@@ -312,9 +312,8 @@
                     <th>Cant.</th>
                     <th style="text-align:left;">Descripción</th>
                     <th>P.Unit</th>
-                    <th>NoSuj.</th>
-                    <th>Exenta</th>
-                    <th>Gravada</th>
+                    <th>Descuento por ítem.</th>
+                    <th>Compras</th>
                 </tr>
             </thead>
             <tbody>
@@ -323,9 +322,8 @@
                     <td>{{ number_format($item['cantidad']) }}</td>
                     <td style="text-align:left;">{{ $item['descripcion'] }}</td>
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
-                    <td>$0.00</td>
-                    <td>$0.00</td>
-                    <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
+                    <td>${{ number_format($item['montoDescu'], 2) }}</td>
+                    <td>${{ number_format($item['compra'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
 
