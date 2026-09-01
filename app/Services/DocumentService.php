@@ -515,6 +515,8 @@ class DocumentService
         $cuerpoDocumento = $sale->details->map(function ($detail, $index) use ($sale) {
             $discount_amount = $sale->discount_amount ?? 0.00;
             $subtotalConIVA = (float) $detail->subtotal - $discount_amount;
+            $subtotalConIVA = (float) $detail->subtotal - $discount_amount;
+
             $baseSinIVA = $subtotalConIVA / 1.13;
             $ivaItem = $baseSinIVA * 0.13;
 
@@ -525,14 +527,17 @@ class DocumentService
                 "descripcion" => $detail->productType->name,
                 "cantidad" => (float) $detail->quantity,
                 "uniMedida" => 59,
-                "precioUni" => round((float) $detail->unit_price / 1.13, 2),
+                "precioUni" => round((float) $detail->unit_price, 2),
                 "montoDescu" => round($discount_amount, 2),
-                "compra" => round((float)$baseSinIVA, 2),
+                "compra" => round((float)$subtotalConIVA, 2),
             ];
         })->toArray();
 
-        $totalGravada = $sale->details->sum(fn($d) => $d->subtotal / 1.13);
+        $totalGravada = $sale->details->sum(fn($d) => $d->subtotal);
         $totalIva = $sale->details->sum(fn($d) => ($d->subtotal / 1.13) * 0.13);
+        $reteRenta = $sale->details->sum(fn($d) => ($d->subtotal * 0.10)); // 10% de retención
+        $totalPagar = $totalGravada - $reteRenta;
+
 
         return [
             "identificacion" => [
@@ -588,14 +593,14 @@ class DocumentService
                 "totalDescu" => 0.00,
                 "subTotal" => round($totalGravada, 2),
                 "ivaRete1" => 0.00,
-                "reteRenta" => 0.00,
-                "totalPagar" => round($totalGravada, 2),
-                "totalLetras" => $this->totalEnLetras($totalGravada),
+                "reteRenta" => round($reteRenta, 2),
+                "totalPagar" => round($totalPagar, 2),
+                "totalLetras" => $this->totalEnLetras($totalPagar),
                 "condicionOperacion" => 1,
                 "pagos" => [
                     [
-                        "codigo" => "01",
-                        "montoPago" =>  round($totalGravada, 2),
+                        "codigo" => "05",
+                        "montoPago" =>  round($totalPagar, 2),
                         "referencia" => null,
                         "plazo" => null,
                         "periodo" => null
