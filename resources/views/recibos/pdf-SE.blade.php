@@ -310,6 +310,7 @@
             <thead>
                 <tr>
                     <th>Cant.</th>
+                    <th>Codigo</th>
                     <th style="text-align:left;">Descripción</th>
                     <th>P.Unit</th>
                     <th>Descuento por ítem.</th>
@@ -320,8 +321,10 @@
                 @foreach ($dte['cuerpoDocumento'] as $item)
                 <tr>
                     <td>{{ number_format($item['cantidad']) }}</td>
+                    <td> - </td>
                     <td style="text-align:left;">{{ $item['descripcion'] }}</td>
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
+
                     <td>${{ number_format($item['montoDescu'], 2) }}</td>
                     <td>${{ number_format($item['compra'] ?? 0, 2) }}</td>
                 </tr>
