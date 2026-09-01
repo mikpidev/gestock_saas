@@ -527,18 +527,33 @@ class SaleController extends Controller
         $writer = new Writer($renderer);
         $qrImage = base64_encode($writer->writeString($urlQR));
 
-        return view('sales.show', [
-            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-            'dte'      => $json,
-            //'emisor'   => $json['emisor'],
-            'emisor' => $emisor,
-            'store'    => $store,
-            //validar si es SE - pass sujetoExcluido en lugar de receptor
-            'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-            'resumen'  => $json['resumen'],
-            'qrImage'  => $qrImage,
-            'dteResponse' => $dteResponse
-        ]);
+        if ($tipo === '14') {
+
+            return view('sales.show-SE', [
+                'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                'dte' => $json,
+                'store' => $sale->store->store_name,
+                'emisor' => $json['emisor'],
+                'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                'resumen' => $json['resumen'],
+                'qrImage' => $qrImage,
+                'dteResponse' => $dteResponse
+            ]);
+        } else {
+
+            return view('sales.show', [
+                'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                'dte'      => $json,
+                //'emisor'   => $json['emisor'],
+                'emisor' => $emisor,
+                'store'    => $store,
+                //validar si es SE - pass sujetoExcluido en lugar de receptor
+                'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                'resumen'  => $json['resumen'],
+                'qrImage'  => $qrImage,
+                'dteResponse' => $dteResponse
+            ]);
+        }
     }
 
 

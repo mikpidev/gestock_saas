@@ -310,22 +310,23 @@
             <thead>
                 <tr>
                     <th>Cant.</th>
+                    <th>Codigo</th>
                     <th style="text-align:left;">Descripción</th>
                     <th>P.Unit</th>
-                    <th>NoSuj.</th>
-                    <th>Exenta</th>
-                    <th>Gravada</th>
+                    <th>Descuento por ítem.</th>
+                    <th>Compras</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($dte['cuerpoDocumento'] as $item)
                 <tr>
                     <td>{{ number_format($item['cantidad']) }}</td>
+                    <td> - </td>
                     <td style="text-align:left;">{{ $item['descripcion'] }}</td>
                     <td>${{ number_format($item['precioUni'], 2) }}</td>
-                    <td>$0.00</td>
-                    <td>$0.00</td>
-                    <td>${{ number_format($item['ventaGravada'] ?? 0, 2) }}</td>
+
+                    <td>${{ number_format($item['montoDescu'], 2) }}</td>
+                    <td>${{ number_format($item['compra'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
 
@@ -349,49 +350,27 @@
         <table class="tabla-totales">
 
             <tr>
-                <th colspan="3" style="text-align:right;">Suma Total de Operaciones (IVA No Incluido): </th>
+                <th colspan="3" style="text-align:right;">Total de Operaciones: </th>
                 <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
 
             </tr>
             <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas no sujetas:</th>
+                <th colspan="3" style="text-align:right;">Descuento global al total de operaciones:</th>
                 <td><span>${{ number_format($resumen['descuNoSuj'] ?? 0, 2) }} </span></td>
             </tr>
             <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas exentas: </th>
-                <td><span>${{ number_format($resumen['descuExenta'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Descuento global a ventas gravadas:</th>
-                <td><span>${{ number_format($resumen['descuGravada'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Impuesto al Valor Agregado 13%:</th>
-                <td><span>${{ number_format($resumen['totalIva'] ?? $resumen['tributos'][0]['valor'] ?? 0, 2) }} </span></td>
-            </tr>
             <tr>
                 <th colspan="3" style="text-align:right;">Sub-Total: </th>
                 <td><span>${{ number_format($resumen['subTotal'] ?? 0, 2) }} </span></td>
             </tr>
             <tr>
-                <th colspan="3" style="text-align:right;">IVA Percibido: </th>
-                <td><span>${{ number_format($resumen['ivaPerci1'] ?? 0, 2) }} </span></td>
+                <th colspan="3" style="text-align:right;">Retención Renta:</th>
+                <td><span>${{ number_format($resumen['reteRenta'] ?? 0, 2) }} </span></td>
             </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">IVA Retenido: </th>
-                <td><span>${{ number_format($resumen['ivaRete1'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Monto Total de la Operacion (IVA Incluido): </th>
-                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
-            </tr>
-            <tr>
-                <th colspan="3" style="text-align:right;">Total Otros montos no afectados:</th>
-                <td><span>${{ number_format($resumen['totalNoGravado'] ?? 0, 2) }} </span></td>
-            </tr>
+
             <tr>
                 <th colspan="3" style="text-align:right;">Total a Pagar:</th>
-                <td><span>${{ number_format($resumen['montoTotalOperacion'] ?? 0, 2) }} </span></td>
+                <td><span>${{ number_format($resumen['totalPagar'] ?? 0, 2) }} </span></td>
             </tr>
             </tbody>
         </table>

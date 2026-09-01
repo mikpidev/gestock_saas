@@ -50,7 +50,7 @@ class ReporteVentas extends Controller
         return $pdf->download('reporte_ventas.pdf');
     }
     public function dteReporte(Request $request, Store $store, OCIService $oci)
-    { 
+    {
         ini_set('memory_limit', '1024M');
         set_time_limit(0);
 
@@ -194,17 +194,29 @@ class ReporteVentas extends Controller
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
                 // Generar PDF
-                $pdf = Pdf::loadView('reportes.ventas', [
-                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                    'dte' => $json,
-                    'store' => $sale->store->store_name,
-                    'emisor' => $json['emisor'],
-                    'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-                    'resumen' => $json['resumen'],
-                    'qrImage' => $qrImage,
-                    'dteResponse' => $dteResponse
-                ]);
-
+                if ($tipo === '14') {
+                    $pdf = Pdf::loadView('reportes.ventas-SE', [
+                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                        'dte' => $json,
+                        'store' => $sale->store->store_name,
+                        'emisor' => $json['emisor'],
+                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                        'resumen' => $json['resumen'],
+                        'qrImage' => $qrImage,
+                        'dteResponse' => $dteResponse
+                    ]);
+                } else {
+                    $pdf = Pdf::loadView('reportes.ventas', [
+                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                        'dte' => $json,
+                        'store' => $sale->store->store_name,
+                        'emisor' => $json['emisor'],
+                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                        'resumen' => $json['resumen'],
+                        'qrImage' => $qrImage,
+                        'dteResponse' => $dteResponse
+                    ]);
+                }
                 $pdfFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.pdf");
                 $pdf->save($pdfFilename);
 
