@@ -207,18 +207,31 @@ class ReciboController extends Controller
         $writer = new Writer($renderer);
         $qrImage = base64_encode($writer->writeString($urlQR));
 
-        // Generar PDF
-        $pdf = Pdf::loadView('recibos.pdf', [
-            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-            'dte'      => $json,
-            'emisor'   => $json['emisor'],
-            'store'    => $store,
-            //validar si es SE - pass sujetoExcluido en lugar de receptor
-            'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-            'resumen'  => $json['resumen'],
-            'qrImage'  => $qrImage,
-            'dteResponse' => $dteResponse
-        ]);
+        if ($tipo === '14') {
+            $pdf = Pdf::loadView('recibos.pdf-SE', [
+                'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                'dte'      => $json,
+                'emisor'   => $json['emisor'],
+                'store'    => $store,
+                //validar si es SE - pass sujetoExcluido en lugar de receptor
+                'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                'resumen'  => $json['resumen'],
+                'qrImage'  => $qrImage,
+                'dteResponse' => $dteResponse
+            ]);
+        } else {        // Generar PDF
+            $pdf = Pdf::loadView('recibos.pdf', [
+                'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                'dte'      => $json,
+                'emisor'   => $json['emisor'],
+                'store'    => $store,
+                //validar si es SE - pass sujetoExcluido en lugar de receptor
+                'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                'resumen'  => $json['resumen'],
+                'qrImage'  => $qrImage,
+                'dteResponse' => $dteResponse
+            ]);
+        }
 
         $pdfContent = $pdf->output();
 
