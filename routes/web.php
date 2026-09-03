@@ -74,7 +74,7 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         Route::get('/stores/{store}/tax-info/create', [StoreTaxInfoController::class, 'create'])
             ->name('store_tax_info.create');
         // EDIT primero
-        Route::get('/stores/{store}/tax-info/{storeTaxInfo}/edit', [StoreTaxInfoController::class, 'edit'])
+        Route::get('/stores/{store}/tax-info/edit', [StoreTaxInfoController::class, 'edit'])
             ->name('store_tax_info.edit');
 
         // SHOW después
@@ -321,6 +321,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
         Route::get('/stores/{store}/dashboard-data', [StoreController::class, 'getChartData'])
             ->name('stores.dashboard.data');
 
+        Route::get('/stores/{store}/dashboard-data/csv', [StoreController::class, 'DownloadPDF'])
+            ->name('stores.dashboard.download-csv');
         Route::get(
             'stores/{store}/sales/salestest',
             [SaleController::class, 'saleTest']

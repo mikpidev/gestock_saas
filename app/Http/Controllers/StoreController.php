@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\TipoDocumento;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +20,7 @@ class StoreController extends Controller
 
 
 
-    public function index(Request $request)
+    public function index(Request $request, Store $store)
     {
         $user = Auth::user();
         if (!$user) {
@@ -42,7 +43,17 @@ class StoreController extends Controller
             abort(403, 'Acceso no autorizado.');
         }
 
-        return view('store.index', compact('stores'));
+        //llamar Catalogos
+
+        $actividades = \App\Models\CodActividad::all();
+        $departamentos = \App\Models\Departamento::all();
+        $municipios = \App\Models\Municipio::all();
+
+        
+        // Cargar relaciones necesarias
+        $store->load(['taxInfo', 'company']);
+
+        return view('store.index', compact('stores','store', 'actividades', 'departamentos', 'municipios'));
     }
 
 
@@ -230,6 +241,209 @@ class StoreController extends Controller
             'topProducts' => $topProducts,
             'peakHours' => $peakHours,
         ]);
+    }
+
+    public function DownloadPDF(Request $request, Store $store)
+    {
+        //filtros
+        $dateFrom = $request->from
+            ? Carbon::parse($request->from)->startOfDay()
+            : Carbon::today()->subDays(6)->startOfDay();
+
+        $dateTo = $request->to
+            ? Carbon::parse($request->to)->endOfDay()
+            : Carbon::today()->endOfDay();
+        //Filtrar por tipo de documento (Factura, CF, etc)
+        $documentType = $request->tipo_documento_id;
+
+        //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
+        $dte_status = $request->dte_status ?? 'PROCESADO';
+
+        // Base query con filtros aplicados
+
+        $baseQuery = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', $dte_status)
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            });
+
+
+        \Log::info("Base Query Download PDF: " . $baseQuery->toSql(), [
+            'bindings' => $baseQuery->getBindings(),
+        ]);
+
+
+        $totalSales = (clone $baseQuery)->sum('total_amount');
+
+        $totalCount = (clone $baseQuery)->count();
+
+        $averageTicket = $totalCount > 0
+            ? $totalSales / $totalCount
+            : 0;
+
+
+        $chartData = (clone $baseQuery)
+            ->selectRaw("
+                DATE(created_at) as date,
+                COUNT(*) as quantity,
+                SUM(total_amount) as total
+            ")
+            ->groupByRaw('DATE(created_at)')
+            ->orderBy('date')
+            ->get();
+
+
+
+        $methodPaymentData = (clone $baseQuery)
+            ->selectRaw("
+                COUNT(CASE WHEN payment_method = 'Efectivo' THEN 1 END) as efectivo,
+                COUNT(CASE WHEN payment_method = 'Tarjeta' THEN 1 END) as tarjeta,
+                COUNT(CASE WHEN payment_method = 'Transferencia' THEN 1 END) as transferencia,
+
+                SUM(CASE
+                    WHEN payment_method = 'Efectivo'
+                    THEN total_amount ELSE 0
+                END) as monto_efectivo,
+
+                SUM(CASE
+                    WHEN payment_method = 'Tarjeta'
+                    THEN total_amount ELSE 0
+                END) as monto_tarjeta,
+
+                SUM(CASE
+                    WHEN payment_method = 'Transferencia'
+                    THEN total_amount ELSE 0
+                END) as monto_transferencia
+            ")
+            ->first();
+
+
+
+        $dteSummary = (clone $baseQuery)
+            ->selectRaw("
+                COUNT(CASE WHEN tipo_documento_id = 1 THEN 1 END) as factura,
+                COUNT(CASE WHEN tipo_documento_id = 2 THEN 1 END) as CCF,
+                COUNT(CASE WHEN tipo_documento_id = 10 THEN 1 END) as SE,
+
+                SUM(CASE
+                    WHEN tipo_documento_id = 1
+                    THEN total_amount ELSE 0
+                END) as monto_factura,
+
+                SUM(CASE
+                    WHEN tipo_documento_id = 2
+                    THEN total_amount ELSE 0
+                END) as monto_CCF,
+
+                SUM(CASE
+                    WHEN tipo_documento_id = 10
+                    THEN total_amount ELSE 0
+                END) as monto_SE
+            ")
+            ->first();
+
+
+        $dteApproved = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', 'PROCESADO')
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->count();
+
+        $dteDenied = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', 'RECHAZADO')
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->count();
+
+        $dtePending = Sale::query()
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', 'PENDIENTE')
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->count();
+
+
+
+        $topProducts = SaleDetail::select(
+            'product_type_id',
+            DB::raw('SUM(quantity) as total_sold'),
+            DB::raw('SUM(subtotal) as total')
+        )
+            ->join('sales', 'sale_details.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $store->id)
+            ->whereBetween('sales.created_at', [$dateFrom, $dateTo])
+            ->where('sales.dte_status', $dte_status)
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('sales.tipo_documento_id', $documentType);
+            })
+            ->groupBy('product_type_id')
+            ->orderByDesc('total_sold')
+            ->with('productType')
+            ->limit(10)
+            ->get();
+
+
+        $peakHours = Sale::query()
+            ->select(
+                DB::raw("
+                    HOUR(
+                        CONVERT_TZ(
+                            created_at,
+                            '+00:00',
+                            '-06:00'
+                        )
+                    ) as hour
+                "),
+                DB::raw('COUNT(*) as total_sales'),
+                DB::raw('SUM(total_amount) as total_amount')
+            )
+            ->where('store_id', $store->id)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->where('dte_status', $dte_status)
+            ->when($documentType, function ($query) use ($documentType) {
+                $query->where('tipo_documento_id', $documentType);
+            })
+            ->groupBy('hour')
+            ->orderByDesc('total_sales')
+            ->limit(5)
+            ->get();
+
+
+
+        $pdf = Pdf::loadView('store.download-csv', compact(
+            'store',
+            'dateFrom',
+            'dateTo',
+            'dte_status',
+            'documentType',
+            'totalSales',
+            'totalCount',
+            'averageTicket',
+            'chartData',
+            'methodPaymentData',
+            'dteSummary',
+            'dteApproved',
+            'dteDenied',
+            'dtePending',
+            'topProducts',
+            'peakHours'
+        ));
+
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream(
+            'reporte-ventas-' . $store->id . '-' . $dateFrom->format('Y-m-d') . '.pdf'
+        );
     }
 
 

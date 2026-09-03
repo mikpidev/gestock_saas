@@ -89,7 +89,7 @@ class StoreTaxInfoController extends Controller
      */
     public function edit(Store $store, StoreTaxInfo $storeTaxInfo)
     {
-        $store = $storeTaxInfo->store;
+        $storeTaxInfo = $store->taxInfo;
 
         if (!$store) {
             return redirect()->back()->with('error', 'La tienda asociada no existe.');

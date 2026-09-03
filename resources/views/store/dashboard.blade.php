@@ -13,8 +13,8 @@
                 data-bs-target="#filtros">
 
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-week" viewBox="0 0 16 16">
-                    <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
-                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+                    <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
+                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
                 </svg>
 
                 <span>
@@ -161,20 +161,25 @@
                         <label>Hasta:</label>
                         <input type="date" id="to" name="to" value="{{ request('to') ?? now()->toDateString() }}">
 
+                        <label>Estado de DTE:</label>
+                        <select name="dte_status" id="dte_status" class="form-control">
+                            <option value="PROCESADO" {{ request('dte_status') == 'PROCESADO' ? 'selected' : '' }}>PROCESADO</option>
+                            <option value="RECHAZADO" {{ request('dte_status') == 'RECHAZADO' ? 'selected' : '' }}>RECHAZADO</option>
+                            <option value="PENDIENTE" {{ request('dte_status') == 'PENDIENTE' ? 'selected' : '' }}>PENDIENTE</option>
+                        </select>
+
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="document.querySelector('.filters').submit()">Filtrar</button>
 
-                        <span class="gradient-text">
-                            Cerrar
-                        </span>
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="document.querySelector('.filters').submit()">            
-                        <span class="gradient-text">
-                            Filtrar
-                        </span> 
-                    </button>
+                    <a href="#"
+                        id="download-pdf"
+                        class="btn btn-primary"
+                        title="Generar reporte PDF">
+                        Descargar Reporte
+                    </a>
                 </div>
             </div>
         </div>
@@ -189,6 +194,26 @@
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOM Pagination listo");
         getData();
+    });
+
+    document.getElementById('download-pdf').addEventListener('click', function(e) {
+
+        e.preventDefault();
+
+        const from = document.getElementById('from').value;
+        const to = document.getElementById('to').value;
+        const dteStatus = document.getElementById('dte_status').value;
+
+        const url = new URL(
+            "{{ route('stores.dashboard.download-csv', ['store' => $store->id]) }}",
+            window.location.origin
+        );
+
+        url.searchParams.set('from', from);
+        url.searchParams.set('to', to);
+        url.searchParams.set('dte_status', dteStatus);
+
+        window.open(url.toString(), '_blank');
     });
 </script>
 
