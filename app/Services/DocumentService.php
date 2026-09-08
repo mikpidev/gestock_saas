@@ -1194,7 +1194,7 @@ class DocumentService
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json'
-        ])->post("http://localhost:{$port['port']}/firmardocumento/", $payload);
+        ])->post("http://" . env('FIRMADOR_HOST', 'localhost') . ":{$port['port']}/firmardocumento/", $payload);
 
         // logs request antes de firmar
 
