@@ -180,9 +180,9 @@
         <div class="encabezado">
             <div>
                 @if(file_exists(public_path($store . '.png')))
-                <img src="{{ asset($store . '.png') }}" style="width:150px;height:auto;">
+                <img src="{{ public_path($store . '.png') }}" style="width:150px;height:auto;">
                 @else
-                <img src="{{ asset($store . '.jpeg') }}" style="width:150px;height:auto;">
+                <img src="{{ public_path($store . '.jpeg') }}" style="width:150px;height:auto;">
                 @endif
             </div>
 
