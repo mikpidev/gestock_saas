@@ -1,12 +1,6 @@
-<div class="card border-0 shadow-sm">
 
-    <div class="card-header bg-white py-2">
-        <h6 class="mb-0">Configuración de tienda</h6>
-    </div>
 
-    <div class="card-body p-3">
 
-        <div class="mb-3">
             <label for="edit_store_name" class="form-label mb-1">
                 Nombre de la tienda
             </label>
@@ -19,7 +13,6 @@
                 value="{{ old('store_name', $store->store_name ?? '') }}"
                 required
             >
-        </div>
 
         <h6 class="border-bottom pb-2 mb-2">
             Correlativos DTE

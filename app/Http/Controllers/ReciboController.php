@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditNote;
 use App\Models\DteResponse;
+use App\Models\DteResponseNC;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Sale;
@@ -232,6 +234,155 @@ class ReciboController extends Controller
                 'dteResponse' => $dteResponse
             ]);
         }
+
+        $pdfContent = $pdf->output();
+
+
+        // Crear ZIP individual
+        $zipIndividualName = "DTE_{$codigoGen}.zip";
+        $zipIndividualPath = $basePath . "/DTE_{$codigoGen}.zip";
+
+        if (file_exists($zipIndividualPath)) {
+            unlink($zipIndividualPath);
+        }
+        $zipIndividual = new \ZipArchive;
+
+        $result = $zipIndividual->open(
+            $zipIndividualPath,
+            \ZipArchive::CREATE
+        );
+
+        if ($result !== true) {
+            return back()->with('error', 'No se pudo crear el ZIP.');
+        }
+
+        $zipIndividual->addFromString(
+            "dte_{$codigoGen}.json",
+            $jsonContent,
+
+        );
+
+        $zipIndividual->addFromString(
+            "dte_{$codigoGen}.pdf",
+            $pdfContent
+        );
+
+        \Log::info("Data de descarga", [
+            'message' => "DTE Download Feature in process.",
+            'sale ID' => $sale->id,
+            'Base path' => $basePath,
+            'Codigo Generacion' => $sale->codigo_generacion,
+            'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+            'emisor'   => $json['emisor'],
+            'store'    => $store,
+        ]);
+
+        $zipIndividual->close();
+
+        return response()->download(
+            $zipIndividualPath,
+            "DTE_{$codigoGen}.zip"
+        );
+    }
+
+    public function downloadDTENC($storeId, $NCId)
+    {
+        // Limitar memoria
+        ini_set('memory_limit', '256M');
+
+        set_time_limit(120);
+
+        $baseQuery = CreditNote::with([
+            'sale',
+            'store.taxInfo',
+            'customer',
+            'creditNoteDetails.productType',
+            'tipoDte'
+        ])->where('store_id', $storeId)
+            ->findOrFail($NCId);
+
+
+        $store = $baseQuery->store->store_name;
+
+        $creditNote = $baseQuery;
+
+
+        \Log::info("Base Query Sale", [
+            'creditNote' => $creditNote->id,
+            'Codigo de Generacion' => $creditNote->codigo_generacion,
+            'Credit Note Date' => $creditNote->credit_note_date,
+        ]);
+
+
+        //Path para ventas app/store_name/dtes_export/month/day/year
+        $basePath = storage_path("app/{$store}/dtes_export/" . date("Y/m/d"));
+
+        \Log::info("Verficando si Base Path existe", ['path' => $basePath]);
+
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0775, true);
+            \Log::info("Directorio base creado", ['path' => $basePath]);
+        }
+
+        // Generamos JSON del DTE
+
+        $dteResponse = DteResponseNC::where('credit_note_id', $creditNote->id)->first();
+        // Mapeo de descripciones
+        $tipoDteDescripcion = [
+            '1' => 'Factura',
+            '3' => 'Crédito Fiscal',
+            '14' => 'Factura Sujeto Excluido',
+            '5' => 'Nota de Crédito',
+            // agregar los necesarios
+        ];
+
+        $sale = $creditNote->sale;
+        $tipo = strtolower($creditNote->tipoDte->codigo ?? '');
+
+        \Log::error("Tipo de DTE", [
+            "DTE" => $tipo
+        ]);
+
+
+        $json = $this->dteService->buildDTEJsonNC($creditNote, $sale);
+
+
+        if ($dteResponse) {
+            $json['sello_recibido'] = $dteResponse->sello_recibido;
+        }
+
+        $codigoGen = $creditNote->codigo_generacion;
+        $jsonContent = json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        // Generar QR
+        $urlQR = "https://admin.factura.gob.sv/consultaPublica"
+            . "?ambiente=01"
+            . "&codGen={$json['identificacion']['codigoGeneracion']}"
+            . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(150),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+        $qrImage = base64_encode($writer->writeString($urlQR));
+
+        // Generar PDF
+        $pdf = Pdf::loadView('recibos.pdf-NC', [
+            'tipoDteDescripcion' => 'Nota de Crédito',
+            'dte'      => $json,
+            'store' => $store,
+            'emisor'   => $json['emisor'],
+            'receptor' => $tipo === '14'
+                ? $json['sujetoExcluido']
+                : $json['receptor'],
+            'customer' => $sale->customer,
+            'documentoRelacionado' => $json['documentoRelacionado'] ?? null,
+            'resumen'  => $json['resumen'],
+            'qrImage'  => $qrImage,
+            'dteResponse' => $dteResponse
+        ]);
 
         $pdfContent = $pdf->output();
 

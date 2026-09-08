@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditNote;
 use App\Models\DteResponse;
 use Illuminate\Http\Request;
 use App\Services\OCIService;
@@ -227,6 +228,139 @@ class OCIController extends Controller
                 'success' => true,
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.sales.index', $store->id),
+            ]);
+        } catch (\Throwable $e) {
+
+            Log::error('Error enviando DTE por correo', [
+                'sale_id' => $sale->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'No se pudo enviar el correo'
+            ], 500);
+        }
+    }
+
+    public function emailSendNc(Store $store, CreditNote $creditNote)
+    {
+        try {
+
+            $sale = $creditNote->sale;
+
+            if (!$sale) {
+                return response()->json([
+                    'error' => 'La nota de crédito no tiene una venta asociada'
+                ], 422);
+            }
+
+            if ($sale->store_id != $store->id) {
+                return response()->json([
+                    'error' => 'La venta no pertenece a la tienda'
+                ], 403);
+            }
+
+            $sale->load([
+                'store.taxInfo',
+                'customer',
+                'details.productType',
+                'creditNotes.creditNoteDetails.productType',
+                'debitNotes.debitNoteDetails.productType',
+                'tipoDte'
+            ]);
+
+            $storeName = $sale->store->store_name;
+
+            // Validar email cliente
+            $to = $sale->customer->correo ?? null;
+
+            if (!$to) {
+                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                return response()->json([
+                    'error' => 'El cliente no tiene correo'
+                ], 422);
+            }
+
+            $dteResponse = DteResponse::where('sale_id', $sale->id)->latest()->first();
+
+
+            // 🔹 Tipo DTE
+            $tipo = $sale->tipoDte->codigo ?? null;
+
+            $json = $this->dteService->buildDTEJsonNC($creditNote, $sale);
+
+
+            if ($dteResponse) {
+                $json['sello_recibido'] = $dteResponse->sello_recibido;
+            }
+
+            // 🔹 JSON en memoria
+            $jsonContent = json_encode(
+                $json,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            );
+
+            // 🔹 QR
+            $urlQR = "https://admin.factura.gob.sv/consultaPublica"
+                . "?ambiente=00"
+                . "&codGen={$json['identificacion']['codigoGeneracion']}"
+                . "&fechaEmi=" . date('Y-m-d', strtotime($json['identificacion']['fecEmi']));
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(150),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+            $qrImage = base64_encode($writer->writeString($urlQR));
+
+            // 🔹 PDF en memoria
+            $pdf = Pdf::loadView('recibos.pdf-NC', [
+                'tipoDteDescripcion' => 'Nota de Crédito',
+                'dte'      => $json,
+                'store' => $storeName,
+                'emisor'   => $json['emisor'],
+                'receptor' => $tipo === '14'
+                    ? $json['sujetoExcluido']
+                    : $json['receptor'],
+                'customer' => $sale->customer,
+                'documentoRelacionado' => $json['documentoRelacionado'] ?? null,
+                'resumen'  => $json['resumen'],
+                'qrImage'  => $qrImage,
+                'dteResponse' => $dteResponse
+
+            ]);
+
+            $pdfBinary = $pdf->output();
+
+            // 🔹 Adjuntos (SIN archivos físicos)
+            $attachments = [
+                [
+                    'data' => $pdfBinary,
+                    'name' => "DTE_{$sale->codigo_generacion}.pdf",
+                    'mime' => 'application/pdf',
+                ],
+                [
+                    'data' => $jsonContent,
+                    'name' => "DTE_{$sale->codigo_generacion}.json",
+                    'mime' => 'application/json',
+                ],
+            ];
+
+            // 🔹 Envío por OCI
+            $subject = "Documento Tributario Electrónico {$sale->codigo_generacion}";
+            $body = "Estimado(a) {$sale->customer->nombre}, adjunto encontrará su comprobante electrónico.";
+
+            $this->ociService->emailSubmissionToOCI(
+                $to,
+                $subject,
+                $body,
+                $attachments
+            );
+            return response()->json([
+                'success' => true,
+                'message' => 'Correo enviado correctamente',
+                'redirect' => route('stores.creditnotes.index', $store->id),
             ]);
         } catch (\Throwable $e) {
 

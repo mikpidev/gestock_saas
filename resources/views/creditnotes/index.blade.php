@@ -1,6 +1,156 @@
 @extends('layouts.admin')
 
 @section('content')
+
+<style>
+    .card-table {
+        background: #fff;
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+        overflow: hidden;
+        margin: 2rem auto;
+        max-width: 1100px;
+    }
+
+    .card-header-custom {
+        background: #1f2937;
+        color: #fff;
+        padding: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-header-custom h2 {
+        font-size: 1.4rem;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .btn-new {
+        background: #3b82f6;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .btn-new:hover {
+        background: #2563eb;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    th {
+        background: #f3f4f6;
+        font-weight: 600;
+    }
+
+    th,
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    tr:hover {
+        background: #fafafa;
+    }
+
+    .actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border-radius: 6px;
+        font-size: 13px;
+        padding: 6px 10px;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-info {
+        background: #3b82f6;
+    }
+
+    .btn-info:hover {
+        background: #2563eb;
+    }
+
+    .btn-print {
+        background: #10b981;
+    }
+
+    .btn-print:hover {
+        background: #059669;
+    }
+
+    .btn-delete {
+        background: #ef4444;
+    }
+
+    .btn-delete:hover {
+        background: #dc2626;
+    }
+
+    .badge {
+        padding: 5px 8px;
+        font-size: 11px;
+        border-radius: 6px;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .badge-procesado {
+        background: #10b981;
+    }
+
+    .badge-rechazado {
+        background: #ef4444;
+    }
+
+    .badge-pendiente {
+        background: #ca8a04;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 2rem;
+        color: #6b7280;
+        font-style: italic;
+    }
+
+    .filter-bar {
+        background: #f9fafb;
+        padding: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-bar input {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px;
+    }
+</style>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <div class="card-table">
@@ -97,6 +247,19 @@
                 <!-- Acciones -->
 
                 <td class="actions">
+                    {{-- Descargar DTE --}}
+                    <form method="GET" action="{{ route('dte-download-nc', [$store->id, $creditNote->id]) }}">
+                        @csrf
+                        <button id="download-btn" class="btn btn-outline-secondary btn-sm" type="submit" aria-expanded="false">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
+                            </svg>
+
+                        </button>
+                    </form>
                     <div class="dropdown">
 
 
@@ -298,7 +461,7 @@
         function mostrarDTE(url) {
             const w = window.open(url, '_blank', 'width=800,height=800');
             w.onload = () => w.print();
-        } 
+        }
 
         document.addEventListener("DOMContentLoaded", function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
