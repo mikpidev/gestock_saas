@@ -2,154 +2,6 @@
 
 @section('content')
 
-<style>
-    .card-table {
-        background: #fff;
-        width: 100%;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
-        overflow: hidden;
-        margin: 2rem auto;
-        max-width: 1100px;
-    }
-
-    .card-header-custom {
-        background: #1f2937;
-        color: #fff;
-        padding: 1.2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .card-header-custom h2 {
-        font-size: 1.4rem;
-        margin: 0;
-        font-weight: 600;
-    }
-
-    .btn-new {
-        background: #3b82f6;
-        padding: 8px 14px;
-        border-radius: 6px;
-        font-weight: 600;
-        color: #fff;
-        text-decoration: none;
-        display: flex;
-        gap: 6px;
-        align-items: center;
-    }
-
-    .btn-new:hover {
-        background: #2563eb;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.95rem;
-    }
-
-    th {
-        background: #f3f4f6;
-        font-weight: 600;
-    }
-
-    th,
-    td {
-        padding: 12px;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    tr:hover {
-        background: #fafafa;
-    }
-
-    .actions {
-        display: flex;
-        gap: 6px;
-    }
-
-    .btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        border-radius: 6px;
-        font-size: 13px;
-        padding: 6px 10px;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .btn-info {
-        background: #3b82f6;
-    }
-
-    .btn-info:hover {
-        background: #2563eb;
-    }
-
-    .btn-print {
-        background: #10b981;
-    }
-
-    .btn-print:hover {
-        background: #059669;
-    }
-
-    .btn-delete {
-        background: #ef4444;
-    }
-
-    .btn-delete:hover {
-        background: #dc2626;
-    }
-
-    .badge {
-        padding: 5px 8px;
-        font-size: 11px;
-        border-radius: 6px;
-        font-weight: bold;
-        color: #fff;
-    }
-
-    .badge-procesado {
-        background: #10b981;
-    }
-
-    .badge-rechazado {
-        background: #ef4444;
-    }
-
-    .badge-pendiente {
-        background: #ca8a04;
-    }
-
-    .no-data {
-        text-align: center;
-        padding: 2rem;
-        color: #6b7280;
-        font-style: italic;
-    }
-
-    .filter-bar {
-        background: #f9fafb;
-        padding: 12px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    .filter-bar input {
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        padding: 6px;
-    }
-</style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
@@ -247,87 +99,89 @@
                 <!-- Acciones -->
 
                 <td class="actions">
-                    {{-- Descargar DTE --}}
-                    <form method="GET" action="{{ route('dte-download-nc', [$store->id, $creditNote->id]) }}">
-                        @csrf
-                        <button id="download-btn" class="btn btn-outline-secondary btn-sm" type="submit" aria-expanded="false">
+                    <div class="d-flex justify-content-center align-items-center gap-2">
 
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
-                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
-                            </svg>
+                        {{-- Descargar DTE --}}
+                        <form method="GET" action="{{ route('dte-download-nc', [$store->id, $creditNote->id]) }}">
+                            @csrf
+                            <button id="download-btn" class="btn btn-outline-secondary btn-sm" type="submit" aria-expanded="false">
 
-                        </button>
-                    </form>
-                    <div class="dropdown">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                    fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
+                                </svg>
+
+                            </button>
+                        </form>
+                        <div class="dropdown">
 
 
-                        <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
-                                <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c-.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z" />
-                            </svg>
-                        </button>
-                        <ul class="dropdown-menu">
+                            <button id="config-btn" class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
+                                    <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c-.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z" />
+                                </svg>
+                            </button>
+                            <ul class="dropdown-menu">
 
-                            {{-- Ver DTE --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="mostrarDTE('{{ route('dte.public.nc', $creditNote->codigo_generacion) }}')">
-                                    <i class="bi bi-eye"></i> Ver DTE
-                                </button>
-                            </li>
-
-                            {{-- Imprimir --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $creditNote->id]) }}')">
-                                    <i class="bi bi-printer"></i> Imprimir
-                                </button>
-                            </li>
-
-                            {{-- Enviar correo --}}
-                            <li>
-                                <button class="dropdown-item"
-                                    onclick="enviarDTEPorCorreo('{{ route('stores.email.send', [$store->id, $creditNote->id]) }}')">
-                                    <i class="bi bi-envelope"></i> Enviar correo
-                                </button>
-                            </li>
-
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-
-                            {{-- Eliminar --}}
-                            @php
-                            $canDelete = $creditNote->created_at->greaterThan(now()->subHours(24));
-                            @endphp
-
-                            @if ($canDelete)
-                            <li>
-                                <form action="{{ route('stores.creditnotes.destroy', [$store->id, $creditNote->id]) }}"
-                                    method="POST"
-                                    onsubmit="return confirm('¿Eliminar Nota de Credito?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="dropdown-item text-danger">
-                                        <i class="bi bi-trash"></i> Eliminar
+                                {{-- Ver DTE --}}
+                                <li>
+                                    <button class="dropdown-item"
+                                        onclick="mostrarDTE('{{ route('dte.public.nc', $creditNote->codigo_generacion) }}')">
+                                        <i class="bi bi-eye"></i> Ver DTE
                                     </button>
-                                </form>
-                            </li>
-                            @else
-                            <li>
-                                <span class="dropdown-item text-muted"
-                                    data-bs-toggle="tooltip"
-                                    title="No se puede eliminar ventas con más de 24 horas">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </span>
-                            </li>
-                            @endif
+                                </li>
 
-                        </ul>
+                                {{-- Imprimir --}}
+                                <li>
+                                    <button class="dropdown-item"
+                                        onclick="mostrarModalImpresion('{{ route('ticket.print', [$store->id, $creditNote->id]) }}')">
+                                        <i class="bi bi-printer"></i> Imprimir
+                                    </button>
+                                </li>
+
+                                {{-- Enviar correo --}}
+                                <li>
+                                    <button class="dropdown-item"
+                                        onclick="enviarDTEPorCorreo('{{ route('stores.email.send', [$store->id, $creditNote->id]) }}')">
+                                        <i class="bi bi-envelope"></i> Enviar correo
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+
+                                {{-- Eliminar --}}
+                                @php
+                                $canDelete = $creditNote->created_at->greaterThan(now()->subHours(24));
+                                @endphp
+
+                                @if ($canDelete)
+                                <li>
+                                    <form action="{{ route('stores.creditnotes.destroy', [$store->id, $creditNote->id]) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('¿Eliminar Nota de Credito?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="dropdown-item text-danger">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </button>
+                                    </form>
+                                </li>
+                                @else
+                                <li>
+                                    <span class="dropdown-item text-muted"
+                                        data-bs-toggle="tooltip"
+                                        title="No se puede eliminar ventas con más de 24 horas">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </span>
+                                </li>
+                                @endif
+
+                            </ul>
+                        </div>
                     </div>
-
                 </td>
             </tr>
             @endforeach
