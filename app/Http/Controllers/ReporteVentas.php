@@ -117,7 +117,11 @@ class ReporteVentas extends Controller
             ->where('environment', $environment);
         //logs para verificar las tiendas y fechas
 
+        $store = $store->store_name;
+
+
         \Log::info('DEBUG QUERY', [
+            'store_name' => $store,
             'store_id' => $storeId,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
@@ -127,9 +131,9 @@ class ReporteVentas extends Controller
         ]);
 
 
-        $query->chunk(40, function ($sales) use ($zipPrincipal) {
-
+        $query->chunk(40, function ($sales) use ($zipPrincipal, $store) {
             $saleIds = $sales->pluck('id');
+
 
             $dteResponses = DteResponse::whereIn('sale_id', $saleIds)
                 ->get()
@@ -194,17 +198,31 @@ class ReporteVentas extends Controller
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
                 // Generar PDF
-                $pdf = Pdf::loadView('reportes.ventas', [
-                    'store' => $sale->store_name,
-                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                    'dte' => $json,
-                    'emisor' => $json['emisor'],
-                    'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-                    'resumen' => $json['resumen'],
-                    'qrImage' => $qrImage,
-                    'dteResponse' => $dteResponse
-                ]);
 
+                if ($tipo === '14') {
+                    $pdf = Pdf::loadView('recibos.pdf-SE', [
+                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                        'dte'      => $json,
+                        'emisor'   => $json['emisor'],
+                        'store'    => $store,
+                        //validar si es SE - pass sujetoExcluido en lugar de receptor
+                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                        'resumen'  => $json['resumen'],
+                        'qrImage'  => $qrImage,
+                        'dteResponse' => $dteResponse
+                    ]);
+                } else {
+                    $pdf = Pdf::loadView('reportes.ventas', [
+                        'store' => $store,
+                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                        'dte' => $json,
+                        'emisor' => $json['emisor'],
+                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                        'resumen' => $json['resumen'],
+                        'qrImage' => $qrImage,
+                        'dteResponse' => $dteResponse
+                    ]);
+                }
                 $pdfFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.pdf");
                 $pdf->save($pdfFilename);
 
