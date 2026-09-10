@@ -47,7 +47,9 @@ class CustomersController extends Controller
     public function index(Store $store)
     {
         $this->validateStoreAccess($store);
-        $customers = $store->customers()->get();
+        $customers = $store->customers()            
+            ->paginate(15)
+            ->withQueryString();
 
         //traer catálogos
         $tiposDocumento = TipoDocumento::all();

@@ -110,6 +110,115 @@
             @endforelse
         </tbody>
     </table>
+
+    @if ($customers->hasPages())
+    <div class="customers-pagination">
+
+        {{-- Información --}}
+        <div class="pagination-info">
+            Mostrando
+            <strong>{{ $customers->firstItem() }}</strong>
+            -
+            <strong>{{ $customers->lastItem() }}</strong>
+            de
+            <strong>{{ $customers->total() }}</strong>
+            Clientes
+        </div>
+
+        {{-- Navegación --}}
+        <nav aria-label="Paginación de ventas">
+            <ul class="pagination-modern">
+
+                {{-- Anterior --}}
+                @if ($customers->onFirstPage())
+                <li class="disabled">
+                    <span class="pagination-btn pagination-arrow">
+                        <i class="bi bi-chevron-left"></i>
+                    </span>
+                </li>
+                @else
+                <li>
+                    <a href="{{ $customers->previousPageUrl() }}"
+                        class="pagination-btn pagination-arrow"
+                        aria-label="Página anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                @endif
+
+
+                {{-- Páginas --}}
+                @php
+                $current = $customers->currentPage();
+                $last = $customers->lastPage();
+
+                $pages = [];
+
+                if ($last <= 7) {
+                    $pages=range(1, $last);
+                    } else {
+                    $pages[]=1;
+
+                    if ($current> 4) {
+                    $pages[] = '...';
+                    }
+
+                    $start = max(2, $current - 1);
+                    $end = min($last - 1, $current + 1);
+
+                    for ($i = $start; $i <= $end; $i++) {
+                        $pages[]=$i;
+                        }
+
+                        if ($current < $last - 3) {
+                        $pages[]='...' ;
+                        }
+
+                        $pages[]=$last;
+                        }
+                        @endphp
+
+
+                        @foreach ($pages as $page)
+
+                        @if ($page==='...' )
+                        <li>
+                        <span class="pagination-dots">...</span>
+                        </li>
+                        @else
+                        <li>
+                            <a href="{{ $customers->url($page) }}"
+                                class="pagination-btn {{ $page == $current ? 'active' : '' }}">
+                                {{ $page }}
+                            </a>
+                        </li>
+                        @endif
+
+                        @endforeach
+
+
+                        {{-- Siguiente --}}
+                        @if ($customers->hasMorePages())
+                        <li>
+                            <a href="{{ $customers->nextPageUrl() }}"
+                                class="pagination-btn pagination-arrow"
+                                aria-label="Página siguiente">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        @else
+                        <li class="disabled">
+                            <span class="pagination-btn pagination-arrow">
+                                <i class="bi bi-chevron-right"></i>
+                            </span>
+                        </li>
+                        @endif
+
+            </ul>
+        </nav>
+
+    </div>
+    @endif
 </div>
 
 <!-- Modal único de edición al final de la página -->
