@@ -11,7 +11,7 @@
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 
 
-    <link rel="icon" type="image/png"  href="{{ asset('favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
 
 
     <!-- Custom CSS -->
@@ -19,6 +19,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
 </head>
+
 <body>
     <!-- Header -->
     <header class="d-flex align-items-center justify-content-between mb-4">
@@ -55,8 +56,8 @@
 
     <!-- Main -->
     <main class="container-fluid mt-4">
-        @if(isset($store) && request()->routeIs('stores.*') && !request()->routeIs('stores.index'))
-        <div class="d-flex">
+        @if(isset($store) && (request()->routeIs('stores.*') || request()->routeIs('contingencias.*')) && !request()->routeIs('stores.index'))
+         <div class="d-flex">
             <!-- Sidebar -->
             <div class="flex-shrink-0 me-4 sidebar">
                 <x-store-panel :store="$store" />

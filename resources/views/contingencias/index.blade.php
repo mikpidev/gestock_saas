@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+
 <div class="container">
     <div class="d-flex justify-content-between mb-3">
         <h4>Contingencias</h4>
@@ -36,10 +37,7 @@
                 </td>
                 <td>
                     @if(!$c->fecha_hora_fin)
-                    <form action="{{ route('contingencias.cerrar', [
-    'store' => $store->id,
-    'contingencia' => $c->id
-]) }}" method="POST">
+                    <form action="{{ route('contingencias.cerrar', ['store' => $store->id, 'contingencia' => $c->id]) }}" method="POST">
                         @csrf
                         <button class="btn btn-sm btn-danger"
                             onclick="return confirm('¿Deseas cerrar esta contingencia?')">

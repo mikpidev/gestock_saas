@@ -11,6 +11,9 @@
         <a href="{{ route('stores.product_types.index', $store->id) }}">
             <i class="fas fa-box-open"></i> Productos
         </a>
+        <a href="{{ route('contingencias.index', $store->id) }}">
+            <i class="fas fa-file-invoice-dollar"></i> Contingencia
+        </a>
 
         @endhasrole
 

@@ -3,6 +3,7 @@
 @section('content')
 
 
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <div class="card-table">
@@ -290,57 +291,58 @@
             </div>
         </div>
     </div>
+</div>
 
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el)
-            })
-        });
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
 
-        function mostrarModalImpresion(url) {
-            const w = window.open(url, '_blank', 'width=400,height=800');
-            w.onload = () => w.print();
+    function mostrarModalImpresion(url) {
+        const w = window.open(url, '_blank', 'width=400,height=800');
+        w.onload = () => w.print();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function mostrarDTE(url) {
+        const w = window.open(url, '_blank', 'width=800,height=800');
+        w.onload = () => w.print();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el)
+        })
+    });
+
+
+    function enviarDTEPorCorreo(url) {
+        if (confirm('¿Enviar DTE por correo electrónico?')) {
+            fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.redirect) {
+                        window.location.href = data.redirect;
+                    }
+                });
         }
-        document.addEventListener("DOMContentLoaded", function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el)
-            })
-        });
-
-
-        function mostrarDTE(url) {
-            const w = window.open(url, '_blank', 'width=800,height=800');
-            w.onload = () => w.print();
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            tooltipTriggerList.map(function(el) {
-                return new bootstrap.Tooltip(el)
-            })
-        });
-
-
-        function enviarDTEPorCorreo(url) {
-            if (confirm('¿Enviar DTE por correo electrónico?')) {
-                fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success && data.redirect) {
-                            window.location.href = data.redirect;
-                        }
-                    });
-            }
-        }
-    </script>
-    @endsection
+    }
+</script>
+@endsection

@@ -116,10 +116,10 @@
                     </tr>
                     @endforelse
                 </tbody>
-                @endforeach
             </table>
         </div>
     </div>
+    @endforeach
 </div>
 
 <!-- Modal único de edición al final de la página -->
@@ -158,7 +158,7 @@
         const editModal = new bootstrap.Modal(document.getElementById('editProductTypeModal'));
         document.querySelectorAll('.editProductTypeBtn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const productTypeId  = btn.dataset.id;
+                const productTypeId = btn.dataset.id;
                 const storeId = btn.dataset.store;
 
                 const form = document.getElementById('editProductTypeForm');
