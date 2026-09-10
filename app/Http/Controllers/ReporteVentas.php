@@ -95,6 +95,7 @@ class ReporteVentas extends Controller
         $dateFrom = $request->dateFrom ? Carbon::parse($request->dateFrom)->startOfDay() : Carbon::now()->startOfDay();
         $dateTo = $request->dateTo ? Carbon::parse($request->dateTo)->endOfDay() : Carbon::now()->endOfDay();
         $storeId = $store->id;
+        $environment = $store->environment;
         //llamar store id para filtrar ventas
 
 
@@ -113,10 +114,9 @@ class ReporteVentas extends Controller
 
             ->where('store_id', $storeId)
             ->whereBetween('sale_date', [$dateFrom, $dateTo])
-            ->where('environment', 'Development');
+            ->where('environment', $environment);
         //logs para verificar las tiendas y fechas
 
-        $storeName = $store->store_name;
         \Log::info('DEBUG QUERY', [
             'store_id' => $storeId,
             'dateFrom' => $dateFrom,
@@ -194,29 +194,17 @@ class ReporteVentas extends Controller
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
                 // Generar PDF
-                if ($tipo === '14') {
-                    $pdf = Pdf::loadView('reportes.ventas-SE', [
-                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                        'dte' => $json,
-                        'store' => $sale->store->store_name,
-                        'emisor' => $json['emisor'],
-                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-                        'resumen' => $json['resumen'],
-                        'qrImage' => $qrImage,
-                        'dteResponse' => $dteResponse
-                    ]);
-                } else {
-                    $pdf = Pdf::loadView('reportes.ventas', [
-                        'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
-                        'dte' => $json,
-                        'store' => $sale->store->store_name,
-                        'emisor' => $json['emisor'],
-                        'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
-                        'resumen' => $json['resumen'],
-                        'qrImage' => $qrImage,
-                        'dteResponse' => $dteResponse
-                    ]);
-                }
+                $pdf = Pdf::loadView('reportes.ventas', [
+                    'store' => $sale->store_name,
+                    'tipoDteDescripcion' => $tipoDteDescripcion[$tipo] ?? 'Desconocido',
+                    'dte' => $json,
+                    'emisor' => $json['emisor'],
+                    'receptor' => $tipo === '14' ? $json['sujetoExcluido'] : $json['receptor'],
+                    'resumen' => $json['resumen'],
+                    'qrImage' => $qrImage,
+                    'dteResponse' => $dteResponse
+                ]);
+
                 $pdfFilename = storage_path("app/dte_reportes/temp/dte_{$codigoGen}.pdf");
                 $pdf->save($pdfFilename);
 
@@ -360,6 +348,7 @@ class ReporteVentas extends Controller
                 $qrImage = base64_encode($writer->writeString($urlQR));
 
                 $pdf = Pdf::loadView('reportes.notascredito', [
+                    'store' => $nc->store_name,
                     'dte' => $json,
                     'emisor' => $json['emisor'],
                     'receptor' => $json['receptor'],
