@@ -32,7 +32,7 @@
     </div>
 </div>
 
-<div class="table-responsive mt-4">
+<div class="table mt-4">
     <table class="table table-hover">
         <thead>
             <tr>

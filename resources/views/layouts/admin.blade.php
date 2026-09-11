@@ -20,7 +20,7 @@
 
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
     <!-- Header -->
     <header class="d-flex align-items-center justify-content-between mb-4">
         <a class="d-flex align-items-center" href="{{ route('home') }}">
@@ -55,7 +55,7 @@
     </header>
 
     <!-- Main -->
-    <main class="container-fluid mt-4">
+    <main class="container-fluid mt-4 flex-grow-1">
         @if(isset($store) && (request()->routeIs('stores.*') || request()->routeIs('contingencias.*')) && !request()->routeIs('stores.index'))
          <div class="d-flex">
             <!-- Sidebar -->
