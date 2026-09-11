@@ -122,7 +122,7 @@ class CreditNoteController extends Controller
 
     public function refreshDTE(Store $store, CreditNote $creditNote, Sale $sale, ConsultaService $consultaService)
     {
-  try {
+        try {
 
             // Validar tiempo permitido
             if ($creditNote->created_at->diffInHours(now()) > 48) {
@@ -198,7 +198,8 @@ class CreditNoteController extends Controller
         //mostrar ventas
 
         $sales = Sale::where('store_id', $store->id)
-            ->orderBy('created_at', 'desc') // 👈 Ordena por fecha descendente
+            ->with(['customer', 'details.productType'])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return view('creditnotes.create', compact('store', 'sales'));
