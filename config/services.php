@@ -67,6 +67,11 @@ return [
         'from_email' => env('MAIL_FROM_ADDRESS'),
         'from_name' => env('MAIL_FROM_NAME', 'Villa Mercedes'),
     ],
+
+    'gestock_leads' => [
+        'notify_email' => env('GESTOCK_LEADS_EMAIL', 'gestock.sts@outlook.com'),
+        'from_email' => env('MAIL_LEADS_FROM_ADDRESS', 'No-Reply@gestock.site'),
+    ],
     
 
 ];

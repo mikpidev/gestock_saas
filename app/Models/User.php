@@ -69,4 +69,13 @@ class User extends Authenticatable
         return $this->belongsTo(Store::class);
     }
 
+    public function canViewLandingLeads(): bool
+    {
+        $ownerEmail = config('services.gestock_leads.notify_email');
+
+        return is_string($ownerEmail)
+            && $ownerEmail !== ''
+            && strcasecmp((string) $this->email, $ownerEmail) === 0;
+    }
+
 }

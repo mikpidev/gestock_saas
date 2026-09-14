@@ -39,6 +39,12 @@
                         <a class="dropdown-item" href="{{ route('profile.edit', Auth::user()->id) }}"
                             style="color: var(--color-black); font-weight:500;">Perfil</a>
                     </li>
+                    @if(Auth::user()->canViewLandingLeads())
+                    <li>
+                        <a class="dropdown-item" href="{{ route('leads.index') }}"
+                            style="color: var(--color-black); font-weight:500;">Solicitudes</a>
+                    </li>
+                    @endif
                     <li>
                         <hr class="dropdown-divider">
                     </li>
