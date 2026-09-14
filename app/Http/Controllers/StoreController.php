@@ -20,7 +20,7 @@ class StoreController extends Controller
 
 
 
-    public function index(Request $request, Store $store)
+    public function index(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
@@ -33,12 +33,16 @@ class StoreController extends Controller
                 return redirect()->route('companies.select'); // o donde seleccione empresa
             }
 
-            $stores = Store::where('company_id', $companyId)->get();
+            $stores = Store::where('company_id', $companyId)
+                ->with(['mh_access', 'taxInfo', 'company', 'correlativoStores'])
+                ->get();
         } elseif ($user->hasRole('admin')) {
 
             $companyId = session('selected_company_id') ?? $user->company_id;
 
-            $stores = Store::where('company_id', $companyId)->get();
+            $stores = Store::where('company_id', $companyId)
+                ->with(['mh_access', 'taxInfo', 'company', 'correlativoStores'])
+                ->get();
         } else {
             abort(403, 'Acceso no autorizado.');
         }
@@ -48,12 +52,16 @@ class StoreController extends Controller
         $actividades = \App\Models\CodActividad::all();
         $departamentos = \App\Models\Departamento::all();
         $municipios = \App\Models\Municipio::all();
+        $tiposDte = \App\Models\TipoDte::all();
 
-        
-        // Cargar relaciones necesarias
-        $store->load(['taxInfo', 'company']);
-
-        return view('store.index', compact('stores','store', 'actividades', 'departamentos', 'municipios'));
+        return view('store.index', compact(
+            'stores',
+            'actividades',
+            'departamentos',
+            'municipios',
+            'tiposDte',
+            'companyId'
+        ));
     }
 
 

@@ -1422,3 +1422,126 @@ label {
     }
 
 }
+
+/* ============================
+   TIENDAS — acciones compactas
+============================ */
+
+.store-index .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-black);
+    background: var(--color-primario);
+    border: 1px solid var(--color-bordes);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.store-index .btn-add svg {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.store-index .btn-add:hover {
+    background: var(--color-acento);
+    border-color: var(--color-bordes);
+    transform: translateY(-1px);
+}
+
+.store-row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.store-index .btn-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    color: var(--color-black);
+    background: var(--color-primario);
+    border: 1px solid var(--color-bordes);
+    border-radius: 8px;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.store-index .btn-edit:hover {
+    background: var(--color-acento);
+    border-color: var(--color-bordes);
+    color: var(--color-black);
+    font-weight: 500;
+}
+
+.store-index .config-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: #af2828;
+    background: var(--color-primario);
+    border: 1px solid var(--color-bordes);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.store-index .config-btn svg {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.store-index .config-btn::after {
+    display: none;
+}
+
+.store-index .config-btn:hover {
+    background: var(--color-acento);
+    border-color: var(--color-bordes);
+    color: #af2828;
+}
+
+.store-index .dropdown-menu {
+    border: 1px solid var(--color-bordes);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.35rem;
+    font-size: 0.8rem;
+}
+
+.store-index .dropdown-item {
+    border-radius: 6px;
+    padding: 0.4rem 0.65rem;
+    color: var(--color-black);
+}
+
+.store-index .dropdown-item:hover {
+    background: var(--color-acento);
+    color: var(--color-black);
+}
+
+.store-index .dropdown-item.text-danger {
+    color: #af2828;
+}
+
+.store-index .btn-modal {
+    min-height: 34px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+}
