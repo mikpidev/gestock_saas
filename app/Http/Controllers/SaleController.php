@@ -28,10 +28,6 @@ use stdClass;
 class SaleController extends Controller
 {
 
-
-
-
-
     // Validación de accesos
     private function validateStoreAccess(Store $store)
     {
@@ -77,7 +73,7 @@ class SaleController extends Controller
         $consultaService = new ConsultaService();
         $customers = Customer::where('store_id', $store->id)->get();
         $dteStatuses = Sale::where('store_id', $store->id)->select('dte_status')->distinct()->pluck('dte_status');
-        $dte_types = Sale::where('store_id', $store->id)->select('tipo_documento_id')->distinct()->pluck('tipo_documento_id');
+        $dteTypes = TipoDte::all(['id', 'nombre']);
 
         // Primero obtenemos la fecha del request (si no viene, usa hoy)
         $dateFrom = $request->from
@@ -93,7 +89,7 @@ class SaleController extends Controller
         $customers_id = $request->customer_id;
         $codigo_generacion_filter = $request->codigo_generacion;
         $dte_status = $request->dte_status;
-        $dte_type = $request->dte_type;
+        $dte_types= $request->dte_types;
 
 
         //obtener datos para mostrar en el filtro
@@ -103,10 +99,13 @@ class SaleController extends Controller
             ->when($customers_id, fn($q) => $q->where('customers_id', $customers_id))
             ->when($codigo_generacion_filter, fn($q) => $q->where('codigo_generacion', $codigo_generacion_filter))
             ->when($dte_status, fn($q) => $q->where('dte_status', $dte_status))
-            ->when($dte_type, fn($q) => $q->where('dte_type', $dte_type))
+            ->when($dte_types, fn($q) => $q->where('tipo_documento_id', $dte_types))
             ->orderByDesc('sale_date')
             ->paginate(15)
             ->withQueryString();
+        
+        //Logs para debug
+        \Log::info('Query: ' . $sales);
 
 
         // Solo ventas no procesadas
@@ -130,7 +129,7 @@ class SaleController extends Controller
         }
 
 
-        return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses'));
+        return view('sales.index', compact('store', 'sales', 'dateFrom', 'dateTo', 'customers', 'customers_id', 'codigo_generacion_filter', 'dte_status', 'dteStatuses', 'dteTypes'));
     }
 
 

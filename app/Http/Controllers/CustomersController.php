@@ -44,18 +44,42 @@ class CustomersController extends Controller
     /**
      * Mostrar todos los clientes de la tienda.
      */
-    public function index(Store $store)
+    public function index(Store $store, Request $request)
     {
         $this->validateStoreAccess($store);
-        $customers = $store->customers()            
-            ->paginate(15)
-            ->withQueryString();
 
         //traer catálogos
         $tiposDocumento = TipoDocumento::all();
         $actividades = CodActividad::all();
         $departamentos = Departamento::all();
         $municipios = Municipio::all();
+
+        $name = $request->name;
+        $numDocumento = $request->numDocumento;
+        $nrc = $request->nrc;
+        $tipoDocumento = $request->tipoDocumento;
+
+        $customers = Customer::with('tipoDocumentoCatalogo')
+            ->where('store_id', $store->id)
+            ->when($name, function ($q) use ($name) {
+                $q->where(function ($query) use ($name) {
+                    $query->where('nombre', 'like', '%' . $name . '%')
+                        ->orWhere('nombreComercial', 'like', '%' . $name . '%');
+                });
+            })
+            ->when($numDocumento, fn($q) => $q->where('numDocumento', 'like', '%' . $numDocumento . '%'))
+            ->when($nrc, fn($q) => $q->where('nrc', 'like', '%' . $nrc . '%'))
+            ->when($tipoDocumento, fn($q) => $q->where('tipoDocumento', $tipoDocumento))
+            ->orderByDesc('created_at')
+            ->paginate(15)
+            ->withQueryString();
+
+            // si no hay Filtros aplicados, traer todos los clientes
+            if (!$name && !$numDocumento && !$nrc && !$tipoDocumento) {
+                $customers = Customer::where('store_id', $store->id)->orderByDesc('created_at')->paginate(15)->withQueryString();
+            }
+
+
 
         return view('customers.index', compact('store', 'customers', 'tiposDocumento', 'actividades', 'departamentos', 'municipios'));
     }

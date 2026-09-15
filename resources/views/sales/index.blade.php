@@ -396,6 +396,16 @@
                         @endforeach
                     </select>
 
+                    <label>Tipo DTE:</label>
+                    <select name="dte_types" class="form-control">
+                        <option value="">Seleccionar tipo</option>
+                        @foreach($dteTypes as $type)
+                        <option value="{{ $type->id }}" @selected(request('dte_types') == $type->id)>
+                            {{ $type->nombre }}
+                        </option>
+                        @endforeach
+                    </select>
+
                 </form>
             </div>
             <div class="modal-footer">

@@ -4,14 +4,70 @@
 
 
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2></h2>
-    <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#gestokModal" title="Crear Cliente" style="margin-right: 75px;">
-        <i class="bi bi-plus-circle"></i>
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
-        </svg>
-    </button>
+<div class="customers-index">
+
+<div class="customers-toolbar">
+    <form method="GET" action="{{ route('stores.customers.index', $store) }}" class="customers-search">
+        <input type="hidden" name="numDocumento" value="{{ request('numDocumento') }}">
+        <input type="hidden" name="nrc" value="{{ request('nrc') }}">
+        <input type="hidden" name="tipoDocumento" value="{{ request('tipoDocumento') }}">
+        <input type="search" name="name" value="{{ request('name') }}" placeholder="Buscar por nombre..." aria-label="Buscar por nombre">
+        <button type="submit" class="customers-search-btn">Buscar</button>
+    </form>
+
+    <div class="customers-toolbar-actions">
+        <button type="button" class="customers-filter-btn" data-bs-toggle="modal" data-bs-target="#customerFiltersModal">
+            Filtros
+            @if(request()->filled('numDocumento') || request()->filled('nrc') || request()->filled('tipoDocumento'))
+                <span class="customers-filter-dot"></span>
+            @endif
+        </button>
+        <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#gestokModal" title="Crear Cliente">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
+            </svg>
+            <span>Nuevo cliente</span>
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="customerFiltersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filtros de clientes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="GET" action="{{ route('stores.customers.index', $store) }}">
+                <div class="modal-body">
+                    <input type="hidden" name="name" value="{{ request('name') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Número de documento</label>
+                        <input type="text" name="numDocumento" class="form-control" value="{{ request('numDocumento') }}" maxlength="14">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">NRC</label>
+                        <input type="text" name="nrc" class="form-control" value="{{ request('nrc') }}" maxlength="10">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de documento</label>
+                        <select name="tipoDocumento" class="form-control">
+                            <option value="">Todos</option>
+                            @foreach ($tiposDocumento as $tipo)
+                                <option value="{{ $tipo->codigo }}" @selected(request('tipoDocumento') == $tipo->codigo)>
+                                    {{ $tipo->codigo }} — {{ $tipo->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ route('stores.customers.index', $store) }}" class="btn-modal">Limpiar</a>
+                    <button type="submit" class="btn-modal">Aplicar filtros</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 
@@ -384,7 +440,5 @@
 
     });
 </script>
-
-
-
+</div>
 @endsection
