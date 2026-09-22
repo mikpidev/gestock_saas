@@ -45,7 +45,7 @@ return [
     ],
     
     'firma' => [
-        'url' => env('FIRMA_API_URL'),
+        'url' => env('FIRMADOR_HOST', env('FIRMA_API_URL', 'localhost')),
     ],
 
     'oci' => [

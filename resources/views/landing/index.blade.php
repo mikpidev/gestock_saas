@@ -16,6 +16,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             <a href="#caracteristicas">Características</a>
             <a href="#reportes">Reportes</a>
             <a href="#planes">Planes</a>
+            <a href="#api">API</a>
             <a href="#faq">Preguntas frecuentes</a>
             <a href="#contacto">Contacto</a>
         </nav>
@@ -38,6 +39,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
         <a href="#caracteristicas" @click="menu = false">Características</a>
         <a href="#reportes" @click="menu = false">Reportes</a>
         <a href="#planes" @click="menu = false">Planes</a>
+        <a href="#api" @click="menu = false">API</a>
         <a href="#faq" @click="menu = false">Preguntas frecuentes</a>
         <a href="#contacto" @click="menu = false">Contacto</a>
         @auth
@@ -350,6 +352,48 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
         </div>
     </section>
 
+    <section id="api" class="lp-api">
+        <div class="lp-wrap lp-api__grid">
+            <div class="lp-reveal">
+                <span class="lp-api__badge">
+                    <i></i>
+                    En desarrollo · Muy pronto
+                </span>
+                <p class="lp-api__brand">Gestock API</p>
+                <h2>La puerta para que tu negocio facture desde cualquier sistema.</h2>
+                <p class="lp-lead">Estamos construyendo una API para conectar tu POS, e-commerce o ERP con Gestock: ventas, clientes y DTE sin salir de tu flujo. El futuro de la facturación electrónica en El Salvador, abierto a integraciones.</p>
+                <ul class="lp-api__chips" aria-label="Capacidades en desarrollo">
+                    <li>REST</li>
+                    <li>DTE</li>
+                    <li>Webhooks</li>
+                    <li>Claves de acceso</li>
+                    <li>Sandbox</li>
+                </ul>
+                <div class="lp-cta-row">
+                    <button type="button" class="lp-btn lp-btn--primary" @click="contact = true">Quiero acceso anticipado</button>
+                    <a class="lp-btn lp-btn--light" href="#contacto">Avísame cuando esté lista</a>
+                </div>
+            </div>
+            <div class="lp-api__terminal lp-reveal" aria-hidden="true">
+                <div class="lp-api__terminal-bar">
+                    <span></span><span></span><span></span>
+                    <code>gestock-api · coming soon</code>
+                </div>
+                <pre><span class="lp-api__cmt"># Integración en construcción</span>
+<span class="lp-api__cmd">POST</span> /v1/dte
+{
+  <span class="lp-api__key">"tipoDte"</span>: <span class="lp-api__str">"01"</span>,
+  <span class="lp-api__key">"ambiente"</span>: <span class="lp-api__str">"00"</span>,
+  <span class="lp-api__key">"receptor"</span>: { <span class="lp-api__key">"nombre"</span>: <span class="lp-api__str">"…"</span> },
+  <span class="lp-api__key">"cuerpoDocumento"</span>: [ … ]
+}
+
+<span class="lp-api__cmt"># Status</span>
+<span class="lp-api__ok">200</span>  almost there<span class="lp-api__cursor">█</span></pre>
+            </div>
+        </div>
+    </section>
+
     <section id="para-quien" class="lp-section lp-audience">
         <div class="lp-wrap">
             <div class="lp-section__head lp-reveal">
@@ -417,6 +461,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             ['¿Gestock es un sistema de inventario?', 'No. Gestock ofrece control y organización de productos para apoyar la operación de ventas, pero no pretende ser un sistema especializado de inventario.'],
             ['¿Gestock funciona con facturación electrónica?', 'Sí. La plataforma está orientada a la gestión de documentos tributarios electrónicos y la operación de ventas.'],
             ['¿El precio es por sucursal?', 'Sí. El plan se maneja por sucursal.'],
+            ['¿Gestock tendrá API?', 'Sí. Gestock API está en desarrollo. Muy pronto podrás integrar facturación electrónica y ventas con tus propios sistemas. Si quieres acceso anticipado, escríbenos.'],
             ] as $faq)
             <details class="lp-reveal">
                 <summary>{{ $faq[0] }}</summary>
@@ -467,6 +512,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             <p><a href="#caracteristicas">Características</a></p>
             <p><a href="#reportes">Reportes</a></p>
             <p><a href="#planes">Planes</a></p>
+            <p><a href="#api">Gestock API</a></p>
             <p><a href="#faq">Preguntas frecuentes</a></p>
             <p><a href="#contacto">Contacto</a></p>
         </div>

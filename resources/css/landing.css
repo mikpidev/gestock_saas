@@ -117,8 +117,10 @@ a {
 .lp-nav__links {
     display: none;
     align-items: center;
-    gap: 1.25rem;
-    font-size: 0.92rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.95rem;
+    font-size: 0.86rem;
     font-weight: 500;
     color: var(--lp-muted);
 }
@@ -606,6 +608,192 @@ a {
     color: var(--lp-muted);
 }
 
+.lp-api {
+    position: relative;
+    overflow: hidden;
+    scroll-margin-top: 96px;
+    padding: 4.5rem 0;
+    background:
+        radial-gradient(ellipse 80% 70% at 90% 10%, rgb(175 40 40 / 28%), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 0% 100%, rgb(255 0 0 / 12%), transparent 50%),
+        #111;
+    color: #fff;
+}
+
+.lp-api::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(180deg, rgb(0 0 0 / 55%), transparent 85%);
+    pointer-events: none;
+}
+
+.lp-api__grid {
+    position: relative;
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+}
+
+.lp-api h2 {
+    max-width: 18ch;
+    margin: 0.35rem 0 0.85rem;
+}
+
+.lp-api .lp-lead {
+    color: rgb(255 255 255 / 72%);
+    max-width: 38rem;
+}
+
+.lp-api__brand {
+    margin: 0.85rem 0 0;
+    font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #ff9999;
+}
+
+.lp-api__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.32rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 153 153 / 35%);
+    background: rgb(175 40 40 / 22%);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.lp-api__badge i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff0000;
+    box-shadow: 0 0 0 0 rgb(255 0 0 / 70%);
+    animation: lp-api-pulse 1.8s ease-out infinite;
+}
+
+.lp-api__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.2rem 0 1.4rem;
+    padding: 0;
+    list-style: none;
+}
+
+.lp-api__chips li {
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    background: rgb(255 255 255 / 6%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.lp-api__terminal {
+    border-radius: var(--lp-radius-lg);
+    border: 1px solid rgb(255 255 255 / 12%);
+    background: #0b0b0b;
+    box-shadow: 0 24px 50px rgb(0 0 0 / 45%), 0 0 0 1px rgb(175 40 40 / 18%);
+    overflow: hidden;
+}
+
+.lp-api__terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 0.9rem;
+    background: #161616;
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.lp-api__terminal-bar span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ff9999;
+}
+
+.lp-api__terminal-bar span:nth-child(2) {
+    background: #ffcccc;
+}
+
+.lp-api__terminal-bar span:nth-child(3) {
+    background: #8f8e8e;
+}
+
+.lp-api__terminal-bar code {
+    margin-left: 0.55rem;
+    font-size: 0.72rem;
+    color: rgb(255 255 255 / 45%);
+}
+
+.lp-api__terminal pre {
+    margin: 0;
+    padding: 1.15rem 1.2rem 1.3rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    color: #e8e8e8;
+    overflow: auto;
+}
+
+.lp-api__cmt {
+    color: #8f8e8e;
+}
+
+.lp-api__cmd {
+    color: #ff6666;
+    font-weight: 700;
+}
+
+.lp-api__key {
+    color: #ff9999;
+}
+
+.lp-api__str {
+    color: #ffcccc;
+}
+
+.lp-api__ok {
+    color: #7dffa3;
+    font-weight: 700;
+}
+
+.lp-api__cursor {
+    display: inline-block;
+    margin-left: 2px;
+    color: var(--lp-cta-strong);
+    animation: lp-api-blink 1s steps(1) infinite;
+}
+
+@keyframes lp-api-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgb(255 0 0 / 55%);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgb(255 0 0 / 0%);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgb(255 0 0 / 0%);
+    }
+}
+
+@keyframes lp-api-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
 .lp-final {
     margin: 1rem 0 0;
     padding: 3.5rem 0;
@@ -772,7 +960,8 @@ a {
 
     .lp-hero__grid,
     .lp-split,
-    .lp-grid-2 {
+    .lp-grid-2,
+    .lp-api__grid {
         grid-template-columns: 1.05fr 0.95fr;
     }
 

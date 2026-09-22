@@ -1192,9 +1192,13 @@ class DocumentService
         //Logs del payload antes de enviarlo al firmador
         Log::debug('Payload para firmar documento', $payload);
 
+        $host = config('services.firma.url')
+            ?: getenv('FIRMADOR_HOST')
+            ?: 'localhost';
+
         $response = Http::withHeaders([
             'Content-Type' => 'application/json'
-        ])->post("http://" . config('services.firma.url', 'localhost') . ":{$port['port']}/firmardocumento/", $payload);
+        ])->post("http://{$host}:{$port['port']}/firmardocumento/", $payload);
 
         // logs request antes de firmar
 
