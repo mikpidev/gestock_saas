@@ -66,7 +66,7 @@ class SaleController extends Controller
 
     public function index(Request $request, Store $store)
     {
-
+        $this->validateStoreAccess($store);
 
         $authService = app(HaciendaAuthService::class);
 

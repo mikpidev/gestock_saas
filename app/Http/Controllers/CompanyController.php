@@ -33,6 +33,8 @@ class CompanyController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Company::class);
+
         return view('company.create');
     }
 
@@ -42,6 +44,8 @@ class CompanyController extends Controller
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Usuario no autenticado'], 401);
         }
+
+        $this->authorize('create', Company::class);
     
         $validated = $request->validate([
             'company_name' => 'required|max:200',
@@ -79,7 +83,8 @@ class CompanyController extends Controller
             return redirect()->route('login');
         }
 
-        
+        $this->authorize('view', $company);
+
         session(['selected_company_id' => $company->id]);
 
         return redirect()->route('stores.index');
@@ -92,6 +97,8 @@ class CompanyController extends Controller
             return redirect()->route('login');
         }
 
+        $this->authorize('update', $company);
+
         return redirect()->route('companies.index')->with('success', 'Compañía creada correctamente.');
     }
 
@@ -101,6 +108,8 @@ class CompanyController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        $this->authorize('update', $company);
 
         $validated = $request->validate([
             'company_name' => 'required|max:200',
@@ -134,6 +143,8 @@ class CompanyController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        $this->authorize('delete', $company);
         
         $company->delete();
         return redirect()->route('companies.index')->with('success', 'Compañía eliminada exitosamente.');
