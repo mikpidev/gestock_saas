@@ -126,8 +126,9 @@ class StoreController extends Controller
         //Filtrar por tipo de documento (Factura, CF, etc)
         $documentType = $request->tipo_documento_id;
 
-        //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
-        $dte_status = 'PROCESADO' ??  $request->dte_status;
+        // Filtrar por Status. Si el request omite dte_status (null), el default es PROCESADO:
+        // ventas aceptadas por Hacienda. Mismo default que DownloadPDF en este controlador.
+        $dte_status = $request->dte_status ?? 'PROCESADO';
 
         // Base query con filtros aplicados
 
