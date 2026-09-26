@@ -169,7 +169,7 @@ class SaleController extends Controller
             $sale->save();
 
 
-            if ($sale->dte_status = 'PROCESADO') {
+            if ($sale->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
                 } catch (\Throwable $e) {
@@ -353,7 +353,7 @@ class SaleController extends Controller
             $token = app(HaciendaAuthService::class)->getToken($store);
 
             // Consultar DTE inmediatamente después de enviar
-            $consultaService = new ConsultaService();
+            $consultaService = app(ConsultaService::class);
             $response = $consultaService->consultarSale($sale, $token);
 
             // Actualizar estado de la venta con el estado real
@@ -363,7 +363,7 @@ class SaleController extends Controller
 
             //enviar correo en automatico
 
-            if ($sale->dte_status = 'PROCESADO') {
+            if ($sale->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
                 } catch (\Throwable $e) {
