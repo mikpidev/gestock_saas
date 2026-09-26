@@ -1,0 +1,15 @@
+diff --git a/app/Services/DocumentService.php b/app/Services/DocumentService.php
+index c004d28..83f739a 100644
+--- a/app/Services/DocumentService.php
++++ b/app/Services/DocumentService.php
+@@ -1190,10 +1190,6 @@ class DocumentService
+             'port' => $port['port'],
+         ]);
+ 
+-        Log::debug('URL firmador', [
+-            'url' => "http://{$host}:{$port['port']}/firmardocumento/",
+-        ]);
+-
+         $host = config('services.firma.url')
+             ?: getenv('FIRMADOR_HOST')
+             ?: 'localhost';

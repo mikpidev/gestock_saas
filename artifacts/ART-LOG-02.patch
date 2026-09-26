@@ -959,7 +959,7 @@ index 3075f8f..83f739a 100644
  use Carbon\Carbon;
  use Illuminate\Http\Request;
  use App\Models\CreditNote;
-@@ -1186,11 +1186,9 @@ public function signDocument(array $dteJson, string $nit, string $password_pri,
+@@ -1186,9 +1186,7 @@ public function signDocument(array $dteJson, string $nit, string $password_pri,
              "dteJson" => $dteJson,
          ];
  
@@ -972,8 +972,6 @@ index 3075f8f..83f739a 100644
 +            'port' => $port['port'],
 +        ]);
  
-         $host = config('services.firma.url')
-             ?: getenv('FIRMADOR_HOST')
 @@ -1203,14 +1201,19 @@ public function signDocument(array $dteJson, string $nit, string $password_pri,
          // logs request antes de firmar
  
@@ -1581,7 +1579,7 @@ new file mode 100644
 index 0000000..a5098bb
 --- /dev/null
 +++ b/tests/Feature/SaleDteDebugChannelTest.php
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,225 @@
 +<?php
 +
 +require_once __DIR__.'/../../app/Models/store.php';
@@ -1801,4 +1799,9 @@ index 0000000..a5098bb
 +    expect($captured)->toContain('gestock.sale')
 +        ->and($captured)->toContain('gestock.dte')
 +        ->and($captured)->toContain('"sale_id":'.$saleId);
++
++    $service = file_get_contents(dirname(__DIR__, 2).'/app/Services/DocumentService.php');
++    preg_match_all('/(?<![\w])Log::/', $service, $bareLog);
++    expect($bareLog[0])->toBeEmpty()
++        ->and($service)->toContain('SaleDteLog::');
 +});
