@@ -23,6 +23,7 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use GuzzleHttp\Psr7\Query;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use stdClass;
 
 class SaleController extends Controller
@@ -46,7 +47,7 @@ class SaleController extends Controller
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
         } elseif ($user->hasRole('user')) {
-            if ($store->company_id != $user->company_id) {
+            if ($store->company_id != $user->company_id || $store->id != $user->store_id) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
         } else {
@@ -221,15 +222,22 @@ class SaleController extends Controller
     {
         $this->validateStoreAccess($store);
 
-        // Validar request
+        // Validar request. Cliente y producto deben pertenecer a esta tienda.
+        // products.*.price se acepta por compatibilidad con el formulario y se ignora.
         $data = $request->validate([
-            'customers_id' => 'nullable|exists:customers,id',
+            'customers_id' => [
+                'nullable',
+                Rule::exists('customers', 'id')->where('store_id', $store->id),
+            ],
             'sale_date' => 'required|date',
             'discount_amount' => 'nullable|numeric|min:0',
             'products' => 'required|array|min:1',
-            'products.*.id' => 'required|exists:product_types,id',
+            'products.*.id' => [
+                'required',
+                Rule::exists('product_types', 'id')->where('store_id', $store->id),
+            ],
             'products.*.quantity' => 'required|numeric|min:1',
-            'products.*.price' => 'required|numeric|min:0',
+            'products.*.price' => 'nullable|numeric|min:0',
             'tipo_documento_id' => 'required|exists:tipo_documento,id',
             'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
         ]);
@@ -243,11 +251,13 @@ class SaleController extends Controller
         $totalIva = 0;
         $totalGravada = 0;
 
-        foreach ($request->products as $p) {
-            $product = ProductType::findOrFail($p['id']); // precio seguro
+        $lines = [];
+
+        foreach ($data['products'] as $p) {
+            $product = ProductType::where('store_id', $store->id)->findOrFail($p['id']);
 
             $cantidad = $p['quantity'];
-            $precioConIVA = $p['price'];
+            $precioConIVA = $product->price;
             $subtotalConIVA = $cantidad * $precioConIVA;
 
             $baseSinIVA = $subtotalConIVA / 1.13;
@@ -256,6 +266,14 @@ class SaleController extends Controller
             $totalAmount += $subtotalConIVA;
             $totalGravada += $baseSinIVA;
             $totalIva += $ivaItem;
+
+            $lines[] = [
+                'product_type_id' => $product->id,
+                'quantity' => $cantidad,
+                'unit_price' => $precioConIVA,
+                'subtotal' => $subtotalConIVA,
+                'iva_item' => round($ivaItem, 2),
+            ];
         }
 
         // Aplicar porcentaje
@@ -325,20 +343,8 @@ class SaleController extends Controller
             'tipoDTE' => $sale->tipo_documento_id,
         ]);
 
-        // Crear detalles
-        foreach ($request->products as $product) {
-            $precioConIVA = $product['price'];
-            $subtotalConIVA = $product['quantity'] * $precioConIVA;
-            $baseSinIVA = $subtotalConIVA / 1.13;
-            $ivaItem = $baseSinIVA * 0.13;
-
-            $sale->details()->create([
-                'product_type_id' => $product['id'],
-                'quantity' => $product['quantity'],
-                'unit_price' => $precioConIVA,
-                'subtotal' => $subtotalConIVA,
-                'iva_item' => round($ivaItem, 2),
-            ]);
+        foreach ($lines as $line) {
+            $sale->details()->create($line);
         }
 
 
