@@ -1,0 +1,560 @@
+diff --git a/app/Http/Controllers/SaleController.php b/app/Http/Controllers/SaleController.php
+index db9f67b..8ca734e 100644
+--- a/app/Http/Controllers/SaleController.php
++++ b/app/Http/Controllers/SaleController.php
+@@ -22,7 +22,10 @@
+ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+ use BaconQrCode\Writer;
+ use GuzzleHttp\Psr7\Query;
++use Illuminate\Database\UniqueConstraintViolationException;
++use Illuminate\Http\JsonResponse;
+ use Illuminate\Support\Facades\DB;
++use Illuminate\Validation\ValidationException;
+ use stdClass;
+ 
+ class SaleController extends Controller
+@@ -234,6 +237,15 @@ public function store(Request $request, Store $store)
+             'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
+         ]);
+ 
++        $idempotencyKey = $this->idempotencyKey($request);
++
++        if ($idempotencyKey !== null) {
++            $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
++            if ($existingSale) {
++                return $this->saleStoreJson($request, $store, $existingSale);
++            }
++        }
++
+         // logs data for debugging
+         \Log::info('Creating sale with data: ', $data);
+ 
+@@ -288,6 +300,20 @@ public function store(Request $request, Store $store)
+             'puntoVenta' => $puntoVenta
+         ]);
+ 
++        // Correlativo, número de control y detalles van en la misma transacción.
++        // Un reintento con la misma Idempotency-Key no debe consumir otro correlativo.
++        DB::beginTransaction();
++
++        try {
++            if ($idempotencyKey !== null) {
++                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey, true);
++                if ($existingSale) {
++                    DB::rollBack();
++
++                    return $this->saleStoreJson($request, $store, $existingSale);
++                }
++            }
++
+         // Generar next invoice y número de control
+         $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
+ 
+@@ -317,7 +343,8 @@ public function store(Request $request, Store $store)
+             'codigo_generacion' => $invoiceNumber->codigo_generacion,
+             'invoice_number' => $invoiceNumber->number,
+             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
+-            'environment' => $store->environment ?? 'Production'
++            'environment' => $store->environment ?? 'Production',
++            'idempotency_key' => $idempotencyKey,
+         ]);
+ 
+         \Log::info('Venta creada', [
+@@ -341,6 +368,23 @@ public function store(Request $request, Store $store)
+             ]);
+         }
+ 
++            DB::commit();
++        } catch (UniqueConstraintViolationException $e) {
++            DB::rollBack();
++
++            if ($idempotencyKey !== null) {
++                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
++                if ($existingSale) {
++                    return $this->saleStoreJson($request, $store, $existingSale);
++                }
++            }
++
++            throw $e;
++        } catch (\Throwable $e) {
++            DB::rollBack();
++            throw $e;
++        }
++
+ 
+         // Generar DTE según tipo de documento
+         try {
+@@ -386,21 +430,7 @@ public function store(Request $request, Store $store)
+ 
+             session()->flash('dte_response', ['error' => $e->getMessage()]);
+         }
+-        if ($request->ajax()) {
+-            return response()->json([
+-                'success'     => true,
+-                'message'     => 'Venta creada y DTE enviado correctamente',
+-                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
+-                'dte_status'  => $sale->dte_status
+-            ]);
+-        }
+-
+-        return response()->json([
+-            'success' => true,
+-            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
+-            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
+-            'sale_id' => $sale->id
+-        ]);
++        return $this->saleStoreJson($request, $store, $sale);
+ 
+         return redirect()->route('stores.sales.index', $store->id)
+             ->with('success', 'Venta creada correctamente. El DTE se generará en breve.');
+@@ -642,4 +672,62 @@ public function destroy(Store $store, Sale $sale)
+             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
+         }
+     }
++
++    /**
++     * Header Idempotency-Key. Null when the client omits it (legacy, not idempotent).
++     */
++    private function idempotencyKey(Request $request): ?string
++    {
++        $raw = $request->headers->get('Idempotency-Key');
++
++        if (!is_string($raw)) {
++            return null;
++        }
++
++        $key = trim($raw);
++
++        if ($key === '') {
++            return null;
++        }
++
++        if (mb_strlen($key) > 255) {
++            throw ValidationException::withMessages([
++                'Idempotency-Key' => 'The Idempotency-Key must not be greater than 255 characters.',
++            ]);
++        }
++
++        return $key;
++    }
++
++    private function findIdempotentSale(int $storeId, string $idempotencyKey, bool $lock = false): ?Sale
++    {
++        $query = Sale::withTrashed()
++            ->where('store_id', $storeId)
++            ->where('idempotency_key', $idempotencyKey);
++
++        if ($lock) {
++            $query->lockForUpdate();
++        }
++
++        return $query->first();
++    }
++
++    private function saleStoreJson(Request $request, Store $store, Sale $sale): JsonResponse
++    {
++        if ($request->ajax()) {
++            return response()->json([
++                'success'     => true,
++                'message'     => 'Venta creada y DTE enviado correctamente',
++                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
++                'dte_status'  => $sale->dte_status
++            ]);
++        }
++
++        return response()->json([
++            'success' => true,
++            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
++            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
++            'sale_id' => $sale->id
++        ]);
++    }
+ }
+diff --git a/app/Models/Sale.php b/app/Models/Sale.php
+index f00436f..24d21ba 100644
+--- a/app/Models/Sale.php
++++ b/app/Models/Sale.php
+@@ -17,6 +17,7 @@ class Sale extends Model
+     // Campos que se pueden asignar masivamente
+     protected $fillable = [
+         'store_id',
++        'idempotency_key',
+         'user_id',
+         'tipo_documento_id',
+         'customers_id',
+diff --git a/database/migrations/2026_09_26_000001_add_idempotency_key_to_sales_table.php b/database/migrations/2026_09_26_000001_add_idempotency_key_to_sales_table.php
+new file mode 100644
+index 0000000..7763f1f
+--- /dev/null
++++ b/database/migrations/2026_09_26_000001_add_idempotency_key_to_sales_table.php
+@@ -0,0 +1,24 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('sales', function (Blueprint $table) {
++            $table->string('idempotency_key', 255)->nullable()->after('store_id');
++            $table->unique(['store_id', 'idempotency_key'], 'sales_store_idempotency_unique');
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('sales', function (Blueprint $table) {
++            $table->dropUnique('sales_store_idempotency_unique');
++            $table->dropColumn('idempotency_key');
++        });
++    }
++};
+diff --git a/resources/views/sales/create.blade.php b/resources/views/sales/create.blade.php
+index a366044..1adb0c8 100644
+--- a/resources/views/sales/create.blade.php
++++ b/resources/views/sales/create.blade.php
+@@ -149,6 +149,16 @@
+         const cartBody = document.getElementById('cart-body');
+         const cartTotalEl = document.getElementById('cart-total');
+         let cart = {};
++        let saleSubmitInFlight = false;
++        let saleIdempotencyKey = null;
++
++        function newSaleIdempotencyKey() {
++            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
++                return window.crypto.randomUUID();
++            }
++
++            return 'sale-' + Date.now().toString(36) + '-' + Math.random().toString(16).slice(2);
++        }
+ 
+         function renderCart() {
+             cartBody.innerHTML = '';
+@@ -238,6 +248,10 @@ function renderCart() {
+         });
+ 
+         document.getElementById('submit-sale').addEventListener('click', function() {
++            if (saleSubmitInFlight) {
++                return;
++            }
++
+             if (Object.keys(cart).length === 0) {
+                 alert('Agrega al menos un producto');
+                 return;
+@@ -266,16 +280,25 @@ function renderCart() {
+ 
+             console.log('Payload:', payload);
+ 
++            if (!saleIdempotencyKey) {
++                saleIdempotencyKey = newSaleIdempotencyKey();
++            }
++
++            saleSubmitInFlight = true;
++            const submitButton = this;
++            submitButton.disabled = true;
+ 
+             fetch("{{ route('stores.sales.store', $store->id) }}", {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
++                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
++                    'Idempotency-Key': saleIdempotencyKey
+                 },
+                 body: JSON.stringify(payload)
+             }).then(res => res.redirected ? window.location.href = res.url : res.json()).then(data => {
+                 if (data && data.success) {
++                    saleIdempotencyKey = null;
+ 
+                     // ABRIR MODAL
+                     let modal = new bootstrap.Modal(document.getElementById('modalVentaCreada'));
+@@ -302,6 +325,10 @@ function renderCart() {
+             .catch(err => {
+                 console.error(err);
+                 alert('Error al crear la venta');
++            })
++            .finally(() => {
++                saleSubmitInFlight = false;
++                submitButton.disabled = false;
+             });
+         });
+     });
+diff --git a/tests/Feature/SaleStoreIdempotencyTest.php b/tests/Feature/SaleStoreIdempotencyTest.php
+new file mode 100644
+index 0000000..b356b69
+--- /dev/null
++++ b/tests/Feature/SaleStoreIdempotencyTest.php
+@@ -0,0 +1,270 @@
++<?php
++
++use App\Models\Company;
++use App\Models\CorrelativoStore;
++use App\Models\InvoiceNumber;
++use App\Models\ProductType;
++use App\Models\Sale;
++use App\Models\SaleDetail;
++use App\Models\Store;
++use App\Models\TipoDte;
++use App\Models\User;
++use Illuminate\Database\UniqueConstraintViolationException;
++use Illuminate\Support\Facades\Http;
++use Spatie\Permission\Models\Role;
++
++beforeEach(function () {
++    Http::fake();
++
++    $this->company = Company::create([
++        'company_name' => 'Gestock Test',
++        'address' => 'San Salvador',
++        'phone' => '22223333',
++        'owner' => 'Owner',
++        'email' => 'company-'.uniqid().'@example.com',
++        'plan' => 'basic',
++        'deployment_type' => 'saas',
++        'status' => 'activa',
++        'comments' => 'test',
++    ]);
++
++    $this->user = User::factory()->create([
++        'company_id' => $this->company->id,
++    ]);
++
++    Role::findOrCreate('admin', 'web');
++    $this->user->assignRole('admin');
++    $this->actingAs($this->user);
++
++    $tipo = new TipoDte();
++    $tipo->codigo = '01';
++    $tipo->nombre = 'Factura';
++    $tipo->save();
++    $this->tipo = $tipo;
++
++    [$this->store, $this->product] = saleIdempotencyStore($this->company, $this->tipo, 'Tienda 1', 'tienda-'.uniqid().'@example.com');
++});
++
++function saleIdempotencyStore(Company $company, TipoDte $tipo, string $name, string $email): array
++{
++    $store = Store::create([
++        'company_id' => $company->id,
++        'store_name' => $name,
++        'establecimiento' => 'M001',
++        'punto_venta' => 'P001',
++        'address' => 'Calle 1',
++        'phone' => '77778888',
++        'manager' => 'Manager',
++        'email' => $email,
++        'status' => 'activa',
++        'environment' => 'Development',
++    ]);
++
++    $product = ProductType::create([
++        'company_id' => $company->id,
++        'store_id' => $store->id,
++        'name' => 'Producto '.$store->id,
++        'price' => 11.30,
++        'stock' => 10,
++        'category' => 'General',
++    ]);
++
++    CorrelativoStore::create([
++        'store_id' => $store->id,
++        'tipo_documento_id' => $tipo->id,
++        'correlativo' => 0,
++    ]);
++
++    return [$store, $product];
++}
++
++function saleIdempotencyPayload(int $productId, int $tipoId, float $price = 11.30): array
++{
++    return [
++        'sale_date' => '2026-09-26',
++        'discount_amount' => 0,
++        'products' => [
++            ['id' => $productId, 'quantity' => 1, 'price' => $price],
++        ],
++        'tipo_documento_id' => $tipoId,
++        'payment_method' => 'Efectivo',
++    ];
++}
++
++function postSale($testCase, Store $store, array $payload, ?string $idempotencyKey = null)
++{
++    $headers = ['Accept' => 'application/json'];
++
++    if ($idempotencyKey !== null) {
++        $headers['Idempotency-Key'] = $idempotencyKey;
++    }
++
++    return $testCase->postJson(route('stores.sales.store', $store), $payload, $headers);
++}
++
++function correlativoFor(Store $store, TipoDte $tipo): int
++{
++    return (int) CorrelativoStore::query()
++        ->where('store_id', $store->id)
++        ->where('tipo_documento_id', $tipo->id)
++        ->value('correlativo');
++}
++
++test('a second post with the same idempotency key after commit returns the original sale', function () {
++    $payload = saleIdempotencyPayload($this->product->id, $this->tipo->id);
++    $key = 'sale-key-same';
++
++    $first = postSale($this, $this->store, $payload, $key);
++    $second = postSale($this, $this->store, $payload, '  '.$key.'  ');
++
++    $first->assertOk();
++    $second->assertOk();
++
++    expect($second->json('sale_id'))->toBe($first->json('sale_id'))
++        ->and($second->json('ticket_url'))->toBe($first->json('ticket_url'))
++        ->and($second->json('pre_order_url'))->toBe($first->json('pre_order_url'))
++        ->and($second->json('success'))->toBeTrue();
++
++    expect(Sale::query()->where('store_id', $this->store->id)->count())->toBe(1)
++        ->and(SaleDetail::query()->count())->toBe(1)
++        ->and(InvoiceNumber::query()->where('store_id', $this->store->id)->count())->toBe(1)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(1);
++
++    $sale = Sale::query()->first();
++    expect($sale->idempotency_key)->toBe($key)
++        ->and($sale->numero_control)->toEndWith('000000000000001');
++});
++
++test('two different idempotency keys create two sales and two correlativos', function () {
++    $payload = saleIdempotencyPayload($this->product->id, $this->tipo->id);
++
++    $first = postSale($this, $this->store, $payload, 'key-a');
++    $second = postSale($this, $this->store, $payload, 'key-b');
++
++    $first->assertOk();
++    $second->assertOk();
++
++    expect($first->json('sale_id'))->not->toBe($second->json('sale_id'))
++        ->and(Sale::query()->where('store_id', $this->store->id)->count())->toBe(2)
++        ->and(SaleDetail::query()->count())->toBe(2)
++        ->and(InvoiceNumber::query()->where('store_id', $this->store->id)->count())->toBe(2)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(2);
++});
++
++test('the same idempotency key is scoped per store', function () {
++    [$otherStore, $otherProduct] = saleIdempotencyStore(
++        $this->company,
++        $this->tipo,
++        'Tienda 2',
++        'tienda2-'.uniqid().'@example.com'
++    );
++
++    $key = 'shared-store-key';
++
++    $first = postSale($this, $this->store, saleIdempotencyPayload($this->product->id, $this->tipo->id), $key);
++    $second = postSale($this, $otherStore, saleIdempotencyPayload($otherProduct->id, $this->tipo->id), $key);
++
++    $first->assertOk();
++    $second->assertOk();
++
++    expect($first->json('sale_id'))->not->toBe($second->json('sale_id'))
++        ->and(Sale::query()->count())->toBe(2)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(1)
++        ->and(correlativoFor($otherStore, $this->tipo))->toBe(1);
++});
++
++test('posts without an idempotency key stay non-idempotent', function () {
++    $payload = saleIdempotencyPayload($this->product->id, $this->tipo->id);
++
++    $first = postSale($this, $this->store, $payload);
++    $second = postSale($this, $this->store, $payload);
++
++    $first->assertOk();
++    $second->assertOk();
++
++    expect($first->json('sale_id'))->not->toBe($second->json('sale_id'))
++        ->and(Sale::query()->where('store_id', $this->store->id)->count())->toBe(2)
++        ->and(Sale::query()->whereNotNull('idempotency_key')->count())->toBe(0)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(2);
++});
++
++test('a failed detail insert rolls back the sale and the correlativo', function () {
++    SaleDetail::creating(function () {
++        throw new RuntimeException('detail insert failed');
++    });
++
++    try {
++        $response = postSale(
++            $this,
++            $this->store,
++            saleIdempotencyPayload($this->product->id, $this->tipo->id),
++            'key-rollback'
++        );
++
++        $response->assertStatus(500);
++        expect(Sale::withTrashed()->count())->toBe(0)
++            ->and(InvoiceNumber::query()->count())->toBe(0)
++            ->and(correlativoFor($this->store, $this->tipo))->toBe(0);
++    } finally {
++        SaleDetail::flushEventListeners();
++    }
++});
++
++test('the unique store and key index rejects a duplicate sale row', function () {
++    $payload = saleIdempotencyPayload($this->product->id, $this->tipo->id);
++    postSale($this, $this->store, $payload, 'unique-key')->assertOk();
++
++    $sale = Sale::query()->first();
++
++    expect(fn () => Sale::create([
++        'store_id' => $sale->store_id,
++        'user_id' => $sale->user_id,
++        'customers_id' => null,
++        'sale_date' => '2026-09-26',
++        'total_amount' => 1,
++        'net_amount' => 1,
++        'tipo_documento_id' => $this->tipo->id,
++        'payment_method' => 'Efectivo',
++        'idempotency_key' => 'unique-key',
++    ]))->toThrow(UniqueConstraintViolationException::class);
++
++    expect(Sale::query()->count())->toBe(1)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(1);
++});
++
++test('an idempotency key longer than 255 characters is rejected', function () {
++    $response = postSale(
++        $this,
++        $this->store,
++        saleIdempotencyPayload($this->product->id, $this->tipo->id),
++        str_repeat('k', 256)
++    );
++
++    $response->assertStatus(422);
++    expect(Sale::query()->count())->toBe(0)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(0);
++});
++
++test('replaying a key ignores a different payload and keeps the original sale', function () {
++    $key = 'payload-ignored';
++    $first = postSale(
++        $this,
++        $this->store,
++        saleIdempotencyPayload($this->product->id, $this->tipo->id, 11.30),
++        $key
++    );
++    $second = postSale(
++        $this,
++        $this->store,
++        saleIdempotencyPayload($this->product->id, $this->tipo->id, 99.99),
++        $key
++    );
++
++    $first->assertOk();
++    $second->assertOk();
++
++    expect($second->json('sale_id'))->toBe($first->json('sale_id'))
++        ->and(Sale::query()->count())->toBe(1)
++        ->and((float) Sale::query()->value('total_amount'))->toBe(11.30)
++        ->and(correlativoFor($this->store, $this->tipo))->toBe(1);
++});
