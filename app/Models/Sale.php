@@ -17,6 +17,7 @@ class Sale extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'store_id',
+        'idempotency_key',
         'user_id',
         'tipo_documento_id',
         'customers_id',

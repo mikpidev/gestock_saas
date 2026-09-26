@@ -22,7 +22,10 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use GuzzleHttp\Psr7\Query;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use stdClass;
 
 class SaleController extends Controller
@@ -234,6 +237,15 @@ class SaleController extends Controller
             'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
         ]);
 
+        $idempotencyKey = $this->idempotencyKey($request);
+
+        if ($idempotencyKey !== null) {
+            $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
+            if ($existingSale) {
+                return $this->saleStoreJson($request, $store, $existingSale);
+            }
+        }
+
         // logs data for debugging
         \Log::info('Creating sale with data: ', $data);
 
@@ -288,6 +300,20 @@ class SaleController extends Controller
             'puntoVenta' => $puntoVenta
         ]);
 
+        // Correlativo, número de control y detalles van en la misma transacción.
+        // Un reintento con la misma Idempotency-Key no debe consumir otro correlativo.
+        DB::beginTransaction();
+
+        try {
+            if ($idempotencyKey !== null) {
+                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey, true);
+                if ($existingSale) {
+                    DB::rollBack();
+
+                    return $this->saleStoreJson($request, $store, $existingSale);
+                }
+            }
+
         // Generar next invoice y número de control
         $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
 
@@ -317,7 +343,8 @@ class SaleController extends Controller
             'codigo_generacion' => $invoiceNumber->codigo_generacion,
             'invoice_number' => $invoiceNumber->number,
             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
-            'environment' => $store->environment ?? 'Production'
+            'environment' => $store->environment ?? 'Production',
+            'idempotency_key' => $idempotencyKey,
         ]);
 
         \Log::info('Venta creada', [
@@ -339,6 +366,23 @@ class SaleController extends Controller
                 'subtotal' => $subtotalConIVA,
                 'iva_item' => round($ivaItem, 2),
             ]);
+        }
+
+            DB::commit();
+        } catch (UniqueConstraintViolationException $e) {
+            DB::rollBack();
+
+            if ($idempotencyKey !== null) {
+                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
+                if ($existingSale) {
+                    return $this->saleStoreJson($request, $store, $existingSale);
+                }
+            }
+
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
 
 
@@ -386,21 +430,7 @@ class SaleController extends Controller
 
             session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
-        if ($request->ajax()) {
-            return response()->json([
-                'success'     => true,
-                'message'     => 'Venta creada y DTE enviado correctamente',
-                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
-                'dte_status'  => $sale->dte_status
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
-            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
-            'sale_id' => $sale->id
-        ]);
+        return $this->saleStoreJson($request, $store, $sale);
 
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente. El DTE se generará en breve.');
@@ -641,5 +671,63 @@ class SaleController extends Controller
 
             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
         }
+    }
+
+    /**
+     * Header Idempotency-Key. Null when the client omits it (legacy, not idempotent).
+     */
+    private function idempotencyKey(Request $request): ?string
+    {
+        $raw = $request->headers->get('Idempotency-Key');
+
+        if (!is_string($raw)) {
+            return null;
+        }
+
+        $key = trim($raw);
+
+        if ($key === '') {
+            return null;
+        }
+
+        if (mb_strlen($key) > 255) {
+            throw ValidationException::withMessages([
+                'Idempotency-Key' => 'The Idempotency-Key must not be greater than 255 characters.',
+            ]);
+        }
+
+        return $key;
+    }
+
+    private function findIdempotentSale(int $storeId, string $idempotencyKey, bool $lock = false): ?Sale
+    {
+        $query = Sale::withTrashed()
+            ->where('store_id', $storeId)
+            ->where('idempotency_key', $idempotencyKey);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function saleStoreJson(Request $request, Store $store, Sale $sale): JsonResponse
+    {
+        if ($request->ajax()) {
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Venta creada y DTE enviado correctamente',
+                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
+                'dte_status'  => $sale->dte_status
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
+            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
+            'sale_id' => $sale->id
+        ]);
     }
 }
