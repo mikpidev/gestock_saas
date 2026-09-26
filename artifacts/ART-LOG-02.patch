@@ -1,0 +1,1804 @@
+diff --git a/app/Http/Controllers/DTEController.php b/app/Http/Controllers/DTEController.php
+index b4e97e2..a37cc5e 100644
+--- a/app/Http/Controllers/DTEController.php
++++ b/app/Http/Controllers/DTEController.php
+@@ -4,8 +4,8 @@
+ 
+ use App\Models\Contingencia;
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\Log;
+ use App\Models\Sale;
++use App\Support\SaleDteLog;
+ use App\Services\DocumentService;
+ use App\Services\HaciendaAuthService;
+ use App\Services\ReceptionService;
+@@ -82,29 +82,41 @@ public function generarDTE(Sale $sale)
+                     throw new \Exception('Tipo de documento no soportado para DTE');
+             }
+ 
+-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
++            SaleDteLog::info("DTE antes de firmar ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'tipo_dte' => $tipoDTE,
++            ]);
+ 
+             //  Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
++            SaleDteLog::info("Documento firmado ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'has_body' => isset($signedData['body']) && is_string($signedData['body']) && $signedData['body'] !== '',
++            ]);
+ 
+             // Obtener token Hacienda
+             
+             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+             $environment = $sale->store->environment ?? 'default_environment';
+ 
+-            Log::info("Obteniendo token de Hacienda ({$tipoDTE})", [
+-                'nit' => $nit,
+-                'environment' => $environment
++            SaleDteLog::info("Obteniendo token de Hacienda ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'environment' => $environment,
+             ]);
+ 
+             $token = $this->authService->generateNewToken($nit, $api_key, $environment);
+ 
+-            Log::info("Token obtenido de Hacienda ({$tipoDTE})", ['token' => $token]);
++            SaleDteLog::info("Token obtenido de Hacienda ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'token_preview' => SaleDteLog::tokenPreview($token),
++            ]);
+ 
+             //  Enviar a Hacienda
+             $haciendaResponse = $this->receptionService->sendToHacienda($sale, $signedData, $token);
+-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
++            SaleDteLog::info("Respuesta Hacienda ({$tipoDTE})", array_merge(
++                ['sale_id' => $sale->id],
++                SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])
++            ));
+             $mh = is_array($haciendaResponse) ? $haciendaResponse : [];
+             if (is_string($haciendaResponse['estado'] ?? null)) {
+                 $statusAfter = $haciendaResponse['estado'];
+@@ -121,9 +133,9 @@ public function generarDTE(Sale $sale)
+             if ($mh === []) {
+                 $mh = ['mensaje' => $th->getMessage()];
+             }
+-            Log::error('Error generando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error generando DTE', [
+                 'sale_id' => $sale->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -158,11 +170,17 @@ public function generarDTECreditNote(CreditNote $creditNote, Sale $sale)
+             $cert_firma_digital = $creditNote->store->mh_access->port_firma_digital ?? 'default_port';
+ 
+             $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale);
+-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
++            SaleDteLog::info("DTE antes de firmar ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'tipo_dte' => $tipoDTE,
++            ]);
+ 
+             //  Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
++            SaleDteLog::info("Documento firmado ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'has_body' => isset($signedData['body']) && is_string($signedData['body']) && $signedData['body'] !== '',
++            ]);
+ 
+             // Obtener token Hacienda
+             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+@@ -172,7 +190,10 @@ public function generarDTECreditNote(CreditNote $creditNote, Sale $sale)
+ 
+             //  Enviar a Hacienda
+             $haciendaResponse = $this->receptionService->sendNCToHacienda($creditNote, $signedData, $token);
+-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
++            SaleDteLog::info("Respuesta Hacienda ({$tipoDTE})", array_merge(
++                ['sale_id' => $sale->id],
++                SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])
++            ));
+             $mh = is_array($haciendaResponse) ? $haciendaResponse : [];
+             if (is_string($haciendaResponse['estado'] ?? null)) {
+                 $statusAfter = $haciendaResponse['estado'];
+@@ -189,9 +210,9 @@ public function generarDTECreditNote(CreditNote $creditNote, Sale $sale)
+             if ($mh === []) {
+                 $mh = ['mensaje' => $th->getMessage()];
+             }
+-            Log::error('Error generando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error generando DTE', [
+                 'sale_id' => $sale->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -221,7 +242,10 @@ public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+             }
+ 
+             $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale);
+-            Log::info("DTE antes de firmar ({$tipoDTE})", $dteJson);
++            SaleDteLog::info("DTE antes de firmar ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'tipo_dte' => $tipoDTE,
++            ]);
+ 
+             $nit = $sale->store->taxInfo->nit ?? '00000000000000';
+             $password_pri = $sale->store->mh_access->password_pri ?? 'default_password';
+@@ -229,7 +253,10 @@ public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+ 
+             //  Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento firmado ({$tipoDTE})", $signedData);
++            SaleDteLog::info("Documento firmado ({$tipoDTE})", [
++                'sale_id' => $sale->id,
++                'has_body' => isset($signedData['body']) && is_string($signedData['body']) && $signedData['body'] !== '',
++            ]);
+ 
+             // Obtener token Hacienda
+             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+@@ -238,7 +265,10 @@ public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+ 
+             //  Enviar a Hacienda
+             $haciendaResponse = $this->receptionService->sendNDToHacienda($debitNote, $signedData, $token);
+-            Log::info("Respuesta Hacienda ({$tipoDTE})", $haciendaResponse);
++            SaleDteLog::info("Respuesta Hacienda ({$tipoDTE})", array_merge(
++                ['sale_id' => $sale->id],
++                SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])
++            ));
+             $mh = is_array($haciendaResponse) ? $haciendaResponse : [];
+             if (is_string($haciendaResponse['estado'] ?? null)) {
+                 $statusAfter = $haciendaResponse['estado'];
+@@ -255,9 +285,9 @@ public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
+             if ($mh === []) {
+                 $mh = ['mensaje' => $th->getMessage()];
+             }
+-            Log::error('Error generando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error generando DTE', [
+                 'sale_id' => $sale->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -295,9 +325,9 @@ public function consultarDTE(Sale $sale, ConsultaService $consultaService)
+                 'hacienda_response' => $data
+             ]);
+         } catch (\Throwable $th) {
+-            Log::error('Error consultando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error consultando DTE', [
+                 'sale_id' => $sale->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -332,9 +362,9 @@ public function consultarDTENC(CreditNote $creditNote, ConsultaService $consulta
+                 'hacienda_response' => $data
+             ]);
+         } catch (\Throwable $th) {
+-            Log::error('Error consultando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error consultando DTE', [
+                 'sale_id' => $creditNote->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -369,9 +399,9 @@ public function consultarDTEND(DebitNote $debitNote, ConsultaService $consultaSe
+                 'hacienda_response' => $data
+             ]);
+         } catch (\Throwable $th) {
+-            Log::error('Error consultando DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error consultando DTE', [
+                 'sale_id' => $debitNote->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -387,12 +417,17 @@ public function generarDTEContingencia(Contingencia $contingencia)
+             // Construir JSON de contingencia
+             $dteJson = $this->documentService->buildDTEJsonContingencia($contingencia);
+ 
+-            Log::info('DTE Contingencia antes de firmar', $dteJson);
++            SaleDteLog::info('DTE Contingencia antes de firmar', [
++                'contingencia_id' => $contingencia->id,
++            ]);
+ 
+             // Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson, $contingencia->store->taxInfo->nit, $contingencia->store->mh_access->password_pri, $contingencia->store->mh_access->port_firma_digital);
+ 
+-            Log::info('DTE Contingencia firmado', $signedData);
++            SaleDteLog::info('DTE Contingencia firmado', [
++                'contingencia_id' => $contingencia->id,
++                'has_body' => isset($signedData['body']) && is_string($signedData['body']) && $signedData['body'] !== '',
++            ]);
+ 
+             // Token
+             $token = $this->authService->generateNewToken( $contingencia->store->taxInfo->nit, $contingencia->store->mh_access->api_key, $contingencia->store->environment);
+@@ -412,9 +447,9 @@ public function generarDTEContingencia(Contingencia $contingencia)
+                 'hacienda_response' => $haciendaResponse
+             ]);
+         } catch (\Throwable $th) {
+-            Log::error('Error generando contingencia DTE: ' . $th->getMessage(), [
++            SaleDteLog::error('Error generando contingencia DTE', [
+                 'contingencia_id' => $contingencia->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -448,7 +483,7 @@ private function logDteAttempt(
+             $message = mb_substr($message, 0, 160);
+         }
+ 
+-        Log::info('gestock.dte', [
++        SaleDteLog::info('gestock.dte', [
+             'sale_id' => $saleId,
+             'store_id' => $storeId,
+             'user_id' => is_int($userId) ? $userId : (is_string($userId) && ctype_digit($userId) ? (int) $userId : null),
+diff --git a/app/Http/Controllers/SaleController.php b/app/Http/Controllers/SaleController.php
+index db9f67b..f91ba26 100644
+--- a/app/Http/Controllers/SaleController.php
++++ b/app/Http/Controllers/SaleController.php
+@@ -14,6 +14,7 @@
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Auth;
+ use App\Services\ConsultaService;
++use App\Support\SaleDteLog;
+ use App\Services\HaciendaAuthService;
+ use Carbon\Carbon;
+ use App\Services\DocumentService;
+@@ -174,10 +175,9 @@ public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaSe
+                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
+                 } catch (\Throwable $e) {
+ 
+-                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
+-
++                    SaleDteLog::error('Error Enviando correo DTE', [
+                         'sale_id' => $sale->id,
+-                        'trace' => $e->getTraceAsString()
++                        'message' => SaleDteLog::safeMessage($e->getMessage()),
+                     ]);
+                 }
+             }
+@@ -189,10 +189,9 @@ public function refreshDTE(Store $store, Sale $sale, ConsultaService $consultaSe
+             );
+         } catch (\Throwable $e) {
+ 
+-            \Log::error("Error reenviando DTE", [
++            SaleDteLog::error('Error reenviando DTE', [
+                 'sale_id' => $sale->id,
+-                'message' => $e->getMessage(),
+-                'trace' => $e->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+ 
+             return back()->with(
+@@ -237,5 +236,9 @@ public function store(Request $request, Store $store)
+-        // logs data for debugging
+-        \Log::info('Creating sale with data: ', $data);
++        SaleDteLog::info('Creating sale', [
++            'store_id' => $store->id,
++            'tipo_documento_id' => $data['tipo_documento_id'] ?? null,
++            'payment_method' => $data['payment_method'] ?? null,
++            'product_count' => is_array($data['products'] ?? null) ? count($data['products']) : 0,
++        ]);
+ 
+         // Calcular totales
+         $discountPercent = $data['discount_amount'] ?? 0; // valor como 0.10 = 10%
+@@ -272,21 +275,26 @@ public function store(Request $request, Store $store)
+         $total_gravada = round($totalGravada, 2);
+         $total_iva = round($totalIva, 2);
+ 
+-        \Log::info('Venta SE Antes de Seleccionar SE');
++        SaleDteLog::info('Venta SE Antes de Seleccionar SE', [
++            'store_id' => $store->id,
++        ]);
+         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
+ 
+-        \Log::info('Venta SE Despues de Seleccionar SE', [
+-            'tipoDTE' => $tipoDTE
++        SaleDteLog::info('Venta SE Despues de Seleccionar SE', [
++            'store_id' => $store->id,
++            'tipoDTE' => $tipoDTE,
+         ]);
+ 
+         $establecimiento = $store->establecimiento;
+ 
+-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+-            'establecimiento' => $establecimiento
++        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
++            'store_id' => $store->id,
++            'establecimiento' => $establecimiento,
+         ]);
+ 
+         $puntoVenta = $store->punto_venta;
+ 
+-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+-            'puntoVenta' => $puntoVenta
++        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
++            'store_id' => $store->id,
++            'puntoVenta' => $puntoVenta,
+         ]);
+@@ -291,8 +306,9 @@ public function store(Request $request, Store $store)
+         // Generar next invoice y número de control
+         $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
+ 
+-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
+-            'invoiceNumber' => $invoiceNumber
++        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
++            'store_id' => $store->id,
++            'numero_control' => $invoiceNumber->numero_control ?? null,
+         ]);
+ 
+ 
+@@ -323,6 +332,7 @@ public function store(Request $request, Store $store)
+-        \Log::info('Venta creada', [
+-            'id' => $sale->id,
++        SaleDteLog::info('Venta creada', [
++            'sale_id' => $sale->id,
++            'store_id' => $store->id,
+             'tipoDTE' => $sale->tipo_documento_id,
+         ]);
+ 
+         // Crear detalles
+@@ -346,7 +356,10 @@ public function store(Request $request, Store $store)
+         try {
+             app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
+         } catch (\Throwable $e) {
+-            \Log::error('Error generando DTE: ' . $e->getMessage());
++            SaleDteLog::error('Error generando DTE', [
++                'sale_id' => $sale->id,
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
++            ]);
+         }
+         try {
+             // Obtener token válido
+@@ -368,10 +381,9 @@ public function store(Request $request, Store $store)
+                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
+                 } catch (\Throwable $e) {
+ 
+-                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
+-
++                    SaleDteLog::error('Error Enviando correo DTE', [
+                         'sale_id' => $sale->id,
+-                        'trace' => $e->getTraceAsString()
++                        'message' => SaleDteLog::safeMessage($e->getMessage()),
+                     ]);
+                 }
+             }
+@@ -379,9 +391,9 @@ public function store(Request $request, Store $store)
+             // Guardar response en sesión para mostrar en index
+             session()->flash('dte_response', $response);
+         } catch (\Throwable $e) {
+-            \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
++            SaleDteLog::error('Error consultando DTE al crear venta', [
+                 'sale_id' => $sale->id,
+-                'trace' => $e->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+ 
+             session()->flash('dte_response', ['error' => $e->getMessage()]);
+@@ -634,9 +646,9 @@ public function destroy(Store $store, Sale $sale)
+             return redirect()->route('stores.sales.index', $store->id)
+                 ->with('success', 'Venta anulada correctamente.');
+         } catch (\Throwable $th) {
+-            \Log::error('Error anulando venta: ' . $th->getMessage(), [
++            SaleDteLog::error('Error anulando venta', [
+                 'sale_id' => $sale->id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
+diff --git a/app/Http/Controllers/VoidDTEController.php b/app/Http/Controllers/VoidDTEController.php
+index 6fce9ff..b5733e4 100644
+--- a/app/Http/Controllers/VoidDTEController.php
++++ b/app/Http/Controllers/VoidDTEController.php
+@@ -3,7 +3,7 @@
+ namespace App\Http\Controllers;
+ 
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\Sale;
+ use App\Models\CreditNote;
+ use App\Models\DebitNote;
+@@ -74,11 +74,11 @@ public function voidDTE(Sale $sale)
+                     throw new \Exception('Tipo de documento no soportado para DTE de anulación');
+             }
+ 
+-            Log::info("DTE void antes de firmar ({$tipoDTE})", ['sale_id' => $sale->id, 'dte' => $dteJson]);
++            SaleDteLog::info("DTE void antes de firmar ({$tipoDTE})", ['sale_id' => $sale->id]);
+ 
+             // Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento void firmado ({$tipoDTE})", ['sale_id' => $sale->id]);
++            SaleDteLog::info("Documento void firmado ({$tipoDTE})", ['sale_id' => $sale->id]);
+ 
+             // Obtener token Hacienda
+             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+@@ -87,11 +87,10 @@ public function voidDTE(Sale $sale)
+ 
+             // Enviar a Hacienda
+             $haciendaResponse = $this->voidService->sendVoidToHacienda($sale, $void, $signedData, $token);
+-            Log::info("Respuesta Hacienda void ({$tipoDTE})", [
++            SaleDteLog::info("Respuesta Hacienda void ({$tipoDTE})", array_merge([
+                 'sale_id' => $sale->id,
+                 'void_id' => $void->id,
+-                'response' => $haciendaResponse
+-            ]);
++            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
+ 
+             // Guardar info del DTE de anulación en la venta
+             $sale->update([
+@@ -101,10 +100,9 @@ public function voidDTE(Sale $sale)
+ 
+             return response()->json($haciendaResponse);
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando DTE', [
++            SaleDteLog::error('Error anulando DTE', [
+                 'sale_id' => $sale->id,
+-                'error' => $th->getMessage(),
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -132,10 +130,10 @@ public function voidDTECreditNote(CreditNote $creditNote, Sale $sale)
+             $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
+ 
+             $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale, $void);
+-            Log::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id]);
++            SaleDteLog::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id]);
+ 
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
++            SaleDteLog::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
+             // Obtener token Hacienda
+ 
+             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
+@@ -143,11 +141,15 @@ public function voidDTECreditNote(CreditNote $creditNote, Sale $sale)
+             $token = $this->authService->generateNewToken($nit, $api_key, $environment);
+ 
+             $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $void, $signedData, $token);
+-            Log::info("Respuesta Hacienda NC", ['credit_note_id' => $creditNote->id, 'void_id' => $void->id]);
++            SaleDteLog::info("Respuesta Hacienda NC", ['credit_note_id' => $creditNote->id, 'void_id' => $void->id]);
+ 
+             return response()->json($haciendaResponse);
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando NC', ['credit_note_id' => $creditNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
++            SaleDteLog::error('Error anulando NC', [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $sale->id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
++            ]);
+             return response()->json(['error' => 'Error anulando NC', 'message' => $th->getMessage()], 500);
+         }
+     }
+@@ -170,10 +172,10 @@ public function voidDTEDebitNote(DebitNote $debitNote, Sale $sale)
+             $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
+ 
+             $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale, $void);
+-            Log::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id]);
++            SaleDteLog::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id]);
+ 
+             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
+-            Log::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
++            SaleDteLog::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
+             
+             // Obtener token Hacienda
+ 
+@@ -183,11 +185,15 @@ public function voidDTEDebitNote(DebitNote $debitNote, Sale $sale)
+             $token = $this->authService->generateNewToken($nit, $api_key, $environment);
+ 
+             $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $void, $signedData, $token);
+-            Log::info("Respuesta Hacienda ND", ['debit_note_id' => $debitNote->id, 'void_id' => $void->id]);
++            SaleDteLog::info("Respuesta Hacienda ND", ['debit_note_id' => $debitNote->id, 'void_id' => $void->id]);
+ 
+             return response()->json($haciendaResponse);
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando ND', ['debit_note_id' => $debitNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
++            SaleDteLog::error('Error anulando ND', [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $sale->id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
++            ]);
+             return response()->json(['error' => 'Error anulando ND', 'message' => $th->getMessage()], 500);
+         }
+     }
+diff --git a/app/Http/Controllers/VoidNCController.php b/app/Http/Controllers/VoidNCController.php
+index 18c7d1b..e4f5227 100644
+--- a/app/Http/Controllers/VoidNCController.php
++++ b/app/Http/Controllers/VoidNCController.php
+@@ -3,7 +3,7 @@
+ namespace App\Http\Controllers;
+ 
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\CreditNote;
+ use App\Models\VoidNC;
+ use App\Services\DocumentService;
+@@ -46,22 +46,25 @@ public function voidNC(CreditNote $creditNote)
+ 
+             // Construir JSON de la NC a anular
+             $dteJson = $this->documentService->buildDTEJsonVoidNC($creditNote, $sale, $void);
+-            Log::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id, 'dte' => $dteJson]);
++            SaleDteLog::info("DTE NC antes de firmar", [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $sale->id,
++            ]);
+ 
+             // Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson);
+-            Log::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
++            SaleDteLog::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
+ 
+             // Obtener token Hacienda
+             $token = $this->authService->generateNewToken();
+ 
+             // Enviar a Hacienda
+             $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $void, $signedData, $token);
+-            Log::info("Respuesta Hacienda NC", [
++            SaleDteLog::info("Respuesta Hacienda NC", array_merge([
+                 'credit_note_id' => $creditNote->id,
++                'sale_id' => $sale->id,
+                 'void_id' => $void->id,
+-                'response' => $haciendaResponse
+-            ]);
++            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
+ 
+             // Guardar respuesta de Hacienda en VoidNC
+             $void->update([
+@@ -73,10 +76,10 @@ public function voidNC(CreditNote $creditNote)
+             return response()->json($haciendaResponse);
+ 
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando NC', [
++            SaleDteLog::error('Error anulando NC', [
+                 'credit_note_id' => $creditNote->id,
+-                'error' => $th->getMessage(),
+-                'trace' => $th->getTraceAsString()
++                'sale_id' => $creditNote->sale_id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -104,10 +107,10 @@ public function destroy(CreditNote $creditNote)
+                 ->with('success', 'Nota de crédito anulada correctamente.');
+ 
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando NC', [
++            SaleDteLog::error('Error anulando NC', [
+                 'credit_note_id' => $creditNote->id,
+-                'error' => $th->getMessage(),
+-                'trace' => $th->getTraceAsString()
++                'sale_id' => $creditNote->sale_id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+             return redirect()->back()->withErrors('Error generando la anulación de la NC: ' . $th->getMessage());
+         }
+diff --git a/app/Http/Controllers/VoidNDController.php b/app/Http/Controllers/VoidNDController.php
+index cfe7164..a21cecf 100644
+--- a/app/Http/Controllers/VoidNDController.php
++++ b/app/Http/Controllers/VoidNDController.php
+@@ -3,7 +3,7 @@
+ namespace App\Http\Controllers;
+ 
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\DebitNote;
+ use App\Models\VoidND;
+ use App\Services\DocumentService;
+@@ -46,22 +46,25 @@ public function voidND(DebitNote $debitNote)
+ 
+             // Construir JSON de la ND a anular
+             $dteJson = $this->documentService->buildDTEJsonVoidND($debitNote, $sale, $void);
+-            Log::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id, 'dte' => $dteJson]);
++            SaleDteLog::info("DTE ND antes de firmar", [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $sale->id,
++            ]);
+ 
+             // Firmar documento
+             $signedData = $this->documentService->signDocument($dteJson);
+-            Log::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
++            SaleDteLog::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
+ 
+             // Obtener token Hacienda
+             $token = $this->authService->generateNewToken();
+ 
+             // Enviar a Hacienda
+             $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $void, $signedData, $token);
+-            Log::info("Respuesta Hacienda ND", [
++            SaleDteLog::info("Respuesta Hacienda ND", array_merge([
+                 'debit_note_id' => $debitNote->id,
++                'sale_id' => $sale->id,
+                 'void_id' => $void->id,
+-                'response' => $haciendaResponse
+-            ]);
++            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
+ 
+             // Guardar respuesta de Hacienda en VoidND
+             $void->update([
+@@ -73,10 +76,10 @@ public function voidND(DebitNote $debitNote)
+             return response()->json($haciendaResponse);
+ 
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando ND', [
++            SaleDteLog::error('Error anulando ND', [
+                 'debit_note_id' => $debitNote->id,
+-                'error' => $th->getMessage(),
+-                'trace' => $th->getTraceAsString()
++                'sale_id' => $debitNote->sale_id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return response()->json([
+@@ -104,10 +107,10 @@ public function destroy(DebitNote $debitNote)
+                 ->with('success', 'Nota de crédito anulada correctamente.');
+ 
+         } catch (\Throwable $th) {
+-            Log::error('Error anulando ND', [
++            SaleDteLog::error('Error anulando ND', [
+                 'debit_note_id' => $debitNote->id,
+-                'error' => $th->getMessage(),
+-                'trace' => $th->getTraceAsString()
++                'sale_id' => $debitNote->sale_id,
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+             return redirect()->back()->withErrors('Error generando la anulación de la ND: ' . $th->getMessage());
+         }
+diff --git a/app/Http/Middleware/LogSaleStoreOutcome.php b/app/Http/Middleware/LogSaleStoreOutcome.php
+index 78b21d1..d9e6ef4 100644
+--- a/app/Http/Middleware/LogSaleStoreOutcome.php
++++ b/app/Http/Middleware/LogSaleStoreOutcome.php
+@@ -5,7 +5,7 @@
+ use App\Models\Sale;
+ use Closure;
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use Symfony\Component\HttpFoundation\Response;
+ 
+ class LogSaleStoreOutcome
+@@ -37,7 +37,7 @@ public function handle(Request $request, Closure $next): Response
+             return $response;
+         }
+ 
+-        Log::info('gestock.sale', [
++        SaleDteLog::info('gestock.sale', [
+             'outcome' => isset(self::$createdIds[$saleId]) ? 'created' : 'replay',
+             'user_id' => $request->user()?->id,
+             'store_id' => $sale->store_id,
+diff --git a/app/Services/ConsultaService.php b/app/Services/ConsultaService.php
+index 3a6466c..a9e3f3f 100644
+--- a/app/Services/ConsultaService.php
++++ b/app/Services/ConsultaService.php
+@@ -9,7 +9,7 @@
+ use App\Models\DteResponseNC;
+ use App\Models\DteResponseND;
+ use Illuminate\Support\Facades\Http;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use Carbon\Carbon;
+ use League\CommonMark\Environment\Environment;
+ 
+@@ -21,7 +21,7 @@ class ConsultaService
+     public function consultarSale(Sale $sale, $token): array
+     {
+         if (!$sale->codigo_generacion) {
+-            Log::warning("Sale sin código de generación, no se puede consultar DTE", [
++            SaleDteLog::warning("Sale sin código de generación, no se puede consultar DTE", [
+                 'sale_id' => $sale->id
+             ]);
+             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
+@@ -41,7 +41,7 @@ public function consultarSale(Sale $sale, $token): array
+         } elseif ($environment === 'Production') {
+             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
+         } else {
+-            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -49,7 +49,7 @@ public function consultarSale(Sale $sale, $token): array
+         }
+ 
+         //Logs before the request
+-/*         Log::info("Consultando DTE en Hacienda", [
++/*         SaleDteLog::info("Consultando DTE en Hacienda", [
+             'sale_id' => $sale->id,
+             'nitEmisor' => $sale->store->taxInfo->nit,
+             'tdte' => $tipoDTE,
+@@ -69,10 +69,9 @@ public function consultarSale(Sale $sale, $token): array
+                 ]);
+ 
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'sale_id' => $sale->id,
++            ]));
+ 
+             $data = $response->json();
+ 
+@@ -95,7 +94,10 @@ public function consultarSale(Sale $sale, $token): array
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Throwable $e) {
+-                Log::error("Error guardando DteResponse", ['sale_id' => $sale->id, 'error' => $e->getMessage()]);
++                SaleDteLog::error('Error guardando DteResponse', [
++                    'sale_id' => $sale->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             // Actualizar estado de la venta
+@@ -104,10 +106,9 @@ public function consultarSale(Sale $sale, $token): array
+ 
+             return $data;
+         } catch (\Throwable $e) {
+-            Log::error("Error consultando DTE en Hacienda", [
++            SaleDteLog::error('Error consultando DTE en Hacienda', [
+                 'sale_id' => $sale->id,
+-                'error' => $e->getMessage(),
+-                'trace' => $e->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
+         }
+@@ -119,7 +120,7 @@ public function consultarSale(Sale $sale, $token): array
+     public function consultarNC(CreditNote $creditNote, $token): array
+     {
+         if (!$creditNote->codigo_generacion) {
+-            Log::warning("creditNote sin código de generación, no se puede consultar DTE", [
++            SaleDteLog::warning("creditNote sin código de generación, no se puede consultar DTE", [
+                 'credit_note_id' => $creditNote->id
+             ]);
+             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
+@@ -134,7 +135,7 @@ public function consultarNC(CreditNote $creditNote, $token): array
+         } elseif ($environment === 'Production') {
+             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
+         } else {
+-            Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -142,12 +143,11 @@ public function consultarNC(CreditNote $creditNote, $token): array
+         }
+ 
+         //info antes de la consulta
+-        Log::info("Consultando DTE en Hacienda", [
++        SaleDteLog::info("Consultando DTE en Hacienda", [
+             'credit_note_id' => $creditNote->id,
+-            'nitEmisor' => $creditNote->store->taxInfo->nit,
++            'sale_id' => $creditNote->sale_id,
+             'tdte' => $tipoDTE,
+             'codigoGeneracion' => $creditNote->codigo_generacion,
+-            'url' => $url
+         ]);
+ 
+         try {
+@@ -162,10 +162,10 @@ public function consultarNC(CreditNote $creditNote, $token): array
+                 ]);
+ 
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id,
++            ]));
+ 
+             $data = $response->json();
+ 
+@@ -188,7 +188,11 @@ public function consultarNC(CreditNote $creditNote, $token): array
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Throwable $e) {
+-                Log::error("Error guardando DteResponse", ['credit_note_id' => $creditNote->id, 'error' => $e->getMessage()]);
++                SaleDteLog::error('Error guardando DteResponse', [
++                    'credit_note_id' => $creditNote->id,
++                    'sale_id' => $creditNote->sale_id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             // Actualizar estado de la venta
+@@ -197,10 +201,10 @@ public function consultarNC(CreditNote $creditNote, $token): array
+ 
+             return $data;
+         } catch (\Throwable $e) {
+-            Log::error("Error consultando DTE en Hacienda", [
+-                'sale_id' => $creditNote->id,
+-                'error' => $e->getMessage(),
+-                'trace' => $e->getTraceAsString()
++            SaleDteLog::error('Error consultando DTE en Hacienda', [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id,
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
+         }
+@@ -209,7 +213,7 @@ public function consultarNC(CreditNote $creditNote, $token): array
+     public function consultarND(DebitNote $debitNote, $token): array
+     {
+         if (!$debitNote->codigo_generacion) {
+-            Log::warning("Debit Note sin código de generación, no se puede consultar DTE", [
++            SaleDteLog::warning("Debit Note sin código de generación, no se puede consultar DTE", [
+                 'debit_note_id' => $debitNote->id
+             ]);
+             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
+@@ -224,7 +228,7 @@ public function consultarND(DebitNote $debitNote, $token): array
+         } elseif ($environment === 'Production') {
+             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
+         } else {
+-            Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -232,12 +236,11 @@ public function consultarND(DebitNote $debitNote, $token): array
+         }
+ 
+                 //info antes de la consulta
+-        Log::info("Consultando DTE en Hacienda", [
++        SaleDteLog::info("Consultando DTE en Hacienda", [
+             'debit_note_id' => $debitNote->id,
+-            'nitEmisor' => $debitNote->store->taxInfo->nit,
++            'sale_id' => $debitNote->sale_id,
+             'tdte' => $tipoDTE,
+             'codigoGeneracion' => $debitNote->codigo_generacion,
+-            'url' => $url
+         ]);
+ 
+         try {
+@@ -252,10 +255,10 @@ public function consultarND(DebitNote $debitNote, $token): array
+                 ]);
+ 
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id,
++            ]));
+ 
+             $data = $response->json();
+ 
+@@ -278,7 +281,11 @@ public function consultarND(DebitNote $debitNote, $token): array
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Throwable $e) {
+-                Log::error("Error guardando DteResponse", ['debit_note_id' => $debitNote->id, 'error' => $e->getMessage()]);
++                SaleDteLog::error('Error guardando DteResponse', [
++                    'debit_note_id' => $debitNote->id,
++                    'sale_id' => $debitNote->sale_id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             // Actualizar estado de la venta
+@@ -287,10 +294,10 @@ public function consultarND(DebitNote $debitNote, $token): array
+ 
+             return $data;
+         } catch (\Throwable $e) {
+-            Log::error("Error consultando DTE en Hacienda", [
+-                'sale_id' => $debitNote->id,
+-                'error' => $e->getMessage(),
+-                'trace' => $e->getTraceAsString()
++            SaleDteLog::error('Error consultando DTE en Hacienda', [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id,
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
+         }
+diff --git a/app/Services/ContingenciaService.php b/app/Services/ContingenciaService.php
+index 75e0b75..43e6686 100644
+--- a/app/Services/ContingenciaService.php
++++ b/app/Services/ContingenciaService.php
+@@ -3,7 +3,7 @@
+ 
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Support\Facades\Http;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\Contingencia;
+ 
+ class ContingenciaService
+@@ -25,18 +25,16 @@ public function sendContingencia(
+                         'documento' => $signedData['body'] ?? null
+                   ]);
+ 
+-            Log::info('Respuesta MH Contingencia', [
++            SaleDteLog::info('Respuesta MH Contingencia', SaleDteLog::httpMh($response, [
+                 'contingencia_id' => $contingencia->id,
+-                'status'          => $response->status(),
+-                'body'            => $response->json()
+-            ]);
++            ]));
+ 
+             return $response->json();
+ 
+         } catch (\Throwable $e) {
+-            Log::error('Error contingencia MH', [
++            SaleDteLog::error('Error contingencia MH', [
+                 'contingencia_id' => $contingencia->id,
+-                'error' => $e->getMessage()
++                'message' => SaleDteLog::safeMessage($e->getMessage()),
+             ]);
+ 
+             throw $e;
+diff --git a/app/Services/DocumentService.php b/app/Services/DocumentService.php
+index 3075f8f..83f739a 100644
+--- a/app/Services/DocumentService.php
++++ b/app/Services/DocumentService.php
+@@ -5,7 +5,7 @@
+ use App\Models\Contingencia;
+ use App\Models\Sale;
+ use Illuminate\Support\Facades\Http;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use Carbon\Carbon;
+ use Illuminate\Http\Request;
+ use App\Models\CreditNote;
+@@ -1186,11 +1186,9 @@ public function signDocument(array $dteJson, string $nit, string $password_pri,
+             "dteJson" => $dteJson,
+         ];
+ 
+-        //debug log del payload antes de enviarlo al firmador
+-        Log::debug('Puerto Certificado', $port);
+-
+-        //Logs del payload antes de enviarlo al firmador
+-        Log::debug('Payload para firmar documento', $payload);
++        SaleDteLog::debug('Puerto Certificado', [
++            'port' => $port['port'],
++        ]);
+ 
+         $host = config('services.firma.url')
+             ?: getenv('FIRMADOR_HOST')
+@@ -1203,14 +1201,19 @@ public function signDocument(array $dteJson, string $nit, string $password_pri,
+         // logs request antes de firmar
+ 
+         if ($response->failed()) {
+-            Log::error('Error firmando documento', $response->json());
++            SaleDteLog::error('Error firmando documento', [
++                'http_status' => $response->status(),
++            ]);
+             throw new \Exception('Error al firmar documento');
+         }
+ 
+         $signedData = $response->json();
+ 
+         if (!isset($signedData['status']) || $signedData['status'] !== 'OK') {
+-            Log::error('Error en la firma del documento', $signedData);
++            $status = is_array($signedData) ? ($signedData['status'] ?? null) : null;
++            SaleDteLog::error('Error en la firma del documento', [
++                'status' => is_string($status) && !SaleDteLog::looksLikePayload($status) ? mb_substr($status, 0, 32) : null,
++            ]);
+             throw new \Exception('Firma del documento fallida');
+         }
+ 
+diff --git a/app/Services/HaciendaAuthService.php b/app/Services/HaciendaAuthService.php
+index dd10ca0..be30949 100644
+--- a/app/Services/HaciendaAuthService.php
++++ b/app/Services/HaciendaAuthService.php
+@@ -6,7 +6,7 @@
+ use App\Models\Store;
+ use Illuminate\Support\Facades\Http;
+ use Carbon\Carbon;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ 
+ 
+ class HaciendaAuthService
+@@ -69,25 +69,27 @@ public function generateNewToken(string $nit, string $api_key, string $environme
+             throw new \Exception('Error de conexión con Hacienda: ' . $e->getMessage());
+         }
+ 
+-        Log::info("Obteniendo token de Hacienda )", [
+-            'user' => $nit,
+-            'pass' => $api_key,
++        SaleDteLog::info('Obteniendo token de Hacienda', [
+             'response_status' => $response->status(),
+-            'response_body' => $response->body('token'),
+         ]);
+         if ($response->failed()) {
+-            Log::error('Error en la petición de token a Hacienda', ['body' => $response->body()]);
++            SaleDteLog::error('Error en la petición de token a Hacienda', [
++                'response_status' => $response->status(),
++            ]);
+             throw new \Exception('Error en la petición de token a Hacienda');
+         }
+ 
+         $data = $response->json();
+         $tokenValue = $data['body']['token'] ?? $data['token'] ?? null;
+ 
+-        //mostrart token
+-        Log::info('Token obtenido de Hacienda', ['token' => $tokenValue]);
++        SaleDteLog::info('Token obtenido de Hacienda', [
++            'token_preview' => SaleDteLog::tokenPreview($tokenValue),
++        ]);
+ 
+         if (!$tokenValue) {
+-            Log::error('Token no encontrado en la respuesta de Hacienda', ['data' => $data]);
++            SaleDteLog::error('Token no encontrado en la respuesta de Hacienda', [
++                'response_status' => $response->status(),
++            ]);
+             throw new \Exception('Token no encontrado en la respuesta de Hacienda');
+         
+         }
+@@ -101,7 +103,9 @@ public function generateNewToken(string $nit, string $api_key, string $environme
+             'expires_at' => Carbon::now()->addMinutes(5), // token válido 5 min
+         ]);
+ 
+-        Log::info('Nuevo token generado', ['token' => $tokenValue]);
++        SaleDteLog::info('Nuevo token generado', [
++            'token_preview' => SaleDteLog::tokenPreview($tokenValue),
++        ]);
+ 
+         return $token->token;
+     }
+diff --git a/app/Services/ReceptionService.php b/app/Services/ReceptionService.php
+index b8fcaef..4d46240 100644
+--- a/app/Services/ReceptionService.php
++++ b/app/Services/ReceptionService.php
+@@ -4,7 +4,7 @@
+ 
+ use App\Models\DteResponse;
+ use Illuminate\Support\Facades\Http;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\Sale;
+ 
+ class ReceptionService
+@@ -35,17 +35,18 @@ public function sendToHacienda(Sale $sale, array $signedData, string $token): ar
+         //obtener ambiente desde sales
+         $environment = $sale->store->environment; // 'prod' o 'test'
+ 
+-        Log::info("Enviando DTE a Hacienda", [
++        SaleDteLog::info('Enviando DTE a Hacienda', [
+             'sale_id' => $sale->id,
+             'tipo_documento' => $sale->tipo_documento_id,
+             'tipoDTE' => $tipoDTE,
+             'ambiente' => $environment,
+-            'token' => $token,
+-            'data firmada' => $signedData['body'] ?? null
++            'has_token' => $token !== '',
++            'token_preview' => SaleDteLog::tokenPreview($token),
++            'documento_length' => strlen($signedData['body'] ?? ''),
+         ]);
+ 
+         if (!$tipoDTE) {
+-            Log::error("Tipo de DTE inválido para la venta {$sale->id}");
++            SaleDteLog::error("Tipo de DTE inválido para la venta {$sale->id}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Tipo de DTE inválido o no encontrado'
+@@ -53,7 +54,8 @@ public function sendToHacienda(Sale $sale, array $signedData, string $token): ar
+         }
+ 
+         // llamando url bases
+-        log::info("URLs de Hacienda", [
++        SaleDteLog::info('URLs de Hacienda', [
++            'sale_id' => $sale->id,
+             'prod_url' => config('services.hacienda.prod_url'),
+             'test_url' => config('services.hacienda.test_url'),
+         ]);
+@@ -75,22 +77,23 @@ public function sendToHacienda(Sale $sale, array $signedData, string $token): ar
+             $url = config('services.hacienda.test_url') . 'recepciondte';
+             $ambiente = '00';
+         } else {
+-            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+             ];
+         }
+ 
+-        Log::info('Request a Hacienda - PRE', [
++        SaleDteLog::info('Request a Hacienda - PRE', [
++            'sale_id' => $sale->id,
+             'url' => $url,
+             'ambiente' => $ambiente,
+             'idEnvio' => 1,
+             'version' => $version,
+             'tipoDte' => $tipoDTE,
+             'codigoGeneracion' => $sale->codigo_generacion,
+-            'has_token' => !empty($token),
+-            'token_preview' => substr($token, 0, 20) . '...', // no log completo por seguridad
++            'has_token' => $token !== '',
++            'token_preview' => SaleDteLog::tokenPreview($token),
+             'documento_length' => strlen($signedData['body'] ?? ''),
+         ]);
+         try {
+@@ -108,11 +111,9 @@ public function sendToHacienda(Sale $sale, array $signedData, string $token): ar
+                 ]);
+ 
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body(),
+-
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'sale_id' => $sale->id,
++            ]));
+ 
+             $data = $response->json();
+ 
+@@ -132,17 +133,20 @@ public function sendToHacienda(Sale $sale, array $signedData, string $token): ar
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponse: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponse', [
++                    'sale_id' => $sale->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+ 
+ 
+             return $response->json();
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando DTE a Hacienda', [
+                 'sale_id' => $sale->id,
+                 'tipo_documento' => $sale->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+             return [
+                 'estado' => 'ERROR',
+@@ -164,7 +168,7 @@ public function sendNCToHacienda($creditNote, $signedData, $token): array
+             $url = config('services.hacienda.test_url') . 'recepciondte';
+             $ambiente = '00';
+         } else {
+-            Log::error("Ambiente desconocido para la venta {$creditNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la venta {$creditNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -187,10 +191,10 @@ public function sendNCToHacienda($creditNote, $signedData, $token): array
+ 
+             $data = $response->json();
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id ?? null,
++            ]));
+ 
+             // Guardar en dte_responses_nc
+             try {
+@@ -211,15 +215,19 @@ public function sendNCToHacienda($creditNote, $signedData, $token): array
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponseNC al crear NC: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponseNC al crear NC', [
++                    'credit_note_id' => $creditNote->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             return $data;
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando NC a Hacienda', [
+                 'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id ?? null,
+                 'tipo_documento' => $creditNote->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return [
+@@ -246,7 +254,7 @@ public function sendNDToHacienda($debitNote, $signedData, $token)
+             $url = config('services.hacienda.test_url') . 'recepciondte';
+             $ambiente = '00';
+         } else {
+-            Log::error("Ambiente desconocido para la venta {$debitNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la venta {$debitNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -270,10 +278,10 @@ public function sendNDToHacienda($debitNote, $signedData, $token)
+ 
+             $data = $response->json();
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id ?? null,
++            ]));
+ 
+             // Guardar en dte_responses_nc
+             try {
+@@ -294,17 +302,21 @@ public function sendNDToHacienda($debitNote, $signedData, $token)
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponseNC al crear NC: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponseNC al crear NC', [
++                    'debit_note_id' => $debitNote->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+ 
+ 
+             return $data;
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando DTE a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando DTE a Hacienda', [
+                 'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id ?? null,
+                 'tipo_documento' => $debitNote->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+             return [
+                 'estado' => 'ERROR',
+diff --git a/app/Services/VoidService.php b/app/Services/VoidService.php
+index 0527d36..30dc493 100644
+--- a/app/Services/VoidService.php
++++ b/app/Services/VoidService.php
+@@ -5,7 +5,7 @@
+ 
+ use App\Models\DteResponse;
+ use Illuminate\Support\Facades\Http;
+-use Illuminate\Support\Facades\Log;
++use App\Support\SaleDteLog;
+ use App\Models\Sale;
+ use App\Models\VoidDTE;
+ use Carbon\Carbon;
+@@ -30,7 +30,7 @@ public function sendVoidToHacienda(Sale $sale, $void, array $signedData, string
+         $tipoDTE = $sale->tipoDte?->codigo;
+ 
+         if (!$tipoDTE) {
+-            Log::error("Tipo de DTE inválido para la venta {$sale->id}");
++            SaleDteLog::error("Tipo de DTE inválido para la venta {$sale->id}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Tipo de DTE inválido o no encontrado'
+@@ -55,7 +55,7 @@ public function sendVoidToHacienda(Sale $sale, $void, array $signedData, string
+             $url = config('services.hacienda.test_url') . 'anulardte';
+             $ambiente = '00';
+         } else {
+-            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -63,12 +63,10 @@ public function sendVoidToHacienda(Sale $sale, $void, array $signedData, string
+         }
+ 
+         //Logs before the request
+-        Log::info("Enviando DTE void a Hacienda", [
++        SaleDteLog::info("Enviando DTE void a Hacienda", [
+             'sale_id' => $sale->id,
+-            'nitEmisor' => $sale->store->taxInfo->nit,
+             'tdte' => $tipoDTE,
+             'codigoGeneracion' => $sale->codigo_generacion,
+-            'url' => $url
+         ]);
+         try {
+             $response = Http::withHeaders([
+@@ -82,10 +80,9 @@ public function sendVoidToHacienda(Sale $sale, $void, array $signedData, string
+                     'documento' => $signedData['body'] ?? null
+                 ]);
+ 
+-            Log::info("Hacienda Void Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Void Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'sale_id' => $sale->id,
++            ]));
+ 
+             $data = $response->json();
+ 
+@@ -108,15 +105,18 @@ public function sendVoidToHacienda(Sale $sale, $void, array $signedData, string
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponse de anulación: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponse de anulación', [
++                    'sale_id' => $sale->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             return $data;
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando anulación a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando anulación a Hacienda', [
+                 'sale_id' => $sale->id,
+                 'tipo_documento' => $sale->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return [
+@@ -139,7 +139,7 @@ public function sendNCVoidToHacienda($creditNote, $void, $signedData, $token): a
+             $ambiente = '00';
+             $url = config('services.hacienda.test_url') . 'anulardte';
+         } else {
+-            Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -160,10 +160,10 @@ public function sendNCVoidToHacienda($creditNote, $void, $signedData, $token): a
+ 
+             $data = $response->json();
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id ?? null,
++            ]));
+ 
+             // Guardar en dte_responses_nc
+             try {
+@@ -184,15 +184,19 @@ public function sendNCVoidToHacienda($creditNote, $void, $signedData, $token): a
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponseNC: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponseNC', [
++                    'credit_note_id' => $creditNote->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             return $data;
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando NC a Hacienda', [
+                 'credit_note_id' => $creditNote->id,
++                'sale_id' => $creditNote->sale_id ?? null,
+                 'tipo_documento' => $creditNote->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return [
+@@ -214,7 +218,7 @@ public function sendNDVoidToHacienda($debitNote, $void, $signedData, $token): ar
+             $ambiente = '00';
+             $url = config('services.hacienda.test_url') . 'anulardte';
+         } else {
+-            Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
++            SaleDteLog::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
+             return [
+                 'estado' => 'ERROR',
+                 'mensaje' => 'Ambiente desconocido'
+@@ -235,10 +239,10 @@ public function sendNDVoidToHacienda($debitNote, $void, $signedData, $token): ar
+ 
+             $data = $response->json();
+ 
+-            Log::info("Hacienda Response ({$tipoDTE})", [
+-                'status' => $response->status(),
+-                'body' => $response->body()
+-            ]);
++            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
++                'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id ?? null,
++            ]));
+ 
+             // Guardar en dte_responses_nc
+             try {
+@@ -259,15 +263,19 @@ public function sendNDVoidToHacienda($debitNote, $void, $signedData, $token): ar
+                     'observaciones' => $data['observaciones'] ?? [],
+                 ]);
+             } catch (\Exception $e) {
+-                Log::error('Error guardando DteResponseND: ' . $e->getMessage());
++                SaleDteLog::error('Error guardando DteResponseND', [
++                    'debit_note_id' => $debitNote->id,
++                    'message' => SaleDteLog::safeMessage($e->getMessage()),
++                ]);
+             }
+ 
+             return $data;
+         } catch (\Throwable $th) {
+-            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
++            SaleDteLog::error('Error enviando ND a Hacienda', [
+                 'debit_note_id' => $debitNote->id,
++                'sale_id' => $debitNote->sale_id ?? null,
+                 'tipo_documento' => $debitNote->tipo_documento_id,
+-                'trace' => $th->getTraceAsString()
++                'message' => SaleDteLog::safeMessage($th->getMessage()),
+             ]);
+ 
+             return [
+diff --git a/app/Support/SaleDteLog.php b/app/Support/SaleDteLog.php
+new file mode 100644
+new file mode 100644
+index 0000000..b969d85
+--- /dev/null
++++ b/app/Support/SaleDteLog.php
+@@ -0,0 +1,102 @@
++<?php
++
++namespace App\Support;
++
++use Illuminate\Http\Client\Response;
++use Illuminate\Support\Facades\Log;
++
++/**
++ * Sale and DTE debug lines share the sale_dte stack (storage/logs/gestock-sale-dte.log).
++ * Context passed here is already reduced; helpers below only keep status fields.
++ */
++class SaleDteLog
++{
++    public const CHANNEL = 'sale_dte';
++
++    public static function info(string $message, array $context = []): void
++    {
++        Log::channel(self::CHANNEL)->info($message, $context);
++    }
++
++    public static function error(string $message, array $context = []): void
++    {
++        Log::channel(self::CHANNEL)->error($message, $context);
++    }
++
++    public static function warning(string $message, array $context = []): void
++    {
++        Log::channel(self::CHANNEL)->warning($message, $context);
++    }
++
++    public static function debug(string $message, array $context = []): void
++    {
++        Log::channel(self::CHANNEL)->debug($message, $context);
++    }
++
++    /**
++     * Short hash so a log can show that a token existed without the token bytes.
++     */
++    public static function tokenPreview(mixed $token): ?string
++    {
++        if (!is_string($token) || $token === '') {
++            return null;
++        }
++
++        return substr(hash('sha256', $token), 0, 12);
++    }
++
++    /**
++     * @param  array<string, mixed>  $payload
++     * @return array<string, mixed>
++     */
++    public static function mhSummary(array $payload): array
++    {
++        $summary = [];
++
++        $estado = $payload['estado'] ?? null;
++        if (is_string($estado) && $estado !== '' && !self::looksLikePayload($estado)) {
++            $summary['estado'] = mb_substr($estado, 0, 32);
++        }
++
++        $code = $payload['codigoMsg'] ?? $payload['codigo_msg'] ?? null;
++        if ((is_int($code) || (is_string($code) && $code !== '')) && !self::looksLikePayload((string) $code)) {
++            $summary['mh_code'] = is_string($code) ? mb_substr($code, 0, 32) : $code;
++        }
++
++        $message = $payload['descripcionMsg'] ?? $payload['mensaje'] ?? $payload['descripcion_msg'] ?? null;
++        if (is_string($message) && $message !== '' && !self::looksLikePayload($message)) {
++            $summary['mh_message'] = mb_substr($message, 0, 160);
++        }
++
++        return $summary;
++    }
++
++    /**
++     * @param  array<string, mixed>  $extra
++     * @return array<string, mixed>
++     */
++    public static function httpMh(Response $response, array $extra = []): array
++    {
++        $json = $response->json();
++
++        return array_merge($extra, [
++            'http_status' => $response->status(),
++        ], self::mhSummary(is_array($json) ? $json : []));
++    }
++
++    public static function safeMessage(string $message): string
++    {
++        if (self::looksLikePayload($message)) {
++            return 'omitted payload';
++        }
++
++        return mb_substr($message, 0, 300);
++    }
++
++    public static function looksLikePayload(string $value): bool
++    {
++        return str_contains($value, '<')
++            || str_contains($value, '{')
++            || str_contains($value, 'eyJ');
++    }
++}
+diff --git a/config/logging.php b/config/logging.php
+index 9e998a4..1136f2d 100644
+--- a/config/logging.php
++++ b/config/logging.php
+@@ -127,6 +127,21 @@
+             'path' => storage_path('logs/laravel.log'),
+         ],
+ 
++        // Sale create/replay and DTE/MH attempts. Not part of the default stack,
++        // so this file is not mixed with the rest of laravel.log.
++        'sale_dte' => [
++            'driver' => 'stack',
++            'channels' => ['sale_dte_file'],
++            'ignore_exceptions' => false,
++        ],
++
++        'sale_dte_file' => [
++            'driver' => 'single',
++            'path' => storage_path('logs/gestock-sale-dte.log'),
++            'level' => env('LOG_SALE_DTE_LEVEL', 'debug'),
++            'replace_placeholders' => true,
++        ],
++
+     ],
+ 
+ ];
+diff --git a/tests/Feature/SaleDteDebugChannelTest.php b/tests/Feature/SaleDteDebugChannelTest.php
+new file mode 100644
+new file mode 100644
+index 0000000..a5098bb
+--- /dev/null
++++ b/tests/Feature/SaleDteDebugChannelTest.php
+@@ -0,0 +1,220 @@
++<?php
++
++require_once __DIR__.'/../../app/Models/store.php';
++require_once __DIR__.'/../../app/Models/company.php';
++
++use App\Http\Controllers\DTEController;
++use App\Models\Company;
++use App\Models\CorrelativoStore;
++use App\Models\MHAccess;
++use App\Models\ProductType;
++use App\Models\Sale;
++use App\Models\Store;
++use App\Models\StoreTaxInfo;
++use App\Models\TipoDte;
++use App\Models\User;
++use App\Services\ContingenciaService;
++use App\Services\DocumentService;
++use App\Services\HaciendaAuthService;
++use App\Services\ReceptionService;
++use App\Support\SaleDteLog;
++use Illuminate\Log\Events\MessageLogged;
++use Illuminate\Support\Facades\Http;
++use Illuminate\Support\Facades\Log;
++use Spatie\Permission\Models\Role;
++
++beforeEach(function () {
++    $this->logFile = storage_path('logs/gestock-sale-dte-test.log');
++    if (is_file($this->logFile)) {
++        unlink($this->logFile);
++    }
++
++    config([
++        'logging.channels.sale_dte_file.path' => $this->logFile,
++        'services.hacienda.token_url_test' => 'https://mh.test',
++        'services.hacienda.test_url' => 'https://mh.test/fesv/',
++        'services.firma.url' => 'firmador.test',
++    ]);
++    Log::forgetChannel(SaleDteLog::CHANNEL);
++    Log::forgetChannel('sale_dte_file');
++
++    $this->records = [];
++    Log::listen(function (MessageLogged $event) {
++        $this->records[] = $event->message.' '.json_encode($event->context);
++    });
++
++    $this->company = Company::create([
++        'company_name' => 'Gestock Test',
++        'address' => 'San Salvador',
++        'phone' => '22223333',
++        'owner' => 'Owner',
++        'email' => 'company-'.uniqid().'@example.com',
++        'plan' => 'basic',
++        'deployment_type' => 'saas',
++        'status' => 'activa',
++        'comments' => 'test',
++    ]);
++
++    $this->user = User::factory()->create([
++        'company_id' => $this->company->id,
++    ]);
++
++    Role::findOrCreate('admin', 'web');
++    $this->user->assignRole('admin');
++    $this->actingAs($this->user);
++
++    $tipo = new TipoDte();
++    $tipo->codigo = '01';
++    $tipo->nombre = 'Factura';
++    $tipo->save();
++    $this->tipo = $tipo;
++
++    $this->store = Store::create([
++        'company_id' => $this->company->id,
++        'store_name' => 'Tienda log',
++        'establecimiento' => 'M001',
++        'punto_venta' => 'P001',
++        'address' => 'Calle 1',
++        'phone' => '77778888',
++        'manager' => 'Manager',
++        'email' => 'tienda-'.uniqid().'@example.com',
++        'status' => 'activa',
++        'environment' => 'Development',
++    ]);
++
++    $this->product = ProductType::create([
++        'company_id' => $this->company->id,
++        'store_id' => $this->store->id,
++        'name' => 'Producto',
++        'price' => 11.30,
++        'stock' => 10,
++        'category' => 'General',
++    ]);
++
++    CorrelativoStore::create([
++        'store_id' => $this->store->id,
++        'tipo_documento_id' => $this->tipo->id,
++        'correlativo' => 0,
++    ]);
++});
++
++test('sale and dte debug file keeps sale_id and drops tokens payloads and pii', function () {
++    $jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PAYLOADSECRET.SIGNATURESECRET';
++    $apiKey = 'APIKEYSECRETO-XYZ';
++    $password = 'PASSWORDPRISECRETO';
++    $signedBody = 'SIGNEDBODYSECRET';
++    $piiName = 'NombreSecretoPii';
++    $piiEmail = 'pii-customer@example.test';
++    $xml = '<?xml version="1.0"?><Respuesta><receptor>'.$piiName.'</receptor></Respuesta>';
++
++    Http::fake([
++        'https://mh.test/seguridad/auth' => Http::response([
++            'body' => ['token' => $jwt],
++        ], 200),
++        'https://mh.test/fesv/recepciondte' => Http::response([
++            'version' => 1,
++            'ambiente' => '00',
++            'versionApp' => 1,
++            'estado' => 'PROCESADO',
++            'codigoGeneracion' => 'ABCDEF01-2345-6789-ABCD-EF0123456789',
++            'selloRecibido' => 'SELLOSECRETO987',
++            'fhProcesamiento' => '26/09/2026 12:00:00',
++            'clasificaMsg' => '10',
++            'codigoMsg' => '001',
++            'descripcionMsg' => 'Recibido',
++            'observaciones' => [],
++            'documento' => $xml,
++        ], 200),
++        'http://firmador.test:8113/firmardocumento/' => Http::response([
++            'status' => 'OK',
++            'body' => $signedBody,
++        ], 200),
++        '*' => Http::response(['estado' => 'PENDIENTE', 'codigoMsg' => '000', 'descripcionMsg' => 'Pendiente'], 200),
++    ]);
++
++    $created = $this->postJson(route('stores.sales.store', $this->store), [
++        'sale_date' => '2026-09-26',
++        'discount_amount' => 0,
++        'products' => [
++            ['id' => $this->product->id, 'quantity' => 1, 'price' => 11.30],
++        ],
++        'tipo_documento_id' => $this->tipo->id,
++        'payment_method' => 'Efectivo',
++    ], ['Accept' => 'application/json']);
++
++    $created->assertOk();
++    $saleId = $created->json('sale_id');
++    expect($saleId)->toBeInt();
++
++    $sale = Sale::query()->findOrFail($saleId);
++    $tax = new StoreTaxInfo();
++    $tax->nit = '06140000000000';
++    $access = new MHAccess();
++    $access->api_key = $apiKey;
++    $access->password_pri = $password;
++    $access->port_firma_digital = '8113';
++    $this->store->setRelation('taxInfo', $tax);
++    $this->store->setRelation('mh_access', $access);
++    $sale->setRelation('store', $this->store);
++    $sale->setRelation('tipoDte', $this->tipo);
++
++    $document = \Mockery::mock(DocumentService::class)->makePartial();
++    $document->shouldReceive('buildDTEJsonFE')->once()->andReturn([
++        'identificacion' => ['tipoDte' => '01', 'numeroControl' => 'DTEJSONSECRET'],
++        'receptor' => ['nombre' => $piiName, 'correo' => $piiEmail],
++    ]);
++
++    $controller = new DTEController(
++        $document,
++        new HaciendaAuthService(),
++        new ReceptionService(),
++        \Mockery::mock(ContingenciaService::class),
++    );
++
++    $response = $controller->generarDTE($sale);
++
++    expect($response->getStatusCode())->toBe(200)
++        ->and($response->getData(true)['estado'])->toBe('PROCESADO');
++
++    expect(is_file($this->logFile))->toBeTrue();
++    $debug = file_get_contents($this->logFile);
++
++    expect($debug)->toContain('gestock.sale')
++        ->and($debug)->toContain('gestock.dte')
++        ->and($debug)->toContain('"sale_id":'.$saleId)
++        ->and($debug)->toContain('"mh_code":"001"')
++        ->and($debug)->toContain('"token_preview":"'.SaleDteLog::tokenPreview($jwt).'"');
++
++    $secrets = [
++        $jwt,
++        $apiKey,
++        $password,
++        $signedBody,
++        $piiName,
++        $piiEmail,
++        'DTEJSONSECRET',
++        'SELLOSECRETO987',
++        $xml,
++        'eyJ',
++        'api_key',
++        'passwordPri',
++        '<?xml',
++        '<Respuesta',
++        'identificacion',
++        '"token":',
++        '"documento":',
++    ];
++
++    foreach ($secrets as $secret) {
++        expect($debug)->not->toContain($secret);
++    }
++
++    $captured = implode("\n", $this->records);
++    foreach ($secrets as $secret) {
++        expect($captured)->not->toContain($secret);
++    }
++
++    expect($captured)->toContain('gestock.sale')
++        ->and($captured)->toContain('gestock.dte')
++        ->and($captured)->toContain('"sale_id":'.$saleId);
++});
