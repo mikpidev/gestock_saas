@@ -1,0 +1,140 @@
+diff --git a/app/Http/Controllers/StoreController.php b/app/Http/Controllers/StoreController.php
+index 40f5501..a305c22 100644
+--- a/app/Http/Controllers/StoreController.php
++++ b/app/Http/Controllers/StoreController.php
+@@ -126,8 +126,9 @@ public function getChartData(Request $request, Store $store)
+         //Filtrar por tipo de documento (Factura, CF, etc)
+         $documentType = $request->tipo_documento_id;
+ 
+-        //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
+-        $dte_status = 'PROCESADO' ??  $request->dte_status;
++        // Filtrar por Status. Si el request omite dte_status (null), el default es PROCESADO:
++        // ventas aceptadas por Hacienda. Mismo default que DownloadPDF en este controlador.
++        $dte_status = $request->dte_status ?? 'PROCESADO';
+ 
+         // Base query con filtros aplicados
+ 
+diff --git a/tests/Feature/StoreDashboardDteStatusTest.php b/tests/Feature/StoreDashboardDteStatusTest.php
+new file mode 100644
+index 0000000..bfa6a74
+--- /dev/null
++++ b/tests/Feature/StoreDashboardDteStatusTest.php
+@@ -0,0 +1,118 @@
++<?php
++
++use App\Models\Sale;
++use App\Models\Store;
++use App\Models\User;
++use Illuminate\Support\Facades\DB;
++
++// app/Models/store.php and company.php are not PSR-4 (classes Store and Company).
++// Load Store before RefreshDatabase reaches the correlativos migration.
++// Load Company because CheckCompanyStatus reads the authenticated user's company.
++require_once __DIR__.'/../../app/Models/store.php';
++require_once __DIR__.'/../../app/Models/company.php';
++
++/**
++ * getChartData uses MySQL HOUR() and CONVERT_TZ(). Register equivalents so the
++ * dashboard endpoint can run on the sqlite test database.
++ */
++function registerSqliteChartDateFunctions(): void
++{
++    if (DB::connection()->getDriverName() !== 'sqlite') {
++        return;
++    }
++
++    $pdo = DB::connection()->getPdo();
++    $pdo->sqliteCreateFunction('CONVERT_TZ', fn ($value, $from, $to) => $value, 3);
++    $pdo->sqliteCreateFunction('HOUR', function ($value) {
++        if ($value === null || $value === '') {
++            return null;
++        }
++
++        $timestamp = strtotime((string) $value);
++
++        return $timestamp === false ? null : (int) date('G', $timestamp);
++    }, 1);
++}
++
++/**
++ * @return array{store: Store, user: User, expected: array<string, float>}
++ */
++function seedDashboardSales(): array
++{
++    $companyId = DB::table('companies')->insertGetId([
++        'company_name' => 'Compañía dashboard',
++        'address' => 'San Salvador',
++        'phone' => '22223333',
++        'owner' => 'Dueño',
++        'email' => 'dashboard-co@example.com',
++        'plan' => 'free',
++        'deployment_type' => 'saas',
++        'status' => 'activa',
++        'comments' => 'test',
++        'created_at' => now(),
++        'updated_at' => now(),
++    ]);
++
++    $store = Store::create([
++        'company_id' => $companyId,
++        'store_name' => 'Tienda dashboard',
++        'address' => 'Calle 1',
++        'phone' => '22224444',
++        'manager' => 'Gerente',
++        'email' => 'dashboard-store@example.com',
++        'status' => 'activa',
++    ]);
++
++    $user = User::factory()->create([
++        'company_id' => $companyId,
++    ]);
++
++    $amounts = [
++        'PROCESADO' => 40.00,
++        'RECHAZADO' => 15.50,
++        'PENDIENTE' => 7.00,
++    ];
++
++    foreach ($amounts as $status => $amount) {
++        Sale::create([
++            'store_id' => $store->id,
++            'user_id' => $user->id,
++            'sale_date' => now()->toDateString(),
++            'total_amount' => $amount,
++            'net_amount' => $amount,
++            'dte_status' => $status,
++            'payment_method' => 'Efectivo',
++        ]);
++    }
++
++    return ['store' => $store, 'user' => $user, 'expected' => $amounts];
++}
++
++beforeEach(function () {
++    registerSqliteChartDateFunctions();
++});
++
++test('dashboard chart data filters sales by the requested dte_status', function () {
++    ['store' => $store, 'user' => $user, 'expected' => $expected] = seedDashboardSales();
++
++    $response = $this->actingAs($user)->getJson(route('stores.dashboard.data', [
++        'store' => $store,
++        'dte_status' => 'RECHAZADO',
++    ]));
++
++    $response->assertOk();
++    expect($response->json('totalCount'))->toBe(1);
++    expect((float) $response->json('totalSales'))->toEqual($expected['RECHAZADO']);
++});
++
++test('dashboard chart data defaults dte_status to PROCESADO when the request omits it', function () {
++    ['store' => $store, 'user' => $user, 'expected' => $expected] = seedDashboardSales();
++
++    $response = $this->actingAs($user)->getJson(route('stores.dashboard.data', [
++        'store' => $store,
++    ]));
++
++    $response->assertOk();
++    expect($response->json('totalCount'))->toBe(1);
++    expect((float) $response->json('totalSales'))->toEqual($expected['PROCESADO']);
++});
