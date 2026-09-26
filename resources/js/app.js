@@ -13,7 +13,6 @@ Chart.register(...registerables);
 let salesChart;
 let paymentChart;
 let dteChart;
-let pagination;
 let topProducts;
 let peakHoursChart = null;
 
@@ -457,26 +456,4 @@ function getData() {
     });
 }
 
-function getPaginationData() {
-    console.log("cargando pagination.js");
-
-    $.ajax({
-        url: `pagination-data`,
-        method: "GET",
-        dataType: "json",
-
-        data: {
-            //filtros
-            from: $("#from").val(),
-            to: $("#to").val(),
-        },
-
-        success: function (data) {
-            console.log("Obteniendo datos para la paginacion de ventas", data);
-        },
-    });
-}
-
 window.getData = getData;
-
-window.getPaginationData = getPaginationData;

@@ -187,10 +187,6 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
             Route::get('stores/{store}/sales', [SaleController::class, 'index'])
                 ->name('stores.sales.index');
 
-            // Paginacion de ventas
-            Route::get('stores/{store}/pagination-data', [SaleController::class, 'getPaginationData'])
-                ->name('stores.sales.data');
-
             // Formulario de creación de venta
             Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
                 ->name('stores.sales.create');

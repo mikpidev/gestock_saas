@@ -1,0 +1,93 @@
+diff --git a/resources/js/app.js b/resources/js/app.js
+index 31649ad..7a7395a 100644
+--- a/resources/js/app.js
++++ b/resources/js/app.js
+@@ -13,7 +13,6 @@ Chart.register(...registerables);
+ let salesChart;
+ let paymentChart;
+ let dteChart;
+-let pagination;
+ let topProducts;
+ let peakHoursChart = null;
+ 
+@@ -457,26 +456,4 @@ function getData() {
+     });
+ }
+ 
+-function getPaginationData() {
+-    console.log("cargando pagination.js");
+-
+-    $.ajax({
+-        url: `pagination-data`,
+-        method: "GET",
+-        dataType: "json",
+-
+-        data: {
+-            //filtros
+-            from: $("#from").val(),
+-            to: $("#to").val(),
+-        },
+-
+-        success: function (data) {
+-            console.log("Obteniendo datos para la paginacion de ventas", data);
+-        },
+-    });
+-}
+-
+ window.getData = getData;
+-
+-window.getPaginationData = getPaginationData;
+diff --git a/resources/views/sales/index.blade.php b/resources/views/sales/index.blade.php
+index 34e1aaf..75fd067 100644
+--- a/resources/views/sales/index.blade.php
++++ b/resources/views/sales/index.blade.php
+@@ -500,7 +500,6 @@ function enviarDTEPorCorreo(url) {
+     }
+ 
+     document.addEventListener("DOMContentLoaded", () => {
+-        getPaginationData();
+         $("#from, #to").on("change", function() {
+             getData();
+         });
+diff --git a/routes/web.php b/routes/web.php
+index 4e9e7bb..fd8e1e1 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -187,10 +187,6 @@
+             Route::get('stores/{store}/sales', [SaleController::class, 'index'])
+                 ->name('stores.sales.index');
+ 
+-            // Paginacion de ventas
+-            Route::get('stores/{store}/pagination-data', [SaleController::class, 'getPaginationData'])
+-                ->name('stores.sales.data');
+-
+             // Formulario de creación de venta
+             Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
+                 ->name('stores.sales.create');
+diff --git a/tests/Feature/SalesPaginationDataTest.php b/tests/Feature/SalesPaginationDataTest.php
+new file mode 100644
+index 0000000..f782270
+--- /dev/null
++++ b/tests/Feature/SalesPaginationDataTest.php
+@@ -0,0 +1,21 @@
++<?php
++
++use App\Models\User;
++use Illuminate\Support\Facades\Route;
++
++test('the broken sales pagination-data route is not registered', function () {
++    expect(Route::has('stores.sales.data'))->toBeFalse();
++});
++
++test('guests receive 404 for the removed sales pagination-data endpoint', function () {
++    $this->get('/stores/1/pagination-data')
++        ->assertNotFound();
++});
++
++test('authenticated users receive 404 for the removed sales pagination-data endpoint', function () {
++    $user = User::factory()->create();
++
++    $this->actingAs($user)
++        ->get('/stores/1/pagination-data')
++        ->assertNotFound();
++});
