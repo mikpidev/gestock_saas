@@ -22,11 +22,18 @@
     <div class="lp-wrap">
         <article>
             <h1>{{ $heading }}</h1>
-            <p class="lp-lead">Última actualización: {{ $updated }}</p>
-            @foreach ($sections as $section)
-                <h2>{{ $section['title'] }}</h2>
-                <p>{{ $section['body'] }}</p>
+            @foreach ($preamble ?? [] as $line)
+                <p><strong>{{ $line['label'] }}:</strong> {{ $line['value'] }}</p>
             @endforeach
+            <p class="lp-lead">Última actualización: {{ $updated }}</p>
+            @if (! empty($policyPartial))
+                @include($policyPartial)
+            @else
+                @foreach ($sections as $section)
+                    <h2>{{ $section['title'] }}</h2>
+                    <p>{{ $section['body'] }}</p>
+                @endforeach
+            @endif
         </article>
     </div>
 </main>

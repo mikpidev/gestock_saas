@@ -48,27 +48,14 @@ class LandingController extends Controller
     public function privacy(): View
     {
         return view('landing.legal', [
-            'title' => 'Política de privacidad',
-            'heading' => 'Política de privacidad',
-            'updated' => 'Septiembre 2026',
-            'sections' => [
-                [
-                    'title' => 'Datos que recopilamos',
-                    'body' => 'Cuando solicitas información, podemos recibir tu nombre, negocio, correo electrónico, teléfono y el mensaje que nos envíes, con el fin de responder tu consulta y dar seguimiento comercial.',
-                ],
-                [
-                    'title' => 'Uso de la información',
-                    'body' => 'Utilizamos estos datos para atender solicitudes, explicar el funcionamiento de Gestock y coordinar la contratación del servicio. No vendemos esta información a terceros.',
-                ],
-                [
-                    'title' => 'Información del negocio en la plataforma',
-                    'body' => 'Los datos operativos que un cliente carga en Gestock (ventas, productos, clientes y documentos) se gestionan dentro de la plataforma para prestar el servicio contratado.',
-                ],
-                [
-                    'title' => 'Contacto',
-                    'body' => 'Para consultas relacionadas con privacidad, puedes utilizar el formulario de contacto de esta página.',
-                ],
+            'title' => 'Política de Privacidad',
+            'heading' => 'Política de Privacidad — Gestock',
+            'updated' => '27 de septiembre de 2026',
+            'preamble' => [
+                ['label' => 'Sitio', 'value' => 'gestock.site'],
+                ['label' => 'Versión', 'value' => 'v1'],
             ],
+            'policyPartial' => 'landing.partials.privacy-policy',
         ]);
     }
 

@@ -519,7 +519,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
         <div>
             <p style="font-weight:700;color:#fff;margin:0 0 .7rem;">Legal</p>
             <p><a href="{{ route('landing.terms') }}">Términos y condiciones</a></p>
-            <p><a href="{{ route('landing.privacy') }}">Política de privacidad</a></p>
+            <p><a href="{{ route('landing.privacy') }}">Políticas de privacidad</a></p>
             @auth
             <p><a href="{{ route('home') }}">Ir al sistema</a></p>
             @else
