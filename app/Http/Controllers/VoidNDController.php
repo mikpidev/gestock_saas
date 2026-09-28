@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use App\Models\DebitNote;
 use App\Models\VoidND;
 use App\Services\DocumentService;
@@ -46,22 +46,25 @@ class VoidNDController extends Controller
 
             // Construir JSON de la ND a anular
             $dteJson = $this->documentService->buildDTEJsonVoidND($debitNote, $sale, $void);
-            Log::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id, 'dte' => $dteJson]);
+            SaleDteLog::info("DTE ND antes de firmar", [
+                'debit_note_id' => $debitNote->id,
+                'sale_id' => $sale->id,
+            ]);
 
             // Firmar documento
             $signedData = $this->documentService->signDocument($dteJson);
-            Log::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
+            SaleDteLog::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
 
             // Obtener token Hacienda
             $token = $this->authService->generateNewToken();
 
             // Enviar a Hacienda
             $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $void, $signedData, $token);
-            Log::info("Respuesta Hacienda ND", [
+            SaleDteLog::info("Respuesta Hacienda ND", array_merge([
                 'debit_note_id' => $debitNote->id,
+                'sale_id' => $sale->id,
                 'void_id' => $void->id,
-                'response' => $haciendaResponse
-            ]);
+            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
 
             // Guardar respuesta de Hacienda en VoidND
             $void->update([
@@ -73,10 +76,10 @@ class VoidNDController extends Controller
             return response()->json($haciendaResponse);
 
         } catch (\Throwable $th) {
-            Log::error('Error anulando ND', [
+            SaleDteLog::error('Error anulando ND', [
                 'debit_note_id' => $debitNote->id,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'sale_id' => $debitNote->sale_id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return response()->json([
@@ -104,10 +107,10 @@ class VoidNDController extends Controller
                 ->with('success', 'Nota de crédito anulada correctamente.');
 
         } catch (\Throwable $th) {
-            Log::error('Error anulando ND', [
+            SaleDteLog::error('Error anulando ND', [
                 'debit_note_id' => $debitNote->id,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'sale_id' => $debitNote->sale_id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
             return redirect()->back()->withErrors('Error generando la anulación de la ND: ' . $th->getMessage());
         }

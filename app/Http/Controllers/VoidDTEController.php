@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use App\Models\Sale;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
@@ -74,11 +74,11 @@ class VoidDTEController extends Controller
                     throw new \Exception('Tipo de documento no soportado para DTE de anulación');
             }
 
-            Log::info("DTE void antes de firmar ({$tipoDTE})", ['sale_id' => $sale->id, 'dte' => $dteJson]);
+            SaleDteLog::info("DTE void antes de firmar ({$tipoDTE})", ['sale_id' => $sale->id]);
 
             // Firmar documento
             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
-            Log::info("Documento void firmado ({$tipoDTE})", ['sale_id' => $sale->id]);
+            SaleDteLog::info("Documento void firmado ({$tipoDTE})", ['sale_id' => $sale->id]);
 
             // Obtener token Hacienda
             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
@@ -87,11 +87,10 @@ class VoidDTEController extends Controller
 
             // Enviar a Hacienda
             $haciendaResponse = $this->voidService->sendVoidToHacienda($sale, $void, $signedData, $token);
-            Log::info("Respuesta Hacienda void ({$tipoDTE})", [
+            SaleDteLog::info("Respuesta Hacienda void ({$tipoDTE})", array_merge([
                 'sale_id' => $sale->id,
                 'void_id' => $void->id,
-                'response' => $haciendaResponse
-            ]);
+            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
 
             // Guardar info del DTE de anulación en la venta
             $sale->update([
@@ -101,10 +100,9 @@ class VoidDTEController extends Controller
 
             return response()->json($haciendaResponse);
         } catch (\Throwable $th) {
-            Log::error('Error anulando DTE', [
+            SaleDteLog::error('Error anulando DTE', [
                 'sale_id' => $sale->id,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return response()->json([
@@ -132,10 +130,10 @@ class VoidDTEController extends Controller
             $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
 
             $dteJson = $this->documentService->buildDTEJsonNC($creditNote, $sale, $void);
-            Log::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id]);
+            SaleDteLog::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id]);
 
             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
-            Log::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
+            SaleDteLog::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
             // Obtener token Hacienda
 
             $api_key = $sale->store->mh_access->api_key ?? 'default_api_key';
@@ -143,11 +141,15 @@ class VoidDTEController extends Controller
             $token = $this->authService->generateNewToken($nit, $api_key, $environment);
 
             $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $void, $signedData, $token);
-            Log::info("Respuesta Hacienda NC", ['credit_note_id' => $creditNote->id, 'void_id' => $void->id]);
+            SaleDteLog::info("Respuesta Hacienda NC", ['credit_note_id' => $creditNote->id, 'void_id' => $void->id]);
 
             return response()->json($haciendaResponse);
         } catch (\Throwable $th) {
-            Log::error('Error anulando NC', ['credit_note_id' => $creditNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
+            SaleDteLog::error('Error anulando NC', [
+                'credit_note_id' => $creditNote->id,
+                'sale_id' => $sale->id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
+            ]);
             return response()->json(['error' => 'Error anulando NC', 'message' => $th->getMessage()], 500);
         }
     }
@@ -170,10 +172,10 @@ class VoidDTEController extends Controller
             $cert_firma_digital = $sale->store->mh_access->port_firma_digital ?? 'default_port';
 
             $dteJson = $this->documentService->buildDTEJsonND($debitNote, $sale, $void);
-            Log::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id]);
+            SaleDteLog::info("DTE ND antes de firmar", ['debit_note_id' => $debitNote->id]);
 
             $signedData = $this->documentService->signDocument($dteJson, $nit, $password_pri, $cert_firma_digital);
-            Log::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
+            SaleDteLog::info("Documento ND firmado", ['debit_note_id' => $debitNote->id]);
             
             // Obtener token Hacienda
 
@@ -183,11 +185,15 @@ class VoidDTEController extends Controller
             $token = $this->authService->generateNewToken($nit, $api_key, $environment);
 
             $haciendaResponse = $this->voidService->sendNDVoidToHacienda($debitNote, $void, $signedData, $token);
-            Log::info("Respuesta Hacienda ND", ['debit_note_id' => $debitNote->id, 'void_id' => $void->id]);
+            SaleDteLog::info("Respuesta Hacienda ND", ['debit_note_id' => $debitNote->id, 'void_id' => $void->id]);
 
             return response()->json($haciendaResponse);
         } catch (\Throwable $th) {
-            Log::error('Error anulando ND', ['debit_note_id' => $debitNote->id, 'error' => $th->getMessage(), 'trace' => $th->getTraceAsString()]);
+            SaleDteLog::error('Error anulando ND', [
+                'debit_note_id' => $debitNote->id,
+                'sale_id' => $sale->id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
+            ]);
             return response()->json(['error' => 'Error anulando ND', 'message' => $th->getMessage()], 500);
         }
     }

@@ -1,10 +1,6 @@
 <form method="POST" action="{{ route('landing.contact') }}" class="lp-form">
     @csrf
-    <div class="lp-honeypot" aria-hidden="true">
-        <label>Sitio web
-            <input type="text" name="website" tabindex="-1" autocomplete="off">
-        </label>
-    </div>
+    @honeypot
     <label>
         Nombre
         <input type="text" name="name" value="{{ old('name') }}" required maxlength="120">

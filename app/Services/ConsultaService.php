@@ -9,7 +9,7 @@ use App\Models\DteResponse;
 use App\Models\DteResponseNC;
 use App\Models\DteResponseND;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use Carbon\Carbon;
 use League\CommonMark\Environment\Environment;
 
@@ -21,7 +21,7 @@ class ConsultaService
     public function consultarSale(Sale $sale, $token): array
     {
         if (!$sale->codigo_generacion) {
-            Log::warning("Sale sin código de generación, no se puede consultar DTE", [
+            SaleDteLog::warning("Sale sin código de generación, no se puede consultar DTE", [
                 'sale_id' => $sale->id
             ]);
             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
@@ -41,7 +41,7 @@ class ConsultaService
         } elseif ($environment === 'Production') {
             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
         } else {
-            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -49,7 +49,7 @@ class ConsultaService
         }
 
         //Logs before the request
-/*         Log::info("Consultando DTE en Hacienda", [
+/*         SaleDteLog::info("Consultando DTE en Hacienda", [
             'sale_id' => $sale->id,
             'nitEmisor' => $sale->store->taxInfo->nit,
             'tdte' => $tipoDTE,
@@ -69,10 +69,9 @@ class ConsultaService
                 ]);
 
 
-            Log::info("Hacienda Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'sale_id' => $sale->id,
+            ]));
 
             $data = $response->json();
 
@@ -95,7 +94,10 @@ class ConsultaService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Throwable $e) {
-                Log::error("Error guardando DteResponse", ['sale_id' => $sale->id, 'error' => $e->getMessage()]);
+                SaleDteLog::error('Error guardando DteResponse', [
+                    'sale_id' => $sale->id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             // Actualizar estado de la venta
@@ -104,10 +106,9 @@ class ConsultaService
 
             return $data;
         } catch (\Throwable $e) {
-            Log::error("Error consultando DTE en Hacienda", [
+            SaleDteLog::error('Error consultando DTE en Hacienda', [
                 'sale_id' => $sale->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
         }
@@ -119,7 +120,7 @@ class ConsultaService
     public function consultarNC(CreditNote $creditNote, $token): array
     {
         if (!$creditNote->codigo_generacion) {
-            Log::warning("creditNote sin código de generación, no se puede consultar DTE", [
+            SaleDteLog::warning("creditNote sin código de generación, no se puede consultar DTE", [
                 'credit_note_id' => $creditNote->id
             ]);
             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
@@ -134,7 +135,7 @@ class ConsultaService
         } elseif ($environment === 'Production') {
             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
         } else {
-            Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -142,12 +143,11 @@ class ConsultaService
         }
 
         //info antes de la consulta
-        Log::info("Consultando DTE en Hacienda", [
+        SaleDteLog::info("Consultando DTE en Hacienda", [
             'credit_note_id' => $creditNote->id,
-            'nitEmisor' => $creditNote->store->taxInfo->nit,
+            'sale_id' => $creditNote->sale_id,
             'tdte' => $tipoDTE,
             'codigoGeneracion' => $creditNote->codigo_generacion,
-            'url' => $url
         ]);
 
         try {
@@ -162,10 +162,10 @@ class ConsultaService
                 ]);
 
 
-            Log::info("Hacienda Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'credit_note_id' => $creditNote->id,
+                'sale_id' => $creditNote->sale_id,
+            ]));
 
             $data = $response->json();
 
@@ -188,7 +188,11 @@ class ConsultaService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Throwable $e) {
-                Log::error("Error guardando DteResponse", ['credit_note_id' => $creditNote->id, 'error' => $e->getMessage()]);
+                SaleDteLog::error('Error guardando DteResponse', [
+                    'credit_note_id' => $creditNote->id,
+                    'sale_id' => $creditNote->sale_id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             // Actualizar estado de la venta
@@ -197,10 +201,10 @@ class ConsultaService
 
             return $data;
         } catch (\Throwable $e) {
-            Log::error("Error consultando DTE en Hacienda", [
-                'sale_id' => $creditNote->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            SaleDteLog::error('Error consultando DTE en Hacienda', [
+                'credit_note_id' => $creditNote->id,
+                'sale_id' => $creditNote->sale_id,
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
         }
@@ -209,7 +213,7 @@ class ConsultaService
     public function consultarND(DebitNote $debitNote, $token): array
     {
         if (!$debitNote->codigo_generacion) {
-            Log::warning("Debit Note sin código de generación, no se puede consultar DTE", [
+            SaleDteLog::warning("Debit Note sin código de generación, no se puede consultar DTE", [
                 'debit_note_id' => $debitNote->id
             ]);
             return ['estado' => 'SIN_CODIGO', 'mensaje' => 'No hay código de generación'];
@@ -224,7 +228,7 @@ class ConsultaService
         } elseif ($environment === 'Production') {
             $url = config('services.hacienda.prod_url') . 'recepcion/consultadte/';
         } else {
-            Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -232,12 +236,11 @@ class ConsultaService
         }
 
                 //info antes de la consulta
-        Log::info("Consultando DTE en Hacienda", [
+        SaleDteLog::info("Consultando DTE en Hacienda", [
             'debit_note_id' => $debitNote->id,
-            'nitEmisor' => $debitNote->store->taxInfo->nit,
+            'sale_id' => $debitNote->sale_id,
             'tdte' => $tipoDTE,
             'codigoGeneracion' => $debitNote->codigo_generacion,
-            'url' => $url
         ]);
 
         try {
@@ -252,10 +255,10 @@ class ConsultaService
                 ]);
 
 
-            Log::info("Hacienda Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'debit_note_id' => $debitNote->id,
+                'sale_id' => $debitNote->sale_id,
+            ]));
 
             $data = $response->json();
 
@@ -278,7 +281,11 @@ class ConsultaService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Throwable $e) {
-                Log::error("Error guardando DteResponse", ['debit_note_id' => $debitNote->id, 'error' => $e->getMessage()]);
+                SaleDteLog::error('Error guardando DteResponse', [
+                    'debit_note_id' => $debitNote->id,
+                    'sale_id' => $debitNote->sale_id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             // Actualizar estado de la venta
@@ -287,10 +294,10 @@ class ConsultaService
 
             return $data;
         } catch (\Throwable $e) {
-            Log::error("Error consultando DTE en Hacienda", [
-                'sale_id' => $debitNote->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            SaleDteLog::error('Error consultando DTE en Hacienda', [
+                'debit_note_id' => $debitNote->id,
+                'sale_id' => $debitNote->sale_id,
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
             return ['estado' => 'ERROR', 'mensaje' => $e->getMessage()];
         }

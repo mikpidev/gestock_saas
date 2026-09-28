@@ -500,7 +500,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        getPaginationData();
         $("#from, #to").on("change", function() {
             getData();
         });

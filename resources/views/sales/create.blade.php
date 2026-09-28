@@ -149,6 +149,16 @@
         const cartBody = document.getElementById('cart-body');
         const cartTotalEl = document.getElementById('cart-total');
         let cart = {};
+        let saleSubmitInFlight = false;
+        let saleIdempotencyKey = null;
+
+        function newSaleIdempotencyKey() {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+
+            return 'sale-' + Date.now().toString(36) + '-' + Math.random().toString(16).slice(2);
+        }
 
         function renderCart() {
             cartBody.innerHTML = '';
@@ -238,6 +248,10 @@
         });
 
         document.getElementById('submit-sale').addEventListener('click', function() {
+            if (saleSubmitInFlight) {
+                return;
+            }
+
             if (Object.keys(cart).length === 0) {
                 alert('Agrega al menos un producto');
                 return;
@@ -266,16 +280,25 @@
 
             console.log('Payload:', payload);
 
+            if (!saleIdempotencyKey) {
+                saleIdempotencyKey = newSaleIdempotencyKey();
+            }
+
+            saleSubmitInFlight = true;
+            const submitButton = this;
+            submitButton.disabled = true;
 
             fetch("{{ route('stores.sales.store', $store->id) }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Idempotency-Key': saleIdempotencyKey
                 },
                 body: JSON.stringify(payload)
             }).then(res => res.redirected ? window.location.href = res.url : res.json()).then(data => {
                 if (data && data.success) {
+                    saleIdempotencyKey = null;
 
                     // ABRIR MODAL
                     let modal = new bootstrap.Modal(document.getElementById('modalVentaCreada'));
@@ -302,6 +325,10 @@
             .catch(err => {
                 console.error(err);
                 alert('Error al crear la venta');
+            })
+            .finally(() => {
+                saleSubmitInFlight = false;
+                submitButton.disabled = false;
             });
         });
     });

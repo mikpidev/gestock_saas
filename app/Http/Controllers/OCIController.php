@@ -6,7 +6,7 @@ use App\Models\CreditNote;
 use App\Models\DteResponse;
 use Illuminate\Http\Request;
 use App\Services\OCIService;
-use Illuminate\Support\Facades\Log;
+use App\Support\MailLog;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\DocumentService;
@@ -102,11 +102,18 @@ class OCIController extends Controller
 
     public function emailSend(Store $store, Sale $sale)
     {
+        $resultado = 'failed';
+        $httpStatus = 500;
+        $error = null;
+
         try {
 
 
             // (opcional pero recomendado)
             if ($sale->store_id !== $store->id) {
+                $resultado = 'skipped';
+                $httpStatus = 403;
+
                 return response()->json([
                     'error' => 'La venta no pertenece a la tienda'
                 ], 403);
@@ -127,7 +134,9 @@ class OCIController extends Controller
             $to = $sale->customer->correo ?? null;
 
             if (!$to) {
-                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                $resultado = 'skipped';
+                $httpStatus = 422;
+
                 return response()->json([
                     'error' => 'El cliente no tiene correo'
                 ], 422);
@@ -150,6 +159,9 @@ class OCIController extends Controller
                     $json = $this->dteService->buildDTEJsonSE($sale);
                     break;
                 default:
+                    $resultado = 'skipped';
+                    $httpStatus = 400;
+
                     return response()->json([
                         'error' => 'Tipo DTE no soportado'
                     ], 400);
@@ -224,37 +236,57 @@ class OCIController extends Controller
                 $body,
                 $attachments
             );
+            $resultado = 'sent';
+            $httpStatus = 200;
             return response()->json([
                 'success' => true,
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.sales.index', $store->id),
             ]);
         } catch (\Throwable $e) {
-
-            Log::error('Error enviando DTE por correo', [
-                'sale_id' => $sale->id,
-                'error' => $e->getMessage(),
-            ]);
+            $resultado = 'failed';
+            $httpStatus = 500;
+            $error = $e;
 
             return response()->json([
                 'error' => 'No se pudo enviar el correo'
             ], 500);
+        } finally {
+            MailLog::attempt([
+                'sale_id' => $sale?->id,
+                'dte_status' => $sale?->dte_status,
+                'numero_control' => $sale?->numero_control,
+                'resultado' => $resultado,
+                'http_status' => $httpStatus,
+                'error' => $error?->getMessage(),
+            ]);
         }
     }
 
     public function emailSendNc(Store $store, CreditNote $creditNote)
     {
+        $resultado = 'failed';
+        $httpStatus = 500;
+        $error = null;
+        $sale = null;
+
         try {
 
             $sale = $creditNote->sale;
 
             if (!$sale) {
+                $resultado = 'skipped';
+                $httpStatus = 422;
+
                 return response()->json([
                     'error' => 'La nota de crédito no tiene una venta asociada'
                 ], 422);
             }
 
             if ($sale->store_id != $store->id) {
+                $resultado = 'skipped';
+                $httpStatus = 403;
+
                 return response()->json([
                     'error' => 'La venta no pertenece a la tienda'
                 ], 403);
@@ -275,7 +307,9 @@ class OCIController extends Controller
             $to = $sale->customer->correo ?? null;
 
             if (!$to) {
-                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                $resultado = 'skipped';
+                $httpStatus = 422;
+
                 return response()->json([
                     'error' => 'El cliente no tiene correo'
                 ], 422);
@@ -357,37 +391,57 @@ class OCIController extends Controller
                 $body,
                 $attachments
             );
+            $resultado = 'sent';
+            $httpStatus = 200;
             return response()->json([
                 'success' => true,
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.creditnotes.index', $store->id),
             ]);
         } catch (\Throwable $e) {
-
-            Log::error('Error enviando DTE por correo', [
-                'sale_id' => $sale->id,
-                'error' => $e->getMessage(),
-            ]);
+            $resultado = 'failed';
+            $httpStatus = 500;
+            $error = $e;
 
             return response()->json([
                 'error' => 'No se pudo enviar el correo'
             ], 500);
+        } finally {
+            MailLog::attempt([
+                'sale_id' => $sale?->id,
+                'dte_status' => $sale?->dte_status,
+                'numero_control' => $sale?->numero_control,
+                'resultado' => $resultado,
+                'http_status' => $httpStatus,
+                'error' => $error?->getMessage(),
+            ]);
         }
     }
 
     public function emailSendNd(Store $store, CreditNote $creditNote)
     {
+        $resultado = 'failed';
+        $httpStatus = 500;
+        $error = null;
+        $sale = null;
+
         try {
 
             $sale = $creditNote->sale;
 
             if (!$sale) {
+                $resultado = 'skipped';
+                $httpStatus = 422;
+
                 return response()->json([
                     'error' => 'La nota de crédito no tiene una venta asociada'
                 ], 422);
             }
 
             if ($sale->store_id != $store->id) {
+                $resultado = 'skipped';
+                $httpStatus = 403;
+
                 return response()->json([
                     'error' => 'La venta no pertenece a la tienda'
                 ], 403);
@@ -408,7 +462,9 @@ class OCIController extends Controller
             $to = $sale->customer->correo ?? null;
 
             if (!$to) {
-                Log::error("El cliente ID {$sale->customer->id} no tiene email.");
+                $resultado = 'skipped';
+                $httpStatus = 422;
+
                 return response()->json([
                     'error' => 'El cliente no tiene correo'
                 ], 422);
@@ -490,21 +546,30 @@ class OCIController extends Controller
                 $body,
                 $attachments
             );
+            $resultado = 'sent';
+            $httpStatus = 200;
             return response()->json([
                 'success' => true,
                 'message' => 'Correo enviado correctamente',
                 'redirect' => route('stores.creditnotes.index', $store->id),
             ]);
         } catch (\Throwable $e) {
-
-            Log::error('Error enviando DTE por correo', [
-                'sale_id' => $sale->id,
-                'error' => $e->getMessage(),
-            ]);
+            $resultado = 'failed';
+            $httpStatus = 500;
+            $error = $e;
 
             return response()->json([
                 'error' => 'No se pudo enviar el correo'
             ], 500);
+        } finally {
+            MailLog::attempt([
+                'sale_id' => $sale?->id,
+                'dte_status' => $sale?->dte_status,
+                'numero_control' => $sale?->numero_control,
+                'resultado' => $resultado,
+                'http_status' => $httpStatus,
+                'error' => $error?->getMessage(),
+            ]);
         }
     }
 }

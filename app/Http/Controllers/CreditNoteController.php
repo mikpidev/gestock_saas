@@ -155,7 +155,7 @@ class CreditNoteController extends Controller
             $creditNote->save();
 
 
-            if ($creditNote->dte_status = 'PROCESADO') {
+            if ($creditNote->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $creditNote);
                 } catch (\Throwable $e) {

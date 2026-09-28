@@ -6,7 +6,7 @@ use App\Models\HaciendaToken;
 use App\Models\Store;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 
 
 class HaciendaAuthService
@@ -69,25 +69,27 @@ class HaciendaAuthService
             throw new \Exception('Error de conexión con Hacienda: ' . $e->getMessage());
         }
 
-        Log::info("Obteniendo token de Hacienda )", [
-            'user' => $nit,
-            'pass' => $api_key,
+        SaleDteLog::info('Obteniendo token de Hacienda', [
             'response_status' => $response->status(),
-            'response_body' => $response->body('token'),
         ]);
         if ($response->failed()) {
-            Log::error('Error en la petición de token a Hacienda', ['body' => $response->body()]);
+            SaleDteLog::error('Error en la petición de token a Hacienda', [
+                'response_status' => $response->status(),
+            ]);
             throw new \Exception('Error en la petición de token a Hacienda');
         }
 
         $data = $response->json();
         $tokenValue = $data['body']['token'] ?? $data['token'] ?? null;
 
-        //mostrart token
-        Log::info('Token obtenido de Hacienda', ['token' => $tokenValue]);
+        SaleDteLog::info('Token obtenido de Hacienda', [
+            'token_preview' => SaleDteLog::tokenPreview($tokenValue),
+        ]);
 
         if (!$tokenValue) {
-            Log::error('Token no encontrado en la respuesta de Hacienda', ['data' => $data]);
+            SaleDteLog::error('Token no encontrado en la respuesta de Hacienda', [
+                'response_status' => $response->status(),
+            ]);
             throw new \Exception('Token no encontrado en la respuesta de Hacienda');
         
         }
@@ -101,7 +103,9 @@ class HaciendaAuthService
             'expires_at' => Carbon::now()->addMinutes(5), // token válido 5 min
         ]);
 
-        Log::info('Nuevo token generado', ['token' => $tokenValue]);
+        SaleDteLog::info('Nuevo token generado', [
+            'token_preview' => SaleDteLog::tokenPreview($tokenValue),
+        ]);
 
         return $token->token;
     }

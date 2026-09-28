@@ -45,7 +45,7 @@ return [
     ],
     
     'firma' => [
-        'url' => env('FIRMADOR_HOST', env('FIRMA_API_URL', 'localhost')),
+        'url' => env('FIRMADOR_HOST'),
     ],
 
     'oci' => [
@@ -71,6 +71,11 @@ return [
     'gestock_leads' => [
         'notify_email' => env('GESTOCK_LEADS_EMAIL', 'gestock.sts@outlook.com'),
         'from_email' => env('MAIL_LEADS_FROM_ADDRESS', 'No-Reply@gestock.site'),
+    ],
+
+    'wompi_gateway' => [
+        'app_id' => env('WOMPI_GATEWAY_APP_ID'),
+        'api_secret' => env('WOMPI_GATEWAY_API_SECRET'),
     ],
     
 

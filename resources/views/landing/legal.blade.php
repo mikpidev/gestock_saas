@@ -31,8 +31,9 @@
     </div>
 </main>
 <footer class="lp-footer">
-    <div class="lp-wrap">
+    <div class="lp-wrap lp-footer__bottom" style="margin-top:0;border-top:0;padding-top:0;">
         <small>© 2026 Gestock. Todos los derechos reservados.</small>
+        @include('landing.partials.social')
     </div>
 </footer>
 @endsection

@@ -5,7 +5,7 @@ namespace App\Services;
 
 use App\Models\DteResponse;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use App\Models\Sale;
 use App\Models\VoidDTE;
 use Carbon\Carbon;
@@ -30,7 +30,7 @@ class VoidService
         $tipoDTE = $sale->tipoDte?->codigo;
 
         if (!$tipoDTE) {
-            Log::error("Tipo de DTE inválido para la venta {$sale->id}");
+            SaleDteLog::error("Tipo de DTE inválido para la venta {$sale->id}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Tipo de DTE inválido o no encontrado'
@@ -55,7 +55,7 @@ class VoidService
             $url = config('services.hacienda.test_url') . 'anulardte';
             $ambiente = '00';
         } else {
-            Log::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la venta {$sale->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -63,12 +63,10 @@ class VoidService
         }
 
         //Logs before the request
-        Log::info("Enviando DTE void a Hacienda", [
+        SaleDteLog::info("Enviando DTE void a Hacienda", [
             'sale_id' => $sale->id,
-            'nitEmisor' => $sale->store->taxInfo->nit,
             'tdte' => $tipoDTE,
             'codigoGeneracion' => $sale->codigo_generacion,
-            'url' => $url
         ]);
         try {
             $response = Http::withHeaders([
@@ -82,10 +80,9 @@ class VoidService
                     'documento' => $signedData['body'] ?? null
                 ]);
 
-            Log::info("Hacienda Void Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Void Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'sale_id' => $sale->id,
+            ]));
 
             $data = $response->json();
 
@@ -108,15 +105,18 @@ class VoidService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Exception $e) {
-                Log::error('Error guardando DteResponse de anulación: ' . $e->getMessage());
+                SaleDteLog::error('Error guardando DteResponse de anulación', [
+                    'sale_id' => $sale->id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             return $data;
         } catch (\Throwable $th) {
-            Log::error("Error enviando anulación a Hacienda: " . $th->getMessage(), [
+            SaleDteLog::error('Error enviando anulación a Hacienda', [
                 'sale_id' => $sale->id,
                 'tipo_documento' => $sale->tipo_documento_id,
-                'trace' => $th->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return [
@@ -139,7 +139,7 @@ class VoidService
             $ambiente = '00';
             $url = config('services.hacienda.test_url') . 'anulardte';
         } else {
-            Log::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la NC {$creditNote->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -160,10 +160,10 @@ class VoidService
 
             $data = $response->json();
 
-            Log::info("Hacienda Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'credit_note_id' => $creditNote->id,
+                'sale_id' => $creditNote->sale_id ?? null,
+            ]));
 
             // Guardar en dte_responses_nc
             try {
@@ -184,15 +184,19 @@ class VoidService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Exception $e) {
-                Log::error('Error guardando DteResponseNC: ' . $e->getMessage());
+                SaleDteLog::error('Error guardando DteResponseNC', [
+                    'credit_note_id' => $creditNote->id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             return $data;
         } catch (\Throwable $th) {
-            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
+            SaleDteLog::error('Error enviando NC a Hacienda', [
                 'credit_note_id' => $creditNote->id,
+                'sale_id' => $creditNote->sale_id ?? null,
                 'tipo_documento' => $creditNote->tipo_documento_id,
-                'trace' => $th->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return [
@@ -214,7 +218,7 @@ class VoidService
             $ambiente = '00';
             $url = config('services.hacienda.test_url') . 'anulardte';
         } else {
-            Log::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
+            SaleDteLog::error("Ambiente desconocido para la ND {$debitNote->id}: {$environment}");
             return [
                 'estado' => 'ERROR',
                 'mensaje' => 'Ambiente desconocido'
@@ -235,10 +239,10 @@ class VoidService
 
             $data = $response->json();
 
-            Log::info("Hacienda Response ({$tipoDTE})", [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+            SaleDteLog::info("Hacienda Response ({$tipoDTE})", SaleDteLog::httpMh($response, [
+                'debit_note_id' => $debitNote->id,
+                'sale_id' => $debitNote->sale_id ?? null,
+            ]));
 
             // Guardar en dte_responses_nc
             try {
@@ -259,15 +263,19 @@ class VoidService
                     'observaciones' => $data['observaciones'] ?? [],
                 ]);
             } catch (\Exception $e) {
-                Log::error('Error guardando DteResponseND: ' . $e->getMessage());
+                SaleDteLog::error('Error guardando DteResponseND', [
+                    'debit_note_id' => $debitNote->id,
+                    'message' => SaleDteLog::safeMessage($e->getMessage()),
+                ]);
             }
 
             return $data;
         } catch (\Throwable $th) {
-            Log::error("Error enviando NC a Hacienda: " . $th->getMessage(), [
+            SaleDteLog::error('Error enviando ND a Hacienda', [
                 'debit_note_id' => $debitNote->id,
+                'sale_id' => $debitNote->sale_id ?? null,
                 'tipo_documento' => $debitNote->tipo_documento_id,
-                'trace' => $th->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return [

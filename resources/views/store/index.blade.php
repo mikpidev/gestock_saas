@@ -164,12 +164,18 @@
                         @endif
                         <input type="hidden" name="store_id" value="{{ $store->id }}">
                         <div class="mb-3">
-                            <label class="form-label">Hacienda API Password</label>
-                            <input type="text" name="api_key" class="form-control" value="{{ old('api_key', $store->mh_access->api_key ?? '') }}" required>
+                            <label class="form-label">{{ $store->mh_access ? 'Hacienda API Password (opcional)' : 'Hacienda API Password' }}</label>
+                            <input type="password" name="api_key" class="form-control" value="{{ old('api_key') }}" autocomplete="new-password" @unless($store->mh_access) required @endunless>
+                            @if ($store->mh_access)
+                            <div class="form-text">Deja en blanco si no quieres cambiar la clave</div>
+                            @endif
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Password Privada</label>
-                            <input type="text" name="password_pri" class="form-control" value="{{ old('password_pri', $store->mh_access->password_pri ?? '') }}">
+                            <label class="form-label">{{ $store->mh_access ? 'Password Privada (opcional)' : 'Password Privada' }}</label>
+                            <input type="password" name="password_pri" class="form-control" value="{{ old('password_pri') }}" autocomplete="new-password" @unless($store->mh_access) required @endunless>
+                            @if ($store->mh_access)
+                            <div class="form-text">Deja en blanco si no quieres cambiar la clave</div>
+                            @endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Port Firma Digital</label>

@@ -13,6 +13,8 @@ class CorrelativoStoreController extends Controller
     public function edit($storeId)
     {
         $store = Store::findOrFail($storeId);
+        $this->authorize('manageCorrelativos', $store);
+
         $tiposDte = TipoDte::all();
         $correlativos = CorrelativoStore::where('store_id', $storeId)
             ->with('tipoDte')
@@ -29,6 +31,7 @@ class CorrelativoStoreController extends Controller
     public function update(Request $request, $storeId)
     {
         $store = Store::findOrFail($storeId);
+        $this->authorize('manageCorrelativos', $store);
 
         $validatedData = $request->validate([
             'correlativos.*.id' => 'nullable|exists:correlativo_stores,id',

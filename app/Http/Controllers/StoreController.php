@@ -72,6 +72,8 @@ class StoreController extends Controller
             return redirect()->route('login');
         }
 
+        $this->authorize('create', [Store::class, $company]);
+
         // Lógica para mostrar el formulario de creación de tienda ya incluye la compañia previamente creada
         return view('store.create', compact('company'));
     }
@@ -82,6 +84,8 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        $this->authorize('create', [Store::class, $company]);
 
         $validated = $request->validate([
             'store_name' => 'required|max:200',
@@ -114,6 +118,7 @@ class StoreController extends Controller
 
     public function getChartData(Request $request, Store $store)
     {
+        $this->authorize('view', $store);
 
         //filtros
         $dateFrom = $request->from
@@ -126,8 +131,9 @@ class StoreController extends Controller
         //Filtrar por tipo de documento (Factura, CF, etc)
         $documentType = $request->tipo_documento_id;
 
-        //Filtrar por Status (por defecto solo ventas aceptadas por Hacienda)
-        $dte_status = 'PROCESADO' ??  $request->dte_status;
+        // Filtrar por Status. Si el request omite dte_status (null), el default es PROCESADO:
+        // ventas aceptadas por Hacienda. Mismo default que DownloadPDF en este controlador.
+        $dte_status = $request->dte_status ?? 'PROCESADO';
 
         // Base query con filtros aplicados
 
@@ -253,6 +259,8 @@ class StoreController extends Controller
 
     public function DownloadPDF(Request $request, Store $store)
     {
+        $this->authorize('view', $store);
+
         //filtros
         $dateFrom = $request->from
             ? Carbon::parse($request->from)->startOfDay()
@@ -457,6 +465,8 @@ class StoreController extends Controller
 
     public function dashboard(Store $store)
     {
+        $this->authorize('view', $store);
+
         return view('store.dashboard', compact('store'));
     }
 
@@ -537,6 +547,8 @@ class StoreController extends Controller
             return redirect()->route('login');
         }
 
+        $this->authorize('update', $store);
+
         //$store = Store::findOrFail($id);
         return view('store.edit', compact('store'));
     }
@@ -547,6 +559,8 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        $this->authorize('update', $store);
 
         // Validación de los datos del formulario
         $validated = $request->validate([
@@ -574,6 +588,8 @@ class StoreController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        $this->authorize('delete', $store);
 
         // Lógica para eliminar una tienda (soft delete)
         $store->delete();

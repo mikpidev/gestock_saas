@@ -3,6 +3,28 @@
 @php
 $logo = file_exists(public_path('Logo.png')) ? asset('Logo.png') : asset('Logo.png');
 $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 'usuarios'];
+$clientSlides = [
+    [
+        'name' => 'Primavera Fleur',
+        'src' => asset('images/landing/primavera-fleur.png'),
+        'alt' => 'Primavera Fleur',
+    ],
+    [
+        'name' => 'Logística y Distribución Torres, S.A. de C.V.',
+        'src' => asset('images/landing/logistica-torres.jpg'),
+        'alt' => 'Logística y Distribución Torres, S.A. de C.V.',
+    ],
+    [
+        'name' => 'ZER',
+        'src' => asset('images/landing/zer.jpg'),
+        'alt' => 'ZER',
+    ],
+    [
+        'name' => 'Costa Rizo',
+        'src' => asset('images/landing/costa-rizo.jpg'),
+        'alt' => 'Costa Rizo Mariscos',
+    ],
+];
 @endphp
 
 @section('content')
@@ -438,13 +460,22 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
         </div>
     </section>
 
-    <section id="testimonios" class="lp-section">
+    <section id="testimonios" class="lp-section lp-clients-band">
         <div class="lp-wrap">
             <div class="lp-section__head lp-reveal">
                 <h2>Negocios que ya trabajan con Gestock</h2>
+                <p>Equipos que ya facturan y operan sus ventas con la plataforma.</p>
             </div>
-            <div class="lp-card lp-empty lp-reveal">
-                <p>Esta sección está lista para testimonios reales. Cuando estén disponibles, aparecerán aquí. No publicamos comentarios inventados.</p>
+        </div>
+        <div class="lp-logo-marquee" aria-label="Negocios que trabajan con Gestock">
+            <div class="lp-logo-marquee__track">
+                @foreach ([1, 2] as $loopCopy)
+                    @foreach ($clientSlides as $client)
+                    <figure class="lp-logo-marquee__item">
+                        <img src="{{ $client['src'] }}" alt="{{ $loopCopy === 1 ? $client['alt'] : '' }}" @if($loopCopy !== 1) aria-hidden="true" @endif>
+                    </figure>
+                    @endforeach
+                @endforeach
             </div>
         </div>
     </section>
@@ -527,8 +558,9 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             @endauth
         </div>
     </div>
-    <div class="lp-wrap">
+    <div class="lp-wrap lp-footer__bottom">
         <small>© 2026 Gestock. Todos los derechos reservados.</small>
+        @include('landing.partials.social')
     </div>
 </footer>
 

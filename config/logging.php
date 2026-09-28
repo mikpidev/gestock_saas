@@ -127,6 +127,35 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // Sale create/replay and DTE/MH attempts. Not part of the default stack,
+        // so this file is not mixed with the rest of laravel.log.
+        'sale_dte' => [
+            'driver' => 'stack',
+            'channels' => ['sale_dte_file'],
+            'ignore_exceptions' => false,
+        ],
+
+        'sale_dte_file' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/gestock-sale-dte.log'),
+            'level' => env('LOG_SALE_DTE_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        // DTE mail attempts. Not part of the default stack and not part of sale_dte.
+        'gestock_mail' => [
+            'driver' => 'stack',
+            'channels' => ['gestock_mail_file'],
+            'ignore_exceptions' => false,
+        ],
+
+        'gestock_mail_file' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/gestock-mail.log'),
+            'level' => env('LOG_GESTOCK_MAIL_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

@@ -822,10 +822,55 @@ a {
 
 .lp-footer small {
     display: block;
+    color: rgb(255 255 255 / 45%);
+}
+
+.lp-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     margin-top: 2rem;
     padding-top: 1.2rem;
     border-top: 1px solid rgb(255 255 255 / 10%);
-    color: rgb(255 255 255 / 45%);
+}
+
+.lp-footer__bottom small {
+    margin: 0;
+}
+
+.lp-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+.lp-footer__bottom .lp-social {
+    margin-top: 0;
+}
+
+.lp-social__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 14%);
+    background: rgb(255 255 255 / 6%);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.lp-social__link:hover {
+    background: rgb(255 255 255 / 12%);
+    color: #fff;
+}
+
+.lp-social__link svg {
+    flex: 0 0 auto;
 }
 
 .lp-form {
@@ -921,6 +966,70 @@ a {
 .lp-empty {
     text-align: center;
     padding: 2.2rem 1.2rem;
+}
+
+.lp-clients-band {
+    padding-bottom: 0;
+}
+
+.lp-logo-marquee {
+    overflow: hidden;
+    margin-top: 2rem;
+    padding: 3.2rem 0;
+    background: #fff;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.lp-logo-marquee__track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+    gap: 6.5rem;
+    animation: lp-logo-marquee 32s linear infinite;
+}
+
+.lp-logo-marquee:hover .lp-logo-marquee__track {
+    animation-play-state: paused;
+}
+
+.lp-logo-marquee__item {
+    margin: 0;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    min-width: 260px;
+}
+
+.lp-logo-marquee__item img {
+    display: block;
+    height: 160px;
+    width: auto;
+    max-width: 360px;
+    object-fit: contain;
+}
+
+@keyframes lp-logo-marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-logo-marquee {
+        mask-image: none;
+    }
+
+    .lp-logo-marquee__track {
+        animation: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: auto;
+        gap: 2.5rem;
+        padding: 0 1.5rem;
+    }
 }
 
 .lp-legal {

@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ContactLeadRequest;
 use App\Models\ContactLead;
+use App\Support\ContactBlacklist;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -72,16 +73,18 @@ class LandingController extends Controller
         ]);
     }
 
-    public function contact(Request $request): RedirectResponse
+    public function contact(ContactLeadRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'business' => ['required', 'string', 'max:160'],
-            'email' => ['required', 'email', 'max:160'],
-            'phone' => ['nullable', 'string', 'max:40'],
-            'message' => ['nullable', 'string', 'max:2000'],
-            'website' => ['prohibited'],
-        ]);
+        if (ContactBlacklist::blocks($request)) {
+            Log::warning('Contacto bloqueado por blacklist', [
+                'ip' => $request->ip(),
+                'email' => $request->input('email'),
+            ]);
+
+            return $this->pretendContactSuccess();
+        }
+
+        $validated = $request->validated();
 
         $lead = ContactLead::create([
             'name' => $validated['name'],
@@ -94,6 +97,11 @@ class LandingController extends Controller
 
         $this->notifyLead($lead);
 
+        return $this->pretendContactSuccess();
+    }
+
+    private function pretendContactSuccess(): RedirectResponse
+    {
         return redirect()
             ->route('landing')
             ->with('contact_sent', true)

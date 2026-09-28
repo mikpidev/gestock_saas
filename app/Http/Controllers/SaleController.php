@@ -14,6 +14,8 @@ use App\Models\TipoDte;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ConsultaService;
+use App\Support\MailLog;
+use App\Support\SaleDteLog;
 use App\Services\HaciendaAuthService;
 use Carbon\Carbon;
 use App\Services\DocumentService;
@@ -22,7 +24,11 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use GuzzleHttp\Psr7\Query;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use stdClass;
 
 class SaleController extends Controller
@@ -46,7 +52,7 @@ class SaleController extends Controller
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
         } elseif ($user->hasRole('user')) {
-            if ($store->company_id != $user->company_id) {
+            if ($store->company_id != $user->company_id || $store->id != $user->store_id) {
                 abort(403, 'No tienes permiso para acceder a esta tienda.');
             }
         } else {
@@ -66,7 +72,7 @@ class SaleController extends Controller
 
     public function index(Request $request, Store $store)
     {
-
+        $this->validateStoreAccess($store);
 
         $authService = app(HaciendaAuthService::class);
 
@@ -169,15 +175,17 @@ class SaleController extends Controller
             $sale->save();
 
 
-            if ($sale->dte_status = 'PROCESADO') {
+            if ($sale->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
                 } catch (\Throwable $e) {
 
-                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
-
+                    MailLog::attempt([
                         'sale_id' => $sale->id,
-                        'trace' => $e->getTraceAsString()
+                        'dte_status' => $sale->dte_status,
+                        'numero_control' => $sale->numero_control,
+                        'resultado' => 'failed',
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -189,10 +197,9 @@ class SaleController extends Controller
             );
         } catch (\Throwable $e) {
 
-            \Log::error("Error reenviando DTE", [
+            SaleDteLog::error('Error reenviando DTE', [
                 'sale_id' => $sale->id,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
 
             return back()->with(
@@ -221,21 +228,41 @@ class SaleController extends Controller
     {
         $this->validateStoreAccess($store);
 
-        // Validar request
+        // Validar request. Cliente y producto deben pertenecer a esta tienda.
+        // products.*.price se acepta por compatibilidad con el formulario y se ignora.
         $data = $request->validate([
-            'customers_id' => 'nullable|exists:customers,id',
+            'customers_id' => [
+                'nullable',
+                Rule::exists('customers', 'id')->where('store_id', $store->id),
+            ],
             'sale_date' => 'required|date',
             'discount_amount' => 'nullable|numeric|min:0',
             'products' => 'required|array|min:1',
-            'products.*.id' => 'required|exists:product_types,id',
+            'products.*.id' => [
+                'required',
+                Rule::exists('product_types', 'id')->where('store_id', $store->id),
+            ],
             'products.*.quantity' => 'required|numeric|min:1',
-            'products.*.price' => 'required|numeric|min:0',
+            'products.*.price' => 'nullable|numeric|min:0',
             'tipo_documento_id' => 'required|exists:tipo_documento,id',
             'payment_method' => 'required|in:Efectivo,Tarjeta,Transferencia',
         ]);
 
-        // logs data for debugging
-        \Log::info('Creating sale with data: ', $data);
+        $idempotencyKey = $this->idempotencyKey($request);
+
+        if ($idempotencyKey !== null) {
+            $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
+            if ($existingSale) {
+                return $this->saleStoreJson($request, $store, $existingSale);
+            }
+        }
+
+        SaleDteLog::info('Creating sale', [
+            'store_id' => $store->id,
+            'tipo_documento_id' => $data['tipo_documento_id'] ?? null,
+            'payment_method' => $data['payment_method'] ?? null,
+            'product_count' => is_array($data['products'] ?? null) ? count($data['products']) : 0,
+        ]);
 
         // Calcular totales
         $discountPercent = $data['discount_amount'] ?? 0; // valor como 0.10 = 10%
@@ -243,11 +270,13 @@ class SaleController extends Controller
         $totalIva = 0;
         $totalGravada = 0;
 
-        foreach ($request->products as $p) {
-            $product = ProductType::findOrFail($p['id']); // precio seguro
+        $lines = [];
+
+        foreach ($data['products'] as $p) {
+            $product = ProductType::where('store_id', $store->id)->findOrFail($p['id']);
 
             $cantidad = $p['quantity'];
-            $precioConIVA = $p['price'];
+            $precioConIVA = $product->price;
             $subtotalConIVA = $cantidad * $precioConIVA;
 
             $baseSinIVA = $subtotalConIVA / 1.13;
@@ -256,6 +285,14 @@ class SaleController extends Controller
             $totalAmount += $subtotalConIVA;
             $totalGravada += $baseSinIVA;
             $totalIva += $ivaItem;
+
+            $lines[] = [
+                'product_type_id' => $product->id,
+                'quantity' => $cantidad,
+                'unit_price' => $precioConIVA,
+                'subtotal' => $subtotalConIVA,
+                'iva_item' => round($ivaItem, 2),
+            ];
         }
 
         // Aplicar porcentaje
@@ -269,30 +306,50 @@ class SaleController extends Controller
         $total_gravada = round($totalGravada, 2);
         $total_iva = round($totalIva, 2);
 
-        \Log::info('Venta SE Antes de Seleccionar SE');
+        SaleDteLog::info('Venta SE Antes de Seleccionar SE', [
+            'store_id' => $store->id,
+        ]);
         $tipoDTE = $data['tipo_documento_id'] ? TipoDte::find($data['tipo_documento_id'])->codigo : null;
 
-        \Log::info('Venta SE Despues de Seleccionar SE', [
-            'tipoDTE' => $tipoDTE
+        SaleDteLog::info('Venta SE Despues de Seleccionar SE', [
+            'store_id' => $store->id,
+            'tipoDTE' => $tipoDTE,
         ]);
 
         $establecimiento = $store->establecimiento;
 
-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
-            'establecimiento' => $establecimiento
+        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'store_id' => $store->id,
+            'establecimiento' => $establecimiento,
         ]);
 
         $puntoVenta = $store->punto_venta;
 
-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
-            'puntoVenta' => $puntoVenta
+        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'store_id' => $store->id,
+            'puntoVenta' => $puntoVenta,
         ]);
+
+        // Correlativo, número de control y detalles van en la misma transacción.
+        // Un reintento con la misma Idempotency-Key no debe consumir otro correlativo.
+        DB::beginTransaction();
+
+        try {
+            if ($idempotencyKey !== null) {
+                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey, true);
+                if ($existingSale) {
+                    DB::rollBack();
+
+                    return $this->saleStoreJson($request, $store, $existingSale);
+                }
+            }
 
         // Generar next invoice y número de control
         $invoiceNumber = InvoiceNumber::getNextNumber($store->id, $tipoDTE, $establecimiento, $puntoVenta);
 
-        \Log::info('Venta SE Despues de Seleccionar Establecimiento', [
-            'invoiceNumber' => $invoiceNumber
+        SaleDteLog::info('Venta SE Despues de Seleccionar Establecimiento', [
+            'store_id' => $store->id,
+            'numero_control' => $invoiceNumber->numero_control ?? null,
         ]);
 
 
@@ -317,28 +374,36 @@ class SaleController extends Controller
             'codigo_generacion' => $invoiceNumber->codigo_generacion,
             'invoice_number' => $invoiceNumber->number,
             'tipo_documento_id' => $data['tipo_documento_id'], // tipo DTE
-            'environment' => $store->environment ?? 'Production'
+            'environment' => $store->environment ?? 'Production',
+            'idempotency_key' => $idempotencyKey,
         ]);
 
-        \Log::info('Venta creada', [
-            'id' => $sale->id,
+        SaleDteLog::info('Venta creada', [
+            'sale_id' => $sale->id,
+            'store_id' => $store->id,
             'tipoDTE' => $sale->tipo_documento_id,
         ]);
 
-        // Crear detalles
-        foreach ($request->products as $product) {
-            $precioConIVA = $product['price'];
-            $subtotalConIVA = $product['quantity'] * $precioConIVA;
-            $baseSinIVA = $subtotalConIVA / 1.13;
-            $ivaItem = $baseSinIVA * 0.13;
+        foreach ($lines as $line) {
+            $sale->details()->create($line);
+        }
 
-            $sale->details()->create([
-                'product_type_id' => $product['id'],
-                'quantity' => $product['quantity'],
-                'unit_price' => $precioConIVA,
-                'subtotal' => $subtotalConIVA,
-                'iva_item' => round($ivaItem, 2),
-            ]);
+
+            DB::commit();
+        } catch (UniqueConstraintViolationException $e) {
+            DB::rollBack();
+
+            if ($idempotencyKey !== null) {
+                $existingSale = $this->findIdempotentSale($store->id, $idempotencyKey);
+                if ($existingSale) {
+                    return $this->saleStoreJson($request, $store, $existingSale);
+                }
+            }
+
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
 
 
@@ -346,14 +411,17 @@ class SaleController extends Controller
         try {
             app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
         } catch (\Throwable $e) {
-            \Log::error('Error generando DTE: ' . $e->getMessage());
+            SaleDteLog::error('Error generando DTE', [
+                'sale_id' => $sale->id,
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
+            ]);
         }
         try {
             // Obtener token válido
             $token = app(HaciendaAuthService::class)->getToken($store);
 
             // Consultar DTE inmediatamente después de enviar
-            $consultaService = new ConsultaService();
+            $consultaService = app(ConsultaService::class);
             $response = $consultaService->consultarSale($sale, $token);
 
             // Actualizar estado de la venta con el estado real
@@ -363,15 +431,17 @@ class SaleController extends Controller
 
             //enviar correo en automatico
 
-            if ($sale->dte_status = 'PROCESADO') {
+            if ($sale->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $sale);
                 } catch (\Throwable $e) {
 
-                    \Log::error("Error Enviando correo DTE: {$e->getMessage()}", [
-
+                    MailLog::attempt([
                         'sale_id' => $sale->id,
-                        'trace' => $e->getTraceAsString()
+                        'dte_status' => $sale->dte_status,
+                        'numero_control' => $sale->numero_control,
+                        'resultado' => 'failed',
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -379,28 +449,14 @@ class SaleController extends Controller
             // Guardar response en sesión para mostrar en index
             session()->flash('dte_response', $response);
         } catch (\Throwable $e) {
-            \Log::error("Error consultando DTE al crear venta: {$e->getMessage()}", [
+            SaleDteLog::error('Error consultando DTE al crear venta', [
                 'sale_id' => $sale->id,
-                'trace' => $e->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
 
             session()->flash('dte_response', ['error' => $e->getMessage()]);
         }
-        if ($request->ajax()) {
-            return response()->json([
-                'success'     => true,
-                'message'     => 'Venta creada y DTE enviado correctamente',
-                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
-                'dte_status'  => $sale->dte_status
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
-            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
-            'sale_id' => $sale->id
-        ]);
+        return $this->saleStoreJson($request, $store, $sale);
 
         return redirect()->route('stores.sales.index', $store->id)
             ->with('success', 'Venta creada correctamente. El DTE se generará en breve.');
@@ -634,12 +690,70 @@ class SaleController extends Controller
             return redirect()->route('stores.sales.index', $store->id)
                 ->with('success', 'Venta anulada correctamente.');
         } catch (\Throwable $th) {
-            \Log::error('Error anulando venta: ' . $th->getMessage(), [
+            SaleDteLog::error('Error anulando venta', [
                 'sale_id' => $sale->id,
-                'trace' => $th->getTraceAsString()
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return redirect()->back()->withErrors('Error generando la anulación: ' . $th->getMessage());
         }
+    }
+
+    /**
+     * Header Idempotency-Key. Null when the client omits it (legacy, not idempotent).
+     */
+    private function idempotencyKey(Request $request): ?string
+    {
+        $raw = $request->headers->get('Idempotency-Key');
+
+        if (!is_string($raw)) {
+            return null;
+        }
+
+        $key = trim($raw);
+
+        if ($key === '') {
+            return null;
+        }
+
+        if (mb_strlen($key) > 255) {
+            throw ValidationException::withMessages([
+                'Idempotency-Key' => 'The Idempotency-Key must not be greater than 255 characters.',
+            ]);
+        }
+
+        return $key;
+    }
+
+    private function findIdempotentSale(int $storeId, string $idempotencyKey, bool $lock = false): ?Sale
+    {
+        $query = Sale::withTrashed()
+            ->where('store_id', $storeId)
+            ->where('idempotency_key', $idempotencyKey);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function saleStoreJson(Request $request, Store $store, Sale $sale): JsonResponse
+    {
+        if ($request->ajax()) {
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Venta creada y DTE enviado correctamente',
+                'ticket_url'  => route('ticket.print', [$store->id, $sale->id]),
+                'dte_status'  => $sale->dte_status
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'ticket_url' => route('ticket.print', [$store->id, $sale->id]),
+            'pre_order_url' => route('ticket.preorder', [$store->id, $sale->id]),
+            'sale_id' => $sale->id
+        ]);
     }
 }

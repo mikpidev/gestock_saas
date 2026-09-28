@@ -125,19 +125,26 @@
 
             <input type="hidden" name="store_id" value="{{ $store->id }}">
 
-            {{-- Hacienda API Password --}}
-            <label for="api_key">Hacienda API Password</label>
-            <input type="text" name="api_key" id="api_key" class="form-control" value="{{ old('api_key', $store->mh_access->api_key ?? '') }}" required>
+            @php
+                $existingMhAccess = $mhAccess ?? $mh_access ?? $store->mh_access ?? null;
+            @endphp
+
+            <label for="api_key">{{ $existingMhAccess ? 'Hacienda API Password (opcional)' : 'Hacienda API Password' }}</label>
+            <input type="password" name="api_key" id="api_key" class="form-control" value="{{ old('api_key') }}" autocomplete="new-password" @unless($existingMhAccess) required @endunless>
+            @if ($existingMhAccess)
+            <div class="form-text">Deja en blanco si no quieres cambiar la clave</div>
+            @endif
             @error('api_key') <div class="text-danger">{{ $message }}</div> @enderror
 
-            {{-- Password Privada --}}
-            <label for="password_pri">Password Privada </label>
-            <input type="text" name="password_pri" id="password_pri" class="form-control" value="{{ old('password_pri',$store->mh_access->password_pri ?? '') }}">
+            <label for="password_pri">{{ $existingMhAccess ? 'Password Privada (opcional)' : 'Password Privada' }}</label>
+            <input type="password" name="password_pri" id="password_pri" class="form-control" value="{{ old('password_pri') }}" autocomplete="new-password" @unless($existingMhAccess) required @endunless>
+            @if ($existingMhAccess)
+            <div class="form-text">Deja en blanco si no quieres cambiar la clave</div>
+            @endif
             @error('password_pri') <div class="text-danger">{{ $message }}</div> @enderror
 
-            {{-- Razón Social --}}
             <label for="port_firma_digital">Port Firma Digital</label>
-            <input type="text" name="port_firma_digital" id="port_firma_digital" class="form-control" value="{{ old('port_firma_digital', $store->mh_access->port_firma_digital ?? '') }}" required>
+            <input type="text" name="port_firma_digital" id="port_firma_digital" class="form-control" value="{{ old('port_firma_digital', $existingMhAccess->port_firma_digital ?? '') }}" required>
             @error('port_firma_digital') <div class="text-danger">{{ $message }}</div> @enderror
 
 

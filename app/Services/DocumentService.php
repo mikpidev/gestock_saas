@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Contingencia;
 use App\Models\Sale;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\CreditNote;
@@ -1186,11 +1186,9 @@ class DocumentService
             "dteJson" => $dteJson,
         ];
 
-        //debug log del payload antes de enviarlo al firmador
-        Log::debug('Puerto Certificado', $port);
-
-        //Logs del payload antes de enviarlo al firmador
-        Log::debug('Payload para firmar documento', $payload);
+        SaleDteLog::debug('Puerto Certificado', [
+            'port' => $port['port'],
+        ]);
 
         $host = config('services.firma.url')
             ?: getenv('FIRMADOR_HOST')
@@ -1203,14 +1201,19 @@ class DocumentService
         // logs request antes de firmar
 
         if ($response->failed()) {
-            Log::error('Error firmando documento', $response->json());
+            SaleDteLog::error('Error firmando documento', [
+                'http_status' => $response->status(),
+            ]);
             throw new \Exception('Error al firmar documento');
         }
 
         $signedData = $response->json();
 
         if (!isset($signedData['status']) || $signedData['status'] !== 'OK') {
-            Log::error('Error en la firma del documento', $signedData);
+            $status = is_array($signedData) ? ($signedData['status'] ?? null) : null;
+            SaleDteLog::error('Error en la firma del documento', [
+                'status' => is_string($status) && !SaleDteLog::looksLikePayload($status) ? mb_substr($status, 0, 32) : null,
+            ]);
             throw new \Exception('Firma del documento fallida');
         }
 

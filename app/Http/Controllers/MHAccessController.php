@@ -55,9 +55,9 @@ class MHAccessController extends Controller
         $this->validateStoreAccess($store);
 
         $validated = $request->validate([
-            'api_key' => 'nullable|string|max:255',
-            'password_pri' => 'nullable|string|max:255',
-            'port_firma_digital' => 'nullable|integer',
+            'api_key' => 'required|string|max:255',
+            'password_pri' => 'required|string|max:255',
+            'port_firma_digital' => 'required|integer',
         ]);
 
         //asignamos el store_id automáticamente

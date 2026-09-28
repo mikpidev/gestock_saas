@@ -3,7 +3,7 @@ namespace App\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use App\Models\Contingencia;
 
 class ContingenciaService
@@ -25,18 +25,16 @@ class ContingenciaService
                         'documento' => $signedData['body'] ?? null
                   ]);
 
-            Log::info('Respuesta MH Contingencia', [
+            SaleDteLog::info('Respuesta MH Contingencia', SaleDteLog::httpMh($response, [
                 'contingencia_id' => $contingencia->id,
-                'status'          => $response->status(),
-                'body'            => $response->json()
-            ]);
+            ]));
 
             return $response->json();
 
         } catch (\Throwable $e) {
-            Log::error('Error contingencia MH', [
+            SaleDteLog::error('Error contingencia MH', [
                 'contingencia_id' => $contingencia->id,
-                'error' => $e->getMessage()
+                'message' => SaleDteLog::safeMessage($e->getMessage()),
             ]);
 
             throw $e;

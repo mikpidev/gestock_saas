@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Support\SaleDteLog;
 use App\Models\CreditNote;
 use App\Models\VoidNC;
 use App\Services\DocumentService;
@@ -46,22 +46,25 @@ class VoidNCController extends Controller
 
             // Construir JSON de la NC a anular
             $dteJson = $this->documentService->buildDTEJsonVoidNC($creditNote, $sale, $void);
-            Log::info("DTE NC antes de firmar", ['credit_note_id' => $creditNote->id, 'dte' => $dteJson]);
+            SaleDteLog::info("DTE NC antes de firmar", [
+                'credit_note_id' => $creditNote->id,
+                'sale_id' => $sale->id,
+            ]);
 
             // Firmar documento
             $signedData = $this->documentService->signDocument($dteJson);
-            Log::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
+            SaleDteLog::info("Documento NC firmado", ['credit_note_id' => $creditNote->id]);
 
             // Obtener token Hacienda
             $token = $this->authService->generateNewToken();
 
             // Enviar a Hacienda
             $haciendaResponse = $this->voidService->sendNCVoidToHacienda($creditNote, $void, $signedData, $token);
-            Log::info("Respuesta Hacienda NC", [
+            SaleDteLog::info("Respuesta Hacienda NC", array_merge([
                 'credit_note_id' => $creditNote->id,
+                'sale_id' => $sale->id,
                 'void_id' => $void->id,
-                'response' => $haciendaResponse
-            ]);
+            ], SaleDteLog::mhSummary(is_array($haciendaResponse) ? $haciendaResponse : [])));
 
             // Guardar respuesta de Hacienda en VoidNC
             $void->update([
@@ -73,10 +76,10 @@ class VoidNCController extends Controller
             return response()->json($haciendaResponse);
 
         } catch (\Throwable $th) {
-            Log::error('Error anulando NC', [
+            SaleDteLog::error('Error anulando NC', [
                 'credit_note_id' => $creditNote->id,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'sale_id' => $creditNote->sale_id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
 
             return response()->json([
@@ -104,10 +107,10 @@ class VoidNCController extends Controller
                 ->with('success', 'Nota de crédito anulada correctamente.');
 
         } catch (\Throwable $th) {
-            Log::error('Error anulando NC', [
+            SaleDteLog::error('Error anulando NC', [
                 'credit_note_id' => $creditNote->id,
-                'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'sale_id' => $creditNote->sale_id,
+                'message' => SaleDteLog::safeMessage($th->getMessage()),
             ]);
             return redirect()->back()->withErrors('Error generando la anulación de la NC: ' . $th->getMessage());
         }

@@ -190,14 +190,7 @@ class OCIService
                     );
                 }
             });
-        } catch (\Throwable $e) {
-
-            Log::error('Error enviando correo por OCI', [
-                'from' => $fromEmail,
-                'to' => $to,
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (\Throwable) {
             throw new \Exception('No se pudo enviar el correo por OCI');
         }
     }

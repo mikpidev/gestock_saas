@@ -147,7 +147,7 @@ class DebitNoteController extends Controller
             $debitNote->save();
 
 
-            if ($debitNote->dte_status = 'PROCESADO') {
+            if ($debitNote->dte_status === 'PROCESADO') {
                 try {
                     app(\App\Http\Controllers\OCIController::class)->emailSend($store, $debitNote);
                 } catch (\Throwable $e) {

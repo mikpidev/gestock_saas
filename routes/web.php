@@ -10,6 +10,7 @@ use App\Http\Controllers\StoreTaxInfoController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\SaleController;
+use App\Http\Middleware\LogSaleStoreOutcome;
 use App\Http\Middleware\PreventBackHistory4;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\TipoDocumentoController;
@@ -28,10 +29,11 @@ use App\Http\Controllers\ReporteVentas;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ContactLeadController;
 use App\Http\Middleware\CheckCompanyStatus;
+use Spatie\Honeypot\ProtectAgainstSpam;
 
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::post('/contacto', [LandingController::class, 'contact'])
-    ->middleware('throttle:8,1')
+    ->middleware([ProtectAgainstSpam::class, 'throttle:contacto'])
     ->name('landing.contact');
 Route::get('/terminos', [LandingController::class, 'terms'])->name('landing.terms');
 Route::get('/privacidad', [LandingController::class, 'privacy'])->name('landing.privacy');
@@ -187,16 +189,13 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
             Route::get('stores/{store}/sales', [SaleController::class, 'index'])
                 ->name('stores.sales.index');
 
-            // Paginacion de ventas
-            Route::get('stores/{store}/pagination-data', [SaleController::class, 'getPaginationData'])
-                ->name('stores.sales.data');
-
             // Formulario de creación de venta
             Route::get('stores/{store}/sales/create', [SaleController::class, 'create'])
                 ->name('stores.sales.create');
 
             // Guardar venta nueva
             Route::post('stores/{store}/sales', [SaleController::class, 'store'])
+                ->middleware(LogSaleStoreOutcome::class)
                 ->name('stores.sales.store');
 
             // Formulario de edición de venta
