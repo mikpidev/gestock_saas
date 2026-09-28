@@ -258,11 +258,11 @@ $clientSlides = [
             </div>
 
             <div class="lp-grid-2 lp-plans">
-            <!-- Plan Free -->
-            <article class="lp-card lp-price lp-price--free lp-reveal">
+            <!-- Plan Starter -->
+            <article class="lp-card lp-price lp-price--starter lp-reveal">
                 <span class="lp-kicker">Para probar</span>
 
-                <h3 style="margin-top:1rem;">Gestock Free</h3>
+                <h3 style="margin-top:1rem;">Gestock Starter</h3>
 
                 <div class="lp-amount">
                     <strong>$25 + IVA</strong>
