@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\CorrelativoStore;
+use App\Services\DteQuotaService;
 use Illuminate\Validation\Rule;
 use App\Models\Store;
 use Illuminate\Http\Request;
@@ -475,11 +476,20 @@ class StoreController extends Controller
     }
 
 
-    public function dashboard(Store $store)
+    public function dashboard(Store $store, DteQuotaService $dteQuota)
     {
         $this->authorize('view', $store);
 
-        return view('store.dashboard', compact('store'));
+        $dteUsage = $dteQuota->usageSummary($store);
+
+        return view('store.dashboard', compact('store', 'dteUsage'));
+    }
+
+    public function dteUsage(Store $store, DteQuotaService $dteQuota)
+    {
+        $this->authorize('view', $store);
+
+        return response()->json($dteQuota->usageSummary($store));
     }
 
     public function show(Store $store)

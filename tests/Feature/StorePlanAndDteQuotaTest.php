@@ -622,3 +622,141 @@ test('creating a sale over the monthly quota returns HTTP 422 and does not sign'
     $allowed->assertOk();
     expect(Sale::query()->where('store_id', $open->id)->count())->toBe(1);
 });
+
+test('dte usage endpoint follows store view authorization', function () {
+    $company = planQuotaCompany();
+    $other = planQuotaCompany();
+    $store = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 50]);
+    $foreign = planQuotaStore($other, ['plan' => 'basic', 'dte_monthly_limit' => 200]);
+    $admin = planQuotaUser('admin', $company, $store);
+    $cashier = planQuotaUser('user', $company, $store);
+    $stranger = planQuotaUser('admin', $other);
+    $superadmin = planQuotaUser('superadmin', $company);
+    $norole = User::factory()->create([
+        'company_id' => $company->id,
+        'store_id' => $store->id,
+    ]);
+
+    $this->getJson(route('stores.dte-usage', $store))->assertRedirect(route('login'));
+
+    $this->actingAs($norole)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertForbidden();
+
+    $this->actingAs($stranger)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertForbidden();
+
+    $this->actingAs($admin)
+        ->getJson(route('stores.dte-usage', $foreign))
+        ->assertForbidden();
+
+    $this->actingAs($superadmin)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertForbidden();
+
+    $this->actingAs($superadmin)
+        ->withSession(['selected_company_id' => $company->id])
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertOk()
+        ->assertJsonPath('plan', 'free')
+        ->assertJsonPath('warning_level', 'ok')
+        ->assertJsonPath('limit', 50);
+
+    $this->actingAs($admin)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertOk()
+        ->assertJsonPath('used', 0);
+
+    $this->actingAs($cashier)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertOk();
+});
+
+test('dte usage warning levels mark free 40 of 50 as critical', function () {
+    Carbon::setTestNow(Carbon::parse('2026-09-15 18:00:00', 'UTC'));
+
+    $company = planQuotaCompany();
+    $store = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 50]);
+    $user = planQuotaUser('user', $company, $store);
+    $service = app(DteQuotaService::class);
+
+    expect($service->usageSummary($store))->toMatchArray([
+        'used' => 0,
+        'limit' => 50,
+        'remaining' => 50,
+        'plan' => 'free',
+        'pct' => 0,
+        'warning_level' => 'ok',
+        'message' => null,
+    ]);
+
+    for ($i = 0; $i < 30; $i++) {
+        planQuotaSale($store, $user);
+    }
+
+    $warn = $service->usageSummary($store->fresh());
+    expect($warn['used'])->toBe(30)
+        ->and($warn['pct'])->toBe(60)
+        ->and($warn['remaining'])->toBe(20)
+        ->and($warn['warning_level'])->toBe('warn')
+        ->and($warn['message'])->toContain('200 DTE/mes')
+        ->and($warn['message'])->toContain('soporte');
+
+    $warnHtml = view('store._dte_usage', ['dteUsage' => $warn])->render();
+    expect($warnHtml)->toContain('alert-warning')
+        ->and($warnHtml)->toContain('dte-usage-warn')
+        ->and($warnHtml)->toContain('Contactar soporte');
+
+    for ($i = 0; $i < 10; $i++) {
+        planQuotaSale($store, $user);
+    }
+
+    $critical = $service->usageSummary($store->fresh());
+    expect($critical['used'])->toBe(40)
+        ->and($critical['limit'])->toBe(50)
+        ->and($critical['remaining'])->toBe(10)
+        ->and($critical['pct'])->toBe(80)
+        ->and($critical['warning_level'])->toBe('critical')
+        ->and($critical['message'])->toContain('Basic')
+        ->and($critical['message'])->toContain('200 DTE/mes');
+
+    $this->actingAs($user)
+        ->getJson(route('stores.dte-usage', $store))
+        ->assertOk()
+        ->assertJsonPath('warning_level', 'critical')
+        ->assertJsonPath('used', 40)
+        ->assertJsonPath('pct', 80);
+
+    $this->actingAs($user)
+        ->get(route('stores.dashboard', $store))
+        ->assertOk()
+        ->assertSee('dte-usage-critical', false)
+        ->assertSee('alert-danger', false)
+        ->assertSee('DTE en nivel crítico', false)
+        ->assertSee('Contactar soporte', false)
+        ->assertSee('200 DTE/mes', false);
+
+    $custom = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 100]);
+    for ($i = 0; $i < 40; $i++) {
+        planQuotaSale($custom, $user);
+    }
+    $early = $service->usageSummary($custom->fresh());
+    expect($early['used'])->toBe(40)
+        ->and($early['pct'])->toBe(40)
+        ->and($early['warning_level'])->toBe('critical');
+
+    $unlimited = planQuotaStore($company, ['plan' => 'empresarial', 'dte_monthly_limit' => null]);
+    for ($i = 0; $i < 5; $i++) {
+        planQuotaSale($unlimited, $user);
+    }
+    expect($service->usageSummary($unlimited->fresh()))->toMatchArray([
+        'used' => 5,
+        'limit' => null,
+        'remaining' => null,
+        'plan' => 'empresarial',
+        'pct' => null,
+        'warning_level' => 'ok',
+        'message' => null,
+    ]);
+});

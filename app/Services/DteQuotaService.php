@@ -71,6 +71,56 @@ class DteQuotaService
         return $configured === null ? null : (int) $configured;
     }
 
+    /**
+     * Month-to-date DTE usage for the store dashboard.
+     *
+     * @return array{
+     *     used: int,
+     *     limit: int|null,
+     *     remaining: int|null,
+     *     plan: string|null,
+     *     pct: int|null,
+     *     warning_level: string,
+     *     message: string|null
+     * }
+     */
+    public function usageSummary(Store $store): array
+    {
+        $used = $this->processedDteCount($store);
+        $limit = $this->monthlyLimit($store);
+        $plan = $store->plan;
+
+        if ($limit === null) {
+            return [
+                'used' => $used,
+                'limit' => null,
+                'remaining' => null,
+                'plan' => $plan,
+                'pct' => null,
+                'warning_level' => 'ok',
+                'message' => null,
+            ];
+        }
+
+        $pct = $limit === 0 ? 100 : (int) round(($used / $limit) * 100);
+        $level = 'ok';
+        if ($pct >= 80 || ($plan === 'free' && $used >= 40)) {
+            $level = 'critical';
+        } elseif ($pct >= 60) {
+            $level = 'warn';
+        }
+
+        return [
+            'used' => $used,
+            'limit' => $limit,
+            'remaining' => max(0, $limit - $used),
+            'plan' => $plan,
+            'pct' => $pct,
+            'warning_level' => $level,
+            'message' => $level === 'ok' ? null : $this->usageMessage($plan, $used, $limit),
+        ];
+    }
+
     public function processedDteCount(Store $store, ?Carbon $moment = null): int
     {
         [$start, $end] = $this->bounds($moment ?? Carbon::now(self::TIMEZONE), 'month');
@@ -104,6 +154,18 @@ class DteQuotaService
             $start->utc()->format('Y-m-d H:i:s'),
             $end->utc()->format('Y-m-d H:i:s'),
         ];
+    }
+
+    private function usageMessage(?string $plan, int $used, int $limit): string
+    {
+        $hint = match ($plan) {
+            'free' => 'Actualiza a Basic ('.config('plans.basic.dte_monthly_limit').' DTE/mes) o contacta a soporte.',
+            'basic' => 'Actualiza a Premium ('.config('plans.premium.dte_monthly_limit').' DTE/mes) o contacta a soporte.',
+            'premium' => 'Actualiza a Empresarial (DTE ilimitados) o contacta a soporte.',
+            default => 'Contacta a soporte para ampliar tu plan.',
+        };
+
+        return "Llevas {$used} de {$limit} DTE este mes. {$hint}";
     }
 
     /**
