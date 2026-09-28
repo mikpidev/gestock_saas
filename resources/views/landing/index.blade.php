@@ -266,17 +266,18 @@ $clientSlides = [
 
                 <div class="lp-amount">
                     <strong>$25 + IVA</strong>
-                    <span>pago único anual</span>
+                    <span>por configuración</span>
                 </div>
 
                 <p>
-                    Autoconsumo para probar Gestock, sin instalación dedicada.
+                    Configuración inicial, una sola vez. Autoconsumo después del alta, sin cuota mensual ni instalación dedicada.
                 </p>
 
                 <ul>
+                    <li>Soporte limitado</li>
                     <li>Tope duro: <strong>50 DTEs</strong> al mes</li>
                     <li>Tope duro de ventas facturadas: <strong>$10,000</strong> al año</li>
-                    <li>Autoconsumo (self-service), sin instalación dedicada</li>
+                    <li>Autoconsumo (self-service); onboarding por esta configuración</li>
                 </ul>
 
                 <button type="button"
