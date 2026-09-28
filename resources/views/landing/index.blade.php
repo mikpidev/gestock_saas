@@ -3,6 +3,7 @@
 @php
 $logo = file_exists(public_path('Logo.png')) ? asset('Logo.png') : asset('Logo.png');
 $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 'usuarios'];
+$documentationUrl = config('services.documentation.url');
 @endphp
 
 @section('content')
@@ -18,6 +19,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             <a href="#planes">Planes</a>
             <a href="#api">API</a>
             <a href="#faq">Preguntas frecuentes</a>
+            <a href="{{ $documentationUrl }}">Documentación</a>
             <a href="#contacto">Contacto</a>
         </nav>
         <div class="lp-nav__actions">
@@ -41,6 +43,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
         <a href="#planes" @click="menu = false">Planes</a>
         <a href="#api" @click="menu = false">API</a>
         <a href="#faq" @click="menu = false">Preguntas frecuentes</a>
+        <a href="{{ $documentationUrl }}" @click="menu = false">Documentación</a>
         <a href="#contacto" @click="menu = false">Contacto</a>
         @auth
         <a href="{{ route('home') }}">Ir al sistema</a>
@@ -515,6 +518,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
             <p><a href="#api">Gestock API</a></p>
             <p><a href="#faq">Preguntas frecuentes</a></p>
             <p><a href="#contacto">Contacto</a></p>
+            <p><a href="{{ $documentationUrl }}">Documentación</a></p>
         </div>
         <div>
             <p style="font-weight:700;color:#fff;margin:0 0 .7rem;">Legal</p>

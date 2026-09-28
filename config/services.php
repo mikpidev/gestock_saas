@@ -43,7 +43,7 @@ return [
         'user' => env('HACIENDA_USER'),
         'pass' => env('HACIENDA_PASS'),
     ],
-    
+
     'firma' => [
         'url' => env('FIRMADOR_HOST', env('FIRMA_API_URL', 'localhost')),
     ],
@@ -72,6 +72,10 @@ return [
         'notify_email' => env('GESTOCK_LEADS_EMAIL', 'gestock.sts@outlook.com'),
         'from_email' => env('MAIL_LEADS_FROM_ADDRESS', 'No-Reply@gestock.site'),
     ],
-    
+
+    'documentation' => [
+        'url' => rtrim((string) env('DOCUMENTATION_URL', 'https://documentation.gestock.site'), '/')
+            ?: 'https://documentation.gestock.site',
+    ],
 
 ];
