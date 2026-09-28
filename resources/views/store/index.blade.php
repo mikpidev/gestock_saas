@@ -4,6 +4,7 @@
 
 <div class="store-index">
 
+@if (auth()->user()?->hasRole('superadmin'))
 <div class="d-flex justify-content-end align-items-center mb-3">
     <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#createStoreModal" title="Crear tienda">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -12,7 +13,9 @@
         <span>Nueva tienda</span>
     </button>
 </div>
+@endif
 
+@if (auth()->user()?->hasRole('superadmin'))
 <div class="modal fade" id="createStoreModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -29,12 +32,14 @@
         </div>
     </div>
 </div>
+@endif
 
 <div class="table mt-4">
     <table class="table table-hover">
         <thead>
             <tr>
                 <th>Nombre</th>
+                <th>Plan</th>
                 <th>Encargado</th>
                 <th>Estado</th>
                 <th>Comentarios</th>
@@ -45,6 +50,7 @@
             @forelse($stores as $store)
             <tr id="store-{{ $store->id }}">
                 <td><a href="{{ route('stores.dashboard', $store->id) }}">{{ $store->store_name }}</a></td>
+                <td>{{ ucfirst($store->plan ?? '') }}</td>
                 <td>{{ $store->manager }}</td>
                 <td>{{ ucfirst($store->status) }}</td>
                 <td>{{ $store->comments }}</td>
@@ -61,6 +67,7 @@
                             data-email="{{ $store->email }}"
                             data-status="{{ $store->status }}"
                             data-environment="{{ $store->environment }}"
+                            data-plan="{{ $store->plan }}"
                             data-comments="{{ $store->comments }}">
                             Editar
                         </button>
@@ -104,7 +111,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="text-center">No hay tiendas disponibles.</td>
+                <td colspan="6" class="text-center">No hay tiendas disponibles.</td>
             </tr>
             @endforelse
         </tbody>
@@ -275,6 +282,8 @@
                 if (statusSelect) statusSelect.value = btn.dataset.status || '';
                 const environmentSelect = form.querySelector('#environment');
                 if (environmentSelect) environmentSelect.value = btn.dataset.environment || '';
+                const planSelect = form.querySelector('#edit_plan');
+                if (planSelect) planSelect.value = btn.dataset.plan || 'basic';
                 editModal.show();
             });
         });

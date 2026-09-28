@@ -49,7 +49,6 @@ beforeEach(function () {
         'phone' => '22223333',
         'owner' => 'Owner',
         'email' => 'company-'.uniqid().'@example.com',
-        'plan' => 'basic',
         'deployment_type' => 'saas',
         'status' => 'activa',
         'comments' => 'test',

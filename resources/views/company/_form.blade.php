@@ -89,26 +89,6 @@
     </div>
 </div>
 
-<!-- Plan -->
-<div class="row mb-3 justify-content-center align-items-center">
-    <label for="plan" class="col-sm-3 col-form-label">
-        Plan
-    </label>
-
-    <div class="col-sm-6">
-        <select name="plan"
-            id="plan"
-            class="form-select"
-            required>
-
-            <option value="free">Free</option>
-            <option value="basic">Basic</option>
-            <option value="premium">Premium</option>
-
-        </select>
-    </div>
-</div>
-
 <!-- Tipo despliegue -->
 <div class="row mb-3 justify-content-center align-items-center">
     <label for="deployment_type" class="col-sm-3 col-form-label">

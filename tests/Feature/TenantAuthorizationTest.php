@@ -26,7 +26,6 @@ function companyAttributes(array $overrides = []): array
         'phone' => '22223333',
         'owner' => 'Dueno',
         'email' => uniqid('co').'@example.test',
-        'plan' => 'free',
         'deployment_type' => 'saas',
         'status' => 'activa',
         'comments' => 'nota',

@@ -14,6 +14,8 @@ use App\Models\DebitNote;
 use App\Models\Store;
 use App\Services\ConsultaService;
 use App\Services\ContingenciaService;
+use App\Services\DteQuotaService;
+use Illuminate\Http\JsonResponse;
 
 class DTEController extends Controller
 {
@@ -39,6 +41,10 @@ class DTEController extends Controller
      */
     public function generarDTE(Sale $sale)
     {
+        if ($denied = $this->quotaExceededResponse($sale->store)) {
+            return $denied;
+        }
+
         $startedNs = hrtime(true);
         $statusBefore = $sale->dte_status;
         $dteType = $sale->tipoDte?->codigo;
@@ -150,6 +156,10 @@ class DTEController extends Controller
 
     public function generarDTECreditNote(CreditNote $creditNote, Sale $sale)
     {
+        if ($denied = $this->quotaExceededResponse($creditNote->store)) {
+            return $denied;
+        }
+
         $startedNs = hrtime(true);
         $statusBefore = $creditNote->dte_status;
         $dteType = '05';
@@ -226,6 +236,10 @@ class DTEController extends Controller
 
     public function generarDTEDebitNote(DebitNote $debitNote, Sale $sale)
     {
+        if ($denied = $this->quotaExceededResponse($debitNote->store)) {
+            return $denied;
+        }
+
         $startedNs = hrtime(true);
         $statusBefore = $debitNote->dte_status;
         $dteType = '06';
@@ -457,6 +471,20 @@ class DTEController extends Controller
                 'message' => $th->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Soft quota block. Returned before signing so the generic catch does not turn it into HTTP 500.
+     */
+    private function quotaExceededResponse(?Store $store): ?JsonResponse
+    {
+        if ($store === null) {
+            return null;
+        }
+
+        $denial = app(DteQuotaService::class)->denial($store);
+
+        return $denial === null ? null : response()->json($denial, 422);
     }
 
     private function logDteAttempt(

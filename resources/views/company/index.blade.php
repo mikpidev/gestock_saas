@@ -61,7 +61,6 @@
                             data-owner="{{ $company->owner }}"
                             data-email="{{ $company->email }}"
                             data-website="{{ $company->website }}"
-                            data-plan="{{ $company->plan }}"
                             data-deployment_type="{{ $company->deployment_type }}"
                             data-status="{{ $company->status }}"
                             data-comments="{{ $company->comments }}">
@@ -129,7 +128,6 @@
                 form.querySelector('#edit_owner').value = btn.dataset.owner || '';
                 form.querySelector('#edit_email').value = btn.dataset.email || '';
                 form.querySelector('#edit_website').value = btn.dataset.website || '';
-                form.querySelector('#edit_plan').value = btn.dataset.plan || '';
                 form.querySelector('#edit_deployment_type').value = btn.dataset.deployment_type || '';
                 form.querySelector('#edit_status').value = btn.dataset.status || '';
                 form.querySelector('#edit_comments').value = btn.dataset.comments || '';

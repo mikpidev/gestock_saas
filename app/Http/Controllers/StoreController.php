@@ -100,6 +100,18 @@ class StoreController extends Controller
             'comments'   => 'nullable',
         ]);
 
+        // Default is basic. Free is applied only when a superadmin sends it.
+        // Posted dte_monthly_limit is never accepted; the column is seeded from config.
+        unset($validated['plan'], $validated['dte_monthly_limit']);
+        $plan = 'basic';
+        if ($user->hasRole('superadmin') && $request->filled('plan')) {
+            $plan = $request->validate([
+                'plan' => ['required', Rule::in(array_keys(config('plans')))],
+            ])['plan'];
+        }
+        $validated['plan'] = $plan;
+        $validated['dte_monthly_limit'] = config("plans.{$plan}.dte_monthly_limit");
+
         $store = $company->stores()->create($validated);
         // Crear los correlativos
         $tiposDocumento = TipoDocumento::all();
@@ -562,7 +574,9 @@ class StoreController extends Controller
 
         $this->authorize('update', $store);
 
-        // Validación de los datos del formulario
+        // Plan is not part of this ruleset. A forged plan or dte_monthly_limit from
+        // an admin is ignored; only updatePlan (superadmin) may change the plan,
+        // and the monthly limit is reseeded from config for that plan.
         $validated = $request->validate([
             'store_name' => 'required|max:200',
             'establecimiento' => 'nullable|max:4',
@@ -576,7 +590,16 @@ class StoreController extends Controller
             'comments' => 'nullable',
         ]);
 
-        // Actualización de la tienda
+        unset($validated['plan'], $validated['dte_monthly_limit']);
+
+        if ($request->filled('plan') && $user->can('updatePlan', $store)) {
+            $plan = $request->validate([
+                'plan' => ['required', Rule::in(array_keys(config('plans')))],
+            ])['plan'];
+            $validated['plan'] = $plan;
+            $validated['dte_monthly_limit'] = config("plans.{$plan}.dte_monthly_limit");
+        }
+
         $store->update($validated);
 
         return redirect()->route('stores.index')->with('success', 'Tienda actualizada exitosamente.');

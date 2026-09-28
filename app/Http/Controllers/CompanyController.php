@@ -54,7 +54,6 @@ class CompanyController extends Controller
             'owner' => 'required|max:100',
             'email' => 'email|max:100|unique:companies,email',            
             'website' => 'nullable|url',
-            'plan' => 'required|in:free,basic,premium',
             'deployment_type' => 'required|in:saas,on_premise',
             'status' => 'required|in:activa,suspendida,inactiva',
             'comments' => 'nullable',
@@ -118,7 +117,6 @@ class CompanyController extends Controller
             'owner' => 'required|max:100',
             'email' => ['email', Rule::unique('companies')->ignore($company->id)->whereNull('deleted_at'),],  // Solo verifica registros activos         
             'website' => 'nullable|url',
-            'plan' => 'required|in:free,basic,premium',
             'deployment_type' => 'required|in:saas,on_premise',
             'status' => 'required|in:activa,suspendida,inactiva',
             'comments' => 'nullable',

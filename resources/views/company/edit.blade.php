@@ -40,17 +40,6 @@
     </div>
 
     <div class="row mb-3 justify-content-center align-items-center">
-        <label for="edit_plan" class="col-sm-3 col-form-label">Plan</label>
-        <div class="col-sm-6">
-            <select name="plan" id="edit_plan" class="form-control" required>
-                <option value="free">Free</option>
-                <option value="basic">Basic</option>
-                <option value="premium">Premium</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="row mb-3 justify-content-center align-items-center">
         <label for="edit_deployment_type" class="col-sm-3 col-form-label">Tipo de Despliegue</label>
         <div class="col-sm-6">
             <select name="deployment_type" id="edit_deployment_type" class="form-control" required>
