@@ -365,9 +365,7 @@ $tourKeys = ['dashboard', 'ventas', 'dte', 'productos', 'clientes', 'reportes', 
                 <ul class="lp-api__chips" aria-label="Capacidades en desarrollo">
                     <li>REST</li>
                     <li>DTE</li>
-                    <li>Webhooks</li>
                     <li>Claves de acceso</li>
-                    <li>Sandbox</li>
                 </ul>
                 <div class="lp-cta-row">
                     <button type="button" class="lp-btn lp-btn--primary" @click="contact = true">Quiero acceso anticipado</button>
