@@ -50,7 +50,7 @@
             @forelse($stores as $store)
             <tr id="store-{{ $store->id }}">
                 <td><a href="{{ route('stores.dashboard', $store->id) }}">{{ $store->store_name }}</a></td>
-                <td>{{ ucfirst($store->plan ?? '') }}</td>
+                <td>{{ config('plans.'.$store->plan.'.label') ?? ucfirst($store->plan ?? '') }}</td>
                 <td>{{ $store->manager }}</td>
                 <td>{{ ucfirst($store->status) }}</td>
                 <td>{{ $store->comments }}</td>

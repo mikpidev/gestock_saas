@@ -104,7 +104,7 @@
     <div class="col-sm-6">
         <select @if($canEditPlan) name="plan" @endif id="edit_plan" class="form-control" @unless($canEditPlan) disabled @endunless>
             @foreach (config('plans') as $planKey => $planConfig)
-                <option value="{{ $planKey }}" @selected($selectedPlan === $planKey)>{{ ucfirst($planKey) }}</option>
+                <option value="{{ $planKey }}" @selected($selectedPlan === $planKey)>{{ $planConfig['label'] ?? ucfirst($planKey) }}</option>
             @endforeach
         </select>
     </div>

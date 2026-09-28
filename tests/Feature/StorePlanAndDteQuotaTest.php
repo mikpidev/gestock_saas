@@ -128,7 +128,8 @@ function planQuotaDteController(): DTEController
 }
 
 test('config lists the four store plans', function () {
-    expect(config('plans.free'))->toMatchArray([
+    expect(config('plans.starter'))->toMatchArray([
+        'label' => 'Starter',
         'price_usd' => 25,
         'billing_period' => 'annual_one_shot',
         'billing_label' => 'config_fee',
@@ -143,6 +144,7 @@ test('config lists the four store plans', function () {
         ->and(config('plans.empresarial.price_usd'))->toBe(75)
         ->and(config('plans.empresarial.dte_monthly_limit'))->toBeNull()
         ->and(config('plans.empresarial.annual_revenue_limit'))->toBeNull()
+        ->and(config('plans.free'))->toBeNull()
         ->and(Schema::hasColumn('companies', 'plan'))->toBeFalse()
         ->and(Schema::hasColumn('stores', 'plan'))->toBeTrue()
         ->and(Schema::hasColumn('stores', 'dte_monthly_limit'))->toBeTrue();
@@ -167,10 +169,10 @@ test('migration remaps legacy company plans onto each store and drops companies.
     $freeCompany = planQuotaCompany();
     $basicCompany = planQuotaCompany();
     $premiumCompany = planQuotaCompany();
-    $freeStoreA = planQuotaStore($freeCompany, ['plan' => 'free', 'dte_monthly_limit' => 1]);
-    $freeStoreB = planQuotaStore($freeCompany, ['plan' => 'free', 'dte_monthly_limit' => 1]);
-    $basicStore = planQuotaStore($basicCompany, ['plan' => 'free', 'dte_monthly_limit' => 1]);
-    $premiumStore = planQuotaStore($premiumCompany, ['plan' => 'free', 'dte_monthly_limit' => 1]);
+    $freeStoreA = planQuotaStore($freeCompany, ['plan' => 'starter', 'dte_monthly_limit' => 1]);
+    $freeStoreB = planQuotaStore($freeCompany, ['plan' => 'starter', 'dte_monthly_limit' => 1]);
+    $basicStore = planQuotaStore($basicCompany, ['plan' => 'starter', 'dte_monthly_limit' => 1]);
+    $premiumStore = planQuotaStore($premiumCompany, ['plan' => 'starter', 'dte_monthly_limit' => 1]);
 
     try {
         Schema::table('companies', function ($table) {
@@ -237,18 +239,30 @@ test('only a superadmin can create a store and the default plan is basic', funct
         ->and($created->plan)->toBe('basic')
         ->and($created->dte_monthly_limit)->toBe(200);
 
-    $freeEmail = uniqid('free').'@example.test';
+    $starterEmail = uniqid('starter').'@example.test';
     $this->actingAs($superadmin)
         ->withSession(['selected_company_id' => $company->id])
-        ->post(route('store.store', $company), planQuotaPayload(new Store(['email' => $freeEmail]), [
-            'email' => $freeEmail,
-            'plan' => 'free',
+        ->post(route('store.store', $company), planQuotaPayload(new Store(['email' => $starterEmail]), [
+            'email' => $starterEmail,
+            'plan' => 'starter',
         ]))
         ->assertRedirect();
 
-    $freeStore = Store::query()->where('email', $freeEmail)->first();
-    expect($freeStore->plan)->toBe('free')
-        ->and($freeStore->dte_monthly_limit)->toBe(50);
+    $starterStore = Store::query()->where('email', $starterEmail)->first();
+    expect($starterStore->plan)->toBe('starter')
+        ->and($starterStore->dte_monthly_limit)->toBe(50);
+
+    $rejectedEmail = uniqid('legacyfree').'@example.test';
+    $this->actingAs($superadmin)
+        ->withSession(['selected_company_id' => $company->id])
+        ->from(route('stores.index'))
+        ->post(route('store.store', $company), planQuotaPayload(new Store(['email' => $rejectedEmail]), [
+            'email' => $rejectedEmail,
+            'plan' => 'free',
+        ]))
+        ->assertRedirect(route('stores.index'))
+        ->assertSessionHasErrors('plan');
+    expect(Store::query()->where('email', $rejectedEmail)->exists())->toBeFalse();
 });
 
 test('an admin can update a store but a forged plan is ignored', function () {
@@ -260,7 +274,7 @@ test('an admin can update a store but a forged plan is ignored', function () {
     $this->actingAs($admin)
         ->put(route('stores.update', $store), planQuotaPayload($store, [
             'store_name' => 'Nombre admin',
-            'plan' => 'free',
+            'plan' => 'starter',
             'dte_monthly_limit' => 1,
         ]))
         ->assertRedirect(route('stores.index'));
@@ -280,13 +294,13 @@ test('an admin can update a store but a forged plan is ignored', function () {
         ->withSession(['selected_company_id' => $company->id])
         ->put(route('stores.update', $store), planQuotaPayload($store, [
             'store_name' => 'Nombre sa',
-            'plan' => 'free',
+            'plan' => 'starter',
             'dte_monthly_limit' => 3,
         ]))
         ->assertRedirect(route('stores.index'));
 
     expect($store->fresh()->store_name)->toBe('Nombre sa')
-        ->and($store->fresh()->plan)->toBe('free')
+        ->and($store->fresh()->plan)->toBe('starter')
         ->and($store->fresh()->dte_monthly_limit)->toBe(50);
 });
 
@@ -328,7 +342,9 @@ test('company forms no longer ask for a plan and create-store UI is superadmin o
         ->get(route('stores.index'))
         ->assertOk()
         ->assertSee('Nueva tienda', false)
-        ->assertSee('name="plan"', false);
+        ->assertSee('name="plan"', false)
+        ->assertSee('Starter', false)
+        ->assertDontSee('value="free"', false);
 
     $this->actingAs($superadmin)
         ->get(route('companies.index'))
@@ -412,11 +428,11 @@ test('monthly DTE quota counts processed sales credit notes and debit notes in t
     expect($service->denial($store->fresh()))->toBeNull();
 });
 
-test('free annual revenue sums processed sales in the Guatemala year and ignores notes', function () {
+test('starter annual revenue sums processed sales in the Guatemala year and ignores notes', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-15 18:00:00', 'UTC'));
 
     $company = planQuotaCompany();
-    $store = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 50]);
+    $store = planQuotaStore($company, ['plan' => 'starter', 'dte_monthly_limit' => 50]);
     $user = planQuotaUser('admin', $company, $store);
     $service = app(DteQuotaService::class);
 
@@ -540,7 +556,7 @@ test('creating a sale over the monthly quota returns HTTP 422 and does not sign'
 
     $company = planQuotaCompany();
     $store = planQuotaStore($company, [
-        'plan' => 'free',
+        'plan' => 'starter',
         'dte_monthly_limit' => 1,
         'establecimiento' => '0001',
         'punto_venta' => '0001',
@@ -626,7 +642,7 @@ test('creating a sale over the monthly quota returns HTTP 422 and does not sign'
 test('dte usage endpoint follows store view authorization', function () {
     $company = planQuotaCompany();
     $other = planQuotaCompany();
-    $store = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 50]);
+    $store = planQuotaStore($company, ['plan' => 'starter', 'dte_monthly_limit' => 50]);
     $foreign = planQuotaStore($other, ['plan' => 'basic', 'dte_monthly_limit' => 200]);
     $admin = planQuotaUser('admin', $company, $store);
     $cashier = planQuotaUser('user', $company, $store);
@@ -659,7 +675,7 @@ test('dte usage endpoint follows store view authorization', function () {
         ->withSession(['selected_company_id' => $company->id])
         ->getJson(route('stores.dte-usage', $store))
         ->assertOk()
-        ->assertJsonPath('plan', 'free')
+        ->assertJsonPath('plan', 'starter')
         ->assertJsonPath('warning_level', 'ok')
         ->assertJsonPath('limit', 50);
 
@@ -673,11 +689,11 @@ test('dte usage endpoint follows store view authorization', function () {
         ->assertOk();
 });
 
-test('dte usage warning levels mark free 40 of 50 as critical', function () {
+test('dte usage warning levels mark starter 40 of 50 as critical', function () {
     Carbon::setTestNow(Carbon::parse('2026-09-15 18:00:00', 'UTC'));
 
     $company = planQuotaCompany();
-    $store = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 50]);
+    $store = planQuotaStore($company, ['plan' => 'starter', 'dte_monthly_limit' => 50]);
     $user = planQuotaUser('user', $company, $store);
     $service = app(DteQuotaService::class);
 
@@ -685,7 +701,7 @@ test('dte usage warning levels mark free 40 of 50 as critical', function () {
         'used' => 0,
         'limit' => 50,
         'remaining' => 50,
-        'plan' => 'free',
+        'plan' => 'starter',
         'pct' => 0,
         'warning_level' => 'ok',
         'message' => null,
@@ -737,7 +753,7 @@ test('dte usage warning levels mark free 40 of 50 as critical', function () {
         ->assertSee('Contactar soporte', false)
         ->assertSee('200 DTE/mes', false);
 
-    $custom = planQuotaStore($company, ['plan' => 'free', 'dte_monthly_limit' => 100]);
+    $custom = planQuotaStore($company, ['plan' => 'starter', 'dte_monthly_limit' => 100]);
     for ($i = 0; $i < 40; $i++) {
         planQuotaSale($custom, $user);
     }

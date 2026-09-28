@@ -2,15 +2,16 @@
 
 /**
  * Store plans. Prices are list prices in USD and do not include IVA (+IVA aparte).
- * Free $25+IVA = one-shot setup/config fee; limited support; not monthly recurring.
+ * Starter $25+IVA = one-shot setup/config fee; limited support; not monthly recurring.
  * dte_monthly_limit null means unlimited DTE.
  * annual_revenue_limit null means no annual revenue gate.
  * Legacy company plans are remapped on migration (free→basic, basic→premium,
- * premium→empresarial). The self-service `free` plan is new and is not that
+ * premium→empresarial). The self-service `starter` plan is new and is not that
  * legacy free tier.
  */
 return [
-    'free' => [
+    'starter' => [
+        'label' => 'Starter',
         'price_usd' => 25,
         'billing_period' => 'annual_one_shot',
         'billing_label' => 'config_fee',

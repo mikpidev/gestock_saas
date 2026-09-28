@@ -9,7 +9,7 @@ return new class extends Migration
 {
     /**
      * Legacy companies.plan → stores.plan.
-     * Self-service `free` is not in this map; legacy free becomes basic.
+     * Self-service `starter` is not in this map; legacy free becomes basic.
      *
      * @var array<string, string>
      */
@@ -23,7 +23,7 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('stores', 'plan')) {
             Schema::table('stores', function (Blueprint $table) {
-                $table->enum('plan', ['free', 'basic', 'premium', 'empresarial'])
+                $table->enum('plan', ['starter', 'basic', 'premium', 'empresarial'])
                     ->default('basic')
                     ->after('company_id');
                 $table->unsignedInteger('dte_monthly_limit')->nullable()->after('plan');
@@ -51,10 +51,10 @@ return new class extends Migration
             return;
         }
 
-        // Lossy: new self-service free and remapped legacy free (now basic)
+        // Lossy: new starter and remapped legacy free (now basic)
         // both become companies.plan = free. Multiple stores keep the first row.
         $reverse = [
-            'free' => 'free',
+            'starter' => 'free',
             'basic' => 'free',
             'premium' => 'basic',
             'empresarial' => 'premium',

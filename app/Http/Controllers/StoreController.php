@@ -101,13 +101,13 @@ class StoreController extends Controller
             'comments'   => 'nullable',
         ]);
 
-        // Default is basic. Free is applied only when a superadmin sends it.
+        // Default is basic. Starter is applied only when a superadmin sends it.
         // Posted dte_monthly_limit is never accepted; the column is seeded from config.
         unset($validated['plan'], $validated['dte_monthly_limit']);
         $plan = 'basic';
         if ($user->hasRole('superadmin') && $request->filled('plan')) {
             $plan = $request->validate([
-                'plan' => ['required', Rule::in(array_keys(config('plans')))],
+                'plan' => ['required', Rule::in(['starter', 'basic', 'premium', 'empresarial'])],
             ])['plan'];
         }
         $validated['plan'] = $plan;
@@ -604,7 +604,7 @@ class StoreController extends Controller
 
         if ($request->filled('plan') && $user->can('updatePlan', $store)) {
             $plan = $request->validate([
-                'plan' => ['required', Rule::in(array_keys(config('plans')))],
+                'plan' => ['required', Rule::in(['starter', 'basic', 'premium', 'empresarial'])],
             ])['plan'];
             $validated['plan'] = $plan;
             $validated['dte_monthly_limit'] = config("plans.{$plan}.dte_monthly_limit");

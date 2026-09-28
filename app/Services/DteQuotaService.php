@@ -34,11 +34,11 @@ class DteQuotaService
             }
         }
 
-        if ($store->plan !== 'free') {
+        if ($store->plan !== 'starter') {
             return null;
         }
 
-        $revenueLimit = config('plans.free.annual_revenue_limit');
+        $revenueLimit = config('plans.starter.annual_revenue_limit');
         if ($revenueLimit === null) {
             return null;
         }
@@ -46,7 +46,7 @@ class DteQuotaService
         $revenue = $this->annualProcessedRevenue($store);
         if ($revenue >= (float) $revenueLimit) {
             return [
-                'message' => 'Límite anual de facturación del plan Free alcanzado para esta sucursal.',
+                'message' => 'Límite anual de facturación del plan Starter alcanzado para esta sucursal.',
                 'error' => 'annual_revenue_limit',
                 'used' => $revenue,
                 'limit' => (float) $revenueLimit,
@@ -104,7 +104,7 @@ class DteQuotaService
 
         $pct = $limit === 0 ? 100 : (int) round(($used / $limit) * 100);
         $level = 'ok';
-        if ($pct >= 80 || ($plan === 'free' && $used >= 40)) {
+        if ($pct >= 80 || ($plan === 'starter' && $used >= 40)) {
             $level = 'critical';
         } elseif ($pct >= 60) {
             $level = 'warn';
@@ -159,7 +159,7 @@ class DteQuotaService
     private function usageMessage(?string $plan, int $used, int $limit): string
     {
         $hint = match ($plan) {
-            'free' => 'Actualiza a Basic ('.config('plans.basic.dte_monthly_limit').' DTE/mes) o contacta a soporte.',
+            'starter' => 'Actualiza a Basic ('.config('plans.basic.dte_monthly_limit').' DTE/mes) o contacta a soporte.',
             'basic' => 'Actualiza a Premium ('.config('plans.premium.dte_monthly_limit').' DTE/mes) o contacta a soporte.',
             'premium' => 'Actualiza a Empresarial (DTE ilimitados) o contacta a soporte.',
             default => 'Contacta a soporte para ampliar tu plan.',
