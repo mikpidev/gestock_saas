@@ -16,7 +16,7 @@ Legacy company plans are remapped when the migration runs:
 
 Self-service `free` is a new plan. It is not the old company free tier. Creating a store defaults to `basic`. `free` is stored only when a superadmin sends it.
 
-`config/plans.php` (USD list price, IVA not included — +IVA aparte — no billing-rate migration, no +$25 addon). Free is **$25 annual one-shot** (`billing_period: annual_one_shot`), same IVA treatment as the paid plans. Quotas for Free are unchanged (50 DTE / month, $10000 processed sales / year).
+`config/plans.php` (USD list price, IVA not included — +IVA aparte — no billing-rate migration, no +$25 addon). Free is **$25 annual one-shot** (`billing_period: annual_one_shot`, `billing_label=config_fee` — fee de configuración, not MRR), same IVA treatment as the paid plans. Quotas for Free are unchanged (50 DTE / month, $10000 processed sales / year).
 
 | plan | price_usd | billing_period | includes_iva | dte_monthly_limit | annual_revenue_limit |
 | --- | --- | --- | --- | --- | --- |

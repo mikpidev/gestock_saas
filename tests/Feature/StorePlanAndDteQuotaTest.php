@@ -131,6 +131,7 @@ test('config lists the four store plans', function () {
     expect(config('plans.free'))->toMatchArray([
         'price_usd' => 25,
         'billing_period' => 'annual_one_shot',
+        'billing_label' => 'config_fee',
         'includes_iva' => false,
         'dte_monthly_limit' => 50,
         'annual_revenue_limit' => 10000,
