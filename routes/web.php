@@ -323,6 +323,8 @@ Route::middleware([PreventBackHistory4::class])->group(function () {
 
             //Chart Routes
             // Chart View
+            Route::get('/stores/{store}/dte-usage', [StoreController::class, 'dteUsage'])
+                ->name('stores.dte-usage');
             Route::get('/stores/{store}/dashboard', [StoreController::class, 'dashboard'])
                 ->name('stores.dashboard');
             Route::get('/stores/{store}/dashboard-data', [StoreController::class, 'getChartData'])

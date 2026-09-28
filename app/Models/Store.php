@@ -10,6 +10,8 @@ class Store extends Model
     //Los campos que pueden ser asignados masivamente
     protected $fillable = [
         'company_id',
+        'plan',
+        'dte_monthly_limit',
         'store_name',
         'establecimiento',
         'punto_venta',
@@ -26,6 +28,10 @@ class Store extends Model
 
     //Uso de SoftDeletes
     use SoftDeletes;
+
+    protected $casts = [
+        'dte_monthly_limit' => 'integer',
+    ];
     //relacion para eliminacion en cascada de la informacion fiscal
     public function taxInfoDelete()
     {

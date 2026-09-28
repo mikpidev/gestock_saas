@@ -32,7 +32,6 @@ function saleHardenCompany(string $email): Company
         'phone' => '22222222',
         'owner' => 'Dueno',
         'email' => $email,
-        'plan' => 'free',
         'deployment_type' => 'saas',
         'status' => 'activa',
         'comments' => 'test',

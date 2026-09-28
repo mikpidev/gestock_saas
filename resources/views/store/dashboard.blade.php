@@ -1,6 +1,8 @@
 @extends('layouts.admin')
 @section('content')
 
+@include('store._dte_usage', ['dteUsage' => $dteUsage])
+
 <div class="row g-3 mb-4">
 
     <div class="chart-container">
@@ -194,7 +196,29 @@
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOM Pagination listo");
         getData();
+        refreshDteUsage();
     });
+
+    function refreshDteUsage() {
+        fetch("{{ route('stores.dte-usage', $store) }}", {
+            headers: { "Accept": "application/json" }
+        }).then(function (response) {
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        }).then(function (usage) {
+            if (!usage) {
+                return;
+            }
+            const banner = document.getElementById("dte-usage-banner");
+            if (!banner) {
+                return;
+            }
+            banner.dataset.warningLevel = usage.warning_level;
+            banner.className = "mb-3 dte-usage-" + usage.warning_level;
+        }).catch(function () {});
+    }
 
     document.getElementById('download-pdf').addEventListener('click', function(e) {
 

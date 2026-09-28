@@ -35,7 +35,6 @@ function dteStatusFixture(): array
         'phone' => '22223333',
         'owner' => 'Owner',
         'email' => 'company-dte@example.com',
-        'plan' => 'basic',
         'deployment_type' => 'saas',
         'status' => 'activa',
         'comments' => '',

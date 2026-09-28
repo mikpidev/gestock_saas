@@ -160,8 +160,13 @@ class SaleController extends Controller
                 );
             }
 
-            app(\App\Http\Controllers\DTEController::class)
+            $dteResponse = app(\App\Http\Controllers\DTEController::class)
                 ->generarDTE($sale);
+            if ($dteResponse instanceof \Illuminate\Http\JsonResponse && $dteResponse->getStatusCode() === 422) {
+                $payload = $dteResponse->getData(true);
+
+                return back()->with('error', $payload['message'] ?? 'Límite de DTE alcanzado.');
+            }
 
 
             $token = app(HaciendaAuthService::class)
@@ -407,9 +412,13 @@ class SaleController extends Controller
         }
 
 
-        // Generar DTE según tipo de documento
+        // Generar DTE según tipo de documento. Over quota returns 422 and does not sign.
+        // The sale row is already stored (soft block).
         try {
-            app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
+            $dteResponse = app(\App\Http\Controllers\DTEController::class)->generarDTE($sale);
+            if ($dteResponse instanceof \Illuminate\Http\JsonResponse && $dteResponse->getStatusCode() === 422) {
+                return $dteResponse;
+            }
         } catch (\Throwable $e) {
             SaleDteLog::error('Error generando DTE', [
                 'sale_id' => $sale->id,

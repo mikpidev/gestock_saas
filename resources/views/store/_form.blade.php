@@ -95,6 +95,21 @@
     </div>
 </div>
 
+@php
+    $canEditPlan = auth()->user()?->hasRole('superadmin') ?? false;
+    $selectedPlan = old('plan', $store->plan ?? 'basic');
+@endphp
+<div class="row mb-3 justify-content-center align-items-center">
+    <label for="edit_plan" class="col-sm-3 col-form-label">Plan</label>
+    <div class="col-sm-6">
+        <select @if($canEditPlan) name="plan" @endif id="edit_plan" class="form-control" @unless($canEditPlan) disabled @endunless>
+            @foreach (config('plans') as $planKey => $planConfig)
+                <option value="{{ $planKey }}" @selected($selectedPlan === $planKey)>{{ $planConfig['label'] ?? ucfirst($planKey) }}</option>
+            @endforeach
+        </select>
+    </div>
+</div>
+
 <!-- Comentarios -->
 <div class="row mb-3 justify-content-center align-items-center">
     <label for="comments" class="col-sm-3 col-form-label">

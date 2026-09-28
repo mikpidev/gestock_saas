@@ -26,14 +26,35 @@ class StorePolicy
         return Response::deny('Acceso no autorizado.');
     }
 
+    /**
+     * Creating a store is superadmin-only, and only for the company selected in session.
+     */
     public function create(User $user, Company $company): Response
     {
-        return $this->administersCompany($user, $company->id);
+        if (! $user->hasRole('superadmin')) {
+            return Response::deny('Acceso no autorizado.');
+        }
+
+        return $this->selectedCompany($company->id);
     }
 
+    /**
+     * Admins may update store fields other than plan (name, status, environment, …).
+     * Changing plan is updatePlan() and is superadmin-only. The controller drops
+     * a forged plan instead of failing the rest of the update.
+     */
     public function update(User $user, Store $store): Response
     {
         return $this->administersCompany($user, $store->company_id);
+    }
+
+    public function updatePlan(User $user, Store $store): Response
+    {
+        if (! $user->hasRole('superadmin')) {
+            return Response::deny('Acceso no autorizado.');
+        }
+
+        return $this->selectedCompany($store->company_id);
     }
 
     public function delete(User $user, Store $store): Response

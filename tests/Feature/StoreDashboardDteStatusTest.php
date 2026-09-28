@@ -45,7 +45,6 @@ function seedDashboardSales(): array
         'phone' => '22223333',
         'owner' => 'Dueño',
         'email' => 'dashboard-co@example.com',
-        'plan' => 'free',
         'deployment_type' => 'saas',
         'status' => 'activa',
         'comments' => 'test',

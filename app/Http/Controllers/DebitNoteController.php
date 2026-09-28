@@ -132,8 +132,13 @@ class DebitNoteController extends Controller
                 );
             }
 
-            app(\App\Http\Controllers\DTEController::class)
+            $dteResponse = app(\App\Http\Controllers\DTEController::class)
                 ->generarDTEDebitNote($debitNote, $sale);
+            if ($dteResponse instanceof \Illuminate\Http\JsonResponse && $dteResponse->getStatusCode() === 422) {
+                $payload = $dteResponse->getData(true);
+
+                return back()->with('error', $payload['message'] ?? 'Límite de DTE alcanzado.');
+            }
 
 
             $token = app(HaciendaAuthService::class)
@@ -288,9 +293,12 @@ class DebitNoteController extends Controller
         // En tu método store, DESPUÉS de crear los detalles:
         $debitNote->load(['debitNoteDetails.saleDetail.productType', 'debitNoteDetails.productType']);
 
-        // Generar DTE
+        // Generar DTE. Over quota returns 422 and does not sign. The note row stays saved.
         try {
-            app(\App\Http\Controllers\DTEController::class)->generarDTEDebitNote($debitNote, $sale);
+            $dteResponse = app(\App\Http\Controllers\DTEController::class)->generarDTEDebitNote($debitNote, $sale);
+            if ($dteResponse instanceof \Illuminate\Http\JsonResponse && $dteResponse->getStatusCode() === 422) {
+                return $dteResponse;
+            }
         } catch (\Throwable $e) {
             \Log::error('Error generando DTE: ' . $e->getMessage());
         }
