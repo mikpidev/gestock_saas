@@ -16,14 +16,14 @@ Legacy company plans are remapped when the migration runs:
 
 Self-service `free` is a new plan. It is not the old company free tier. Creating a store defaults to `basic`. `free` is stored only when a superadmin sends it.
 
-`config/plans.php` (USD list price, IVA not included, no billing-rate migration, no +$25 addon):
+`config/plans.php` (USD list price, IVA not included — +IVA aparte — no billing-rate migration, no +$25 addon). Free is **$25 annual one-shot** (`billing_period: annual_one_shot`), same IVA treatment as the paid plans. Quotas for Free are unchanged (50 DTE / month, $10000 processed sales / year).
 
-| plan | price_usd | includes_iva | dte_monthly_limit | annual_revenue_limit |
-| --- | --- | --- | --- | --- |
-| free | 0 | false | 50 | 10000 |
-| basic | 25 | false | 200 | null |
-| premium | 40 | false | 1000 | null |
-| empresarial | 75 | false | null (unlimited) | null |
+| plan | price_usd | billing_period | includes_iva | dte_monthly_limit | annual_revenue_limit |
+| --- | --- | --- | --- | --- | --- |
+| free | 25 | annual_one_shot | false | 50 | 10000 |
+| basic | 25 | | false | 200 | null |
+| premium | 40 | | false | 1000 | null |
+| empresarial | 75 | | false | null (unlimited) | null |
 
 Quotas are per store. `stores.dte_monthly_limit` is a nullable override seeded from config on create, on plan change, and on backfill. A non-null column wins over config. A null column falls back to config. A null config value means no DTE cap (empresarial). The HTTP forms do not accept a posted `dte_monthly_limit`; a forged value is ignored.
 
@@ -115,7 +115,7 @@ php artisan test tests/Feature/SaleStoreHardeningTest.php
 
 Covered:
 
-- Config values and columns (`companies.plan` gone, `stores.plan` present).
+- Config values and columns (`companies.plan` gone, `stores.plan` present). Free is `price_usd` 25, `billing_period` `annual_one_shot`, `includes_iva` false, DTE limit 50, annual revenue limit 10000.
 - DB default `basic` when a store is inserted without a plan.
 - Migration remap free→basic (limit 200), basic→premium (1000), premium→empresarial (null), including two stores on one company, then drop `companies.plan`.
 - Admin and user cannot create a store. Superadmin cannot create outside the selected company. Omitted plan becomes `basic` / 200. Explicit `free` becomes `free` / 50. A posted limit is ignored.
@@ -148,5 +148,5 @@ Tests: 24 passed (210 assertions)
 - `companies.show` redirects to the store index, so the live create-store control is “Nueva tienda” on `stores/index`. The company show button is gated anyway.
 - The plan `<select>` in the edit modal is filled by the existing row script. With JavaScript off, a superadmin save can submit the default `basic`.
 - `down()` cannot tell a new free store from a legacy free store that became basic.
-- List prices in `config/plans.php` are not wired to invoices or to the old $30 rate.
+- List prices in `config/plans.php` are catalog data only. Free is $25 annual one-shot +IVA (`billing_period: annual_one_shot`); that price is not invoiced from this patch, and the old $30 rate is not migrated.
 - Landing pages were left unchanged.

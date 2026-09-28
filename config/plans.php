@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Store plans. Prices are list prices in USD and do not include IVA.
+ * Store plans. Prices are list prices in USD and do not include IVA (+IVA aparte).
+ * Free is a $25 annual one-shot (billing_period annual_one_shot), not $0.
  * dte_monthly_limit null means unlimited DTE.
  * annual_revenue_limit null means no annual revenue gate.
  * Legacy company plans are remapped on migration (free→basic, basic→premium,
@@ -10,7 +11,8 @@
  */
 return [
     'free' => [
-        'price_usd' => 0,
+        'price_usd' => 25,
+        'billing_period' => 'annual_one_shot',
         'includes_iva' => false,
         'dte_monthly_limit' => 50,
         'annual_revenue_limit' => 10000,
