@@ -253,10 +253,41 @@ $clientSlides = [
                 <h2>Un plan simple para tu negocio</h2>
                 <p>
                     Elige el plan que mejor se adapte al volumen de facturación de tu negocio.
+                    Documentos: Factura, CCF, SE, NC y ND.
                 </p>
             </div>
 
-            <div class="lp-grid-3 lp-plans">
+            <div class="lp-grid-2 lp-plans">
+            <!-- Plan Free -->
+            <article class="lp-card lp-price lp-price--free lp-reveal">
+                <span class="lp-kicker">Para probar</span>
+
+                <h3 style="margin-top:1rem;">Gestock Free</h3>
+
+                <div class="lp-amount">
+                    <strong>$0</strong>
+                    <span>/ mes</span>
+                </div>
+
+                <p>
+                    Autoconsumo para probar Gestock, sin instalación dedicada.
+                </p>
+
+                <ul>
+                    <li>Hasta <strong>50 DTEs</strong> al mes</li>
+                    <li>Tope de ventas facturadas: <strong>$10,000</strong> al año</li>
+                    <li>Autoconsumo (self-service), sin instalación dedicada</li>
+                </ul>
+
+                <button type="button"
+                    class="lp-btn lp-btn--ghost"
+                    style="width:100%;"
+                    @click="contact = true">
+                    Probar Gestock
+                </button>
+            </article>
+
+
             <!-- Plan Basic -->
             <article class="lp-card lp-price lp-reveal">
                 <span class="lp-kicker">Para comenzar</span>
