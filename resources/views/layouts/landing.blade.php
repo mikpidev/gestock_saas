@@ -7,7 +7,6 @@
     <title>@yield('title', 'Gestock — Facturación electrónica y control de ventas')</title>
     <meta name="description" content="@yield('meta_description', 'Gestock es una plataforma en la nube para facturación electrónica, ventas, productos, clientes y reportes. Diseñada para negocios en El Salvador.')">
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
-    @stack('head')
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/landing.css', 'resources/js/landing.js'])

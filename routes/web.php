@@ -26,18 +26,8 @@ use App\Http\Controllers\DebitNoteController;
 use App\Http\Controllers\OCIController;
 use App\Http\Controllers\ReporteVentas;
 use App\Http\Controllers\LandingController;
-use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\ContactLeadController;
 use App\Http\Middleware\CheckCompanyStatus;
-
-// KB shell: Host from DOCUMENTATION_URL serves `/`; preview on this app is `/documentacion`.
-$documentationHost = parse_url((string) config('services.documentation.url'), PHP_URL_HOST);
-
-if (is_string($documentationHost) && $documentationHost !== '') {
-    Route::domain(strtolower($documentationHost))->group(function () {
-        Route::get('/', [KnowledgeBaseController::class, 'index'])->name('kb.index');
-    });
-}
 
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::post('/contacto', [LandingController::class, 'contact'])
@@ -45,7 +35,6 @@ Route::post('/contacto', [LandingController::class, 'contact'])
     ->name('landing.contact');
 Route::get('/terminos', [LandingController::class, 'terms'])->name('landing.terms');
 Route::get('/privacidad', [LandingController::class, 'privacy'])->name('landing.privacy');
-Route::get('/documentacion', [KnowledgeBaseController::class, 'index'])->name('kb.preview');
 
 //Cache prevent back history
 Route::middleware([PreventBackHistory4::class])->group(function () {
