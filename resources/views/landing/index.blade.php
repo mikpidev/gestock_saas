@@ -257,11 +257,11 @@ $clientSlides = [
             </div>
 
             <div class="lp-grid-3 lp-plans">
-            <!-- Plan Básico -->
+            <!-- Plan Basic -->
             <article class="lp-card lp-price lp-reveal">
                 <span class="lp-kicker">Para comenzar</span>
 
-                <h3 style="margin-top:1rem;">Gestock Básico</h3>
+                <h3 style="margin-top:1rem;">Gestock Basic</h3>
 
                 <div class="lp-amount">
                     <strong>$25 + IVA</strong>
@@ -297,10 +297,10 @@ $clientSlides = [
 
                 <span class="lp-kicker">Más elegido</span>
 
-                <h3 style="margin-top:1rem;">Gestock Profesional</h3>
+                <h3 style="margin-top:1rem;">Gestock Premium</h3>
 
                 <div class="lp-amount">
-                    <strong>$35 + IVA</strong>
+                    <strong>$40 + IVA</strong>
                     <span>/ mes por sucursal</span>
                 </div>
 
@@ -337,7 +337,7 @@ $clientSlides = [
                 <h3 style="margin-top:1rem;">Gestock Empresarial</h3>
 
                 <div class="lp-amount">
-                    <strong>$60 + IVA</strong>
+                    <strong>$75 + IVA</strong>
                     <span>/ mes por sucursal</span>
                 </div>
 
