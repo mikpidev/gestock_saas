@@ -265,8 +265,8 @@ $clientSlides = [
                 <h3 style="margin-top:1rem;">Gestock Free</h3>
 
                 <div class="lp-amount">
-                    <strong>$0</strong>
-                    <span>/ mes</span>
+                    <strong>$25</strong>
+                    <span>pago único anual</span>
                 </div>
 
                 <p>
