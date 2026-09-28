@@ -103,9 +103,9 @@ a {
 }
 
 .lp-logo img {
-    height: 150px;
+    height: 110px;
     width: auto;
-    margin-block: -16px;
+    margin-block: -12px;
     object-fit: contain;
 }
 
@@ -117,12 +117,18 @@ a {
 .lp-nav__links {
     display: none;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 0.95rem;
-    font-size: 0.86rem;
+    gap: 0.55rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--lp-muted);
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.lp-nav__links a {
+    white-space: nowrap;
 }
 
 .lp-nav__links a:hover {
@@ -548,6 +554,10 @@ a {
 
 .lp-plans {
     align-items: stretch;
+}
+
+.lp-price--starter {
+    border-color: rgb(143 142 142 / 28%);
 }
 
 .lp-price .lp-amount {
@@ -1088,6 +1098,10 @@ a {
 
     .lp-metrics {
         grid-template-columns: repeat(4, 1fr);
+    }
+
+    .lp-plans {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

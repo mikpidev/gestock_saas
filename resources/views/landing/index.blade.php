@@ -255,15 +255,47 @@ $clientSlides = [
                 <h2>Un plan simple para tu negocio</h2>
                 <p>
                     Elige el plan que mejor se adapte al volumen de facturación de tu negocio.
+                    Documentos: Factura, CCF, SE, NC y ND.
                 </p>
             </div>
 
-            <div class="lp-grid-3 lp-plans">
-            <!-- Plan Básico -->
+            <div class="lp-grid-2 lp-plans">
+            <!-- Plan Starter -->
+            <article class="lp-card lp-price lp-price--starter lp-reveal">
+                <span class="lp-kicker">Para probar</span>
+
+                <h3 style="margin-top:1rem;">Gestock Starter</h3>
+
+                <div class="lp-amount">
+                    <strong>$25 + IVA</strong>
+                    <span>por configuración</span>
+                </div>
+
+                <p>
+                    Configuración inicial, una sola vez. Autoconsumo después del alta, sin cuota mensual ni instalación dedicada.
+                </p>
+
+                <ul>
+                    <li>Soporte limitado (solo para consultas)</li>
+                    <li>Tope duro: <strong>50 DTEs</strong> al mes</li>
+                    <li>Tope duro de ventas facturadas: <strong>$10,000</strong> al año</li>
+                    <li>Autoconsumo; el alta se hace con esta configuración</li>
+                </ul>
+
+                <button type="button"
+                    class="lp-btn lp-btn--ghost"
+                    style="width:100%;"
+                    @click="contact = true">
+                    Probar Gestock
+                </button>
+            </article>
+
+
+            <!-- Plan Basic -->
             <article class="lp-card lp-price lp-reveal">
                 <span class="lp-kicker">Para comenzar</span>
 
-                <h3 style="margin-top:1rem;">Gestock Básico</h3>
+                <h3 style="margin-top:1rem;">Gestock Basic</h3>
 
                 <div class="lp-amount">
                     <strong>$25 + IVA</strong>
@@ -282,7 +314,7 @@ $clientSlides = [
                     <li>Clientes</li>
                     <li>Usuarios</li>
                     <li>Plataforma en la nube</li>
-                    <li>Soporte Limitado (Solo para consultas)</li>
+                    <li>Soporte limitado (solo para consultas)</li>
                 </ul>
 
                 <button type="button"
@@ -299,10 +331,10 @@ $clientSlides = [
 
                 <span class="lp-kicker">Más elegido</span>
 
-                <h3 style="margin-top:1rem;">Gestock Profesional</h3>
+                <h3 style="margin-top:1rem;">Gestock Premium</h3>
 
                 <div class="lp-amount">
-                    <strong>$35 + IVA</strong>
+                    <strong>$40 + IVA</strong>
                     <span>/ mes por sucursal</span>
                 </div>
 
@@ -339,7 +371,7 @@ $clientSlides = [
                 <h3 style="margin-top:1rem;">Gestock Empresarial</h3>
 
                 <div class="lp-amount">
-                    <strong>$60 + IVA</strong>
+                    <strong>$75 + IVA</strong>
                     <span>/ mes por sucursal</span>
                 </div>
 
@@ -349,7 +381,7 @@ $clientSlides = [
 
                 <ul>
                     <li><strong>DTEs ilimitados</strong></li>
-                    <li>Hosting propio</li>
+                    <li>Alojamiento propio</li>
                     <li>Dominio propio</li>
                     <li>Infraestructura dedicada</li>
                     <li>Facturación electrónica</li>
@@ -493,7 +525,7 @@ $clientSlides = [
             ['¿Puedo utilizar Gestock desde diferentes computadoras?', 'Sí, siempre que tengas acceso a Internet y las credenciales correspondientes.'],
             ['¿Gestock es un sistema de inventario?', 'No. Gestock ofrece control y organización de productos para apoyar la operación de ventas, pero no pretende ser un sistema especializado de inventario.'],
             ['¿Gestock funciona con facturación electrónica?', 'Sí. La plataforma está orientada a la gestión de documentos tributarios electrónicos y la operación de ventas.'],
-            ['¿El precio es por sucursal?', 'Sí. El plan se maneja por sucursal.'],
+            ['¿El precio es por sucursal?', 'Gestock Starter es $25 + IVA por configuración, una sola vez: no es una cuota mensual. Basic, Premium y Empresarial sí se manejan por sucursal, con pago mensual.'],
             ['¿Gestock tendrá API?', 'Sí. Gestock API está en desarrollo. Muy pronto podrás integrar facturación electrónica y ventas con tus propios sistemas. Si quieres acceso anticipado, escríbenos.'],
             ] as $faq)
             <details class="lp-reveal">
