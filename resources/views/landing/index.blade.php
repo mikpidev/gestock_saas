@@ -274,8 +274,8 @@ $clientSlides = [
                 </p>
 
                 <ul>
-                    <li>Hasta <strong>50 DTEs</strong> al mes</li>
-                    <li>Tope de ventas facturadas: <strong>$10,000</strong> al año</li>
+                    <li>Tope duro: <strong>50 DTEs</strong> al mes</li>
+                    <li>Tope duro de ventas facturadas: <strong>$10,000</strong> al año</li>
                     <li>Autoconsumo (self-service), sin instalación dedicada</li>
                 </ul>
 
