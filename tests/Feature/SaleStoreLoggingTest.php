@@ -1,8 +1,5 @@
 <?php
 
-require_once __DIR__.'/../../app/Models/store.php';
-require_once __DIR__.'/../../app/Models/company.php';
-
 use App\Http\Controllers\DTEController;
 use App\Models\Company;
 use App\Models\CorrelativoStore;

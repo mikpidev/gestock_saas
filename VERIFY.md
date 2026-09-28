@@ -40,8 +40,8 @@ Created:
 
 Updated:
 
-- `app/Models/store.php` — fillable `plan`, `dte_monthly_limit`
-- `app/Models/company.php` — `plan` removed from fillable
+- `app/Models/Store.php` — fillable `plan`, `dte_monthly_limit`
+- `app/Models/Company.php` — `plan` removed from fillable
 - `app/Policies/StorePolicy.php` — `create` is superadmin + selected company; `updatePlan` is superadmin + selected company; `update` still lets an admin change other fields
 - `app/Http/Controllers/StoreController.php` — default plan `basic`; plan validated only for superadmin; admin POST cannot change plan or the limit; `dashboard` passes `dteUsage`; `dteUsage` returns the JSON summary
 - `routes/web.php` — `GET /stores/{store}/dte-usage` named `stores.dte-usage`
@@ -51,7 +51,7 @@ Updated:
 - `app/Http/Controllers/SaleController.php`, `CreditNoteController.php`, `DebitNoteController.php` — a 422 from those methods is returned (store) or flashed (refresh)
 - `resources/views/store/_form.blade.php`, `resources/views/store/index.blade.php` — plan select only named for superadmin; “Nueva tienda” only for superadmin
 - `resources/views/company/_form.blade.php`, `edit.blade.php`, `index.blade.php`, `show.blade.php` — company plan removed; “Agregar Tienda” only for superadmin
-- `composer.json` — file autoload for `app/Models/company.php` and `app/Models/store.php` (class names do not match the lowercase filenames, so Linux `artisan migrate` could not load `Store` for the existing correlativos migration)
+- `composer.json` — no extra file autoload. `main` already renamed the models to `app/Models/Company.php` and `app/Models/Store.php`, so PSR-4 loads them.
 - Feature fixtures that wrote `companies.plan` — key removed so inserts match the dropped column
 
 Not edited: `resources/views/landing/*`.

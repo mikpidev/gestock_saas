@@ -21,9 +21,6 @@ use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
-require_once __DIR__.'/../../app/Models/store.php';
-require_once __DIR__.'/../../app/Models/company.php';
-
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {

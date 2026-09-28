@@ -13,14 +13,6 @@ use App\Services\ConsultaService;
 use App\Services\HaciendaAuthService;
 use Spatie\Permission\Models\Role;
 
-// company.php and store.php do not match PSR-4 on case-sensitive filesystems.
-if (!class_exists(\App\Models\Company::class)) {
-    require_once __DIR__.'/../../app/Models/company.php';
-}
-if (!class_exists(\App\Models\Store::class)) {
-    require_once __DIR__.'/../../app/Models/store.php';
-}
-
 /**
  * Hacienda statuses persisted on sales.dte_status (string, default PENDIENTE).
  * PROCESADO is the only status that may trigger the DTE email.

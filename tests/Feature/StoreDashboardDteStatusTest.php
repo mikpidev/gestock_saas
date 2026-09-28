@@ -5,12 +5,6 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-// app/Models/store.php and company.php are not PSR-4 (classes Store and Company).
-// Load Store before RefreshDatabase reaches the correlativos migration.
-// Load Company because CheckCompanyStatus reads the authenticated user's company.
-require_once __DIR__.'/../../app/Models/store.php';
-require_once __DIR__.'/../../app/Models/company.php';
-
 /**
  * getChartData uses MySQL HOUR() and CONVERT_TZ(). Register equivalents so the
  * dashboard endpoint can run on the sqlite test database.

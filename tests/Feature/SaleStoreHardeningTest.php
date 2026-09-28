@@ -12,13 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 
-/*
- * store.php / company.php do not match PSR-4 case, so Linux cannot autoload
- * App\Models\Store or App\Models\Company. Load them before RefreshDatabase.
- */
-require_once dirname(__DIR__, 2).'/app/Models/store.php';
-require_once dirname(__DIR__, 2).'/app/Models/company.php';
-
 function saleHardenRole(string $name): Role
 {
     return Role::findOrCreate($name, 'web');
