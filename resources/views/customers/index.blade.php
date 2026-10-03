@@ -6,6 +6,22 @@
 
 <div class="customers-index store-index">
 
+@if (session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+@if (session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+@endif
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <div class="customers-toolbar">
     <form method="GET" action="{{ route('stores.customers.index', $store) }}" class="customers-search">
         <input type="hidden" name="numDocumento" value="{{ request('numDocumento') }}">
@@ -22,7 +38,7 @@
                 <span class="customers-filter-dot"></span>
             @endif
         </button>
-        <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#gestokModal" title="Crear Cliente">
+        <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#createCustomerModal" title="Crear Cliente">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
             </svg>
@@ -71,7 +87,7 @@
 </div>
 
 
-<div class="modal fade" id="gestokModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -80,9 +96,9 @@
             </div>
             <div class="modal-body">
                 <div id="formResponse"></div>
-                <form action="{{ route('stores.customers.store', $store->id) }}" method="POST">
+                <form id="createCustomerForm" action="{{ route('stores.customers.store', $store->id) }}" method="POST">
                     @csrf
-                    @include('customers._form')
+                    @include('customers._form', ['idPrefix' => 'create', 'customer' => null])
                 </form>
             </div>
         </div>
@@ -280,7 +296,7 @@
                 <form id="editCustomersForm" method="POST">
                     @csrf
                     @method('PUT')
-                    @include('customers._form') <!-- Reutiliza inputs -->
+                    @include('customers._form', ['idPrefix' => 'edit'])
                 </form>
             </div>
         </div>
@@ -428,5 +444,16 @@
 
     });
 </script>
+
+@if ($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('createCustomerModal');
+        if (el && window.bootstrap) {
+            window.bootstrap.Modal.getOrCreateInstance(el).show();
+        }
+    });
+</script>
+@endif
 </div>
 @endsection

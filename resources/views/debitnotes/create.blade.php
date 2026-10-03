@@ -133,7 +133,7 @@
                             <th>Producto</th>
                             <th>Precio Unit.</th>
                             <th>Disponible</th>
-                            <th>Cant. a Acreditar</th>
+                            <th>Cant. a Debitar</th>
                             <th>Subtotal</th>
                         </tr>
                     </thead>

@@ -1,0 +1,283 @@
+{
+    "ticket":  "OMP-PLAN-01",
+    "pr":  "https://github.com/mikpidev/gestock_saas/pull/5",
+    "sha":  "921ef6186b0843cc78dce2487039ff2cf0702cdc",
+    "branch":  "main",
+    "mode":  "live_http",
+    "base_url":  "http://127.0.0.1:8001",
+    "timestamp":  "2026-09-28T15:58:55-06:00",
+    "overall":  "PASS",
+    "checks":  [
+                   {
+                       "id":  1,
+                       "name":  "monthly DTE quota GT (sale+NC+ND PROCESADO; soft block dte_monthly_limit)",
+                       "result":  "PASS",
+                       "detail":  "service_used=3 denial={\"message\":\"L\\u00edmite mensual de DTE alcanzado para esta sucursal.\",\"error\":\"dte_monthly_limit\",\"used\":3,\"limit\":2} usage_http=200 usage_body={\"used\":3,\"limit\":2,\"remaining\":0,\"plan\":\"basic\",\"pct\":150,\"warning_level\":\"critical\",\"message\":\"Llevas 3 de 2 DTE este mes. Actualiza a Premium (1000 DTE\\/mes) o contacta a soporte.\"} post_status=422 post_body={\"message\":\"L\\u00edmite mensual de DTE alcanzado para esta sucursal.\",\"error\":\"dte_monthly_limit\",\"used\":3,\"limit\":2}",
+                       "http_status":  422,
+                       "evidence":  {
+                                        "dte_usage":  {
+                                                          "used":  3,
+                                                          "limit":  2,
+                                                          "remaining":  0,
+                                                          "plan":  "basic",
+                                                          "pct":  150,
+                                                          "warning_level":  "critical",
+                                                          "message":  "Llevas 3 de 2 DTE este mes. Actualiza a Premium (1000 DTE/mes) o contacta a soporte."
+                                                      },
+                                        "post_sales":  {
+                                                           "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                           "error":  "dte_monthly_limit",
+                                                           "used":  3,
+                                                           "limit":  2
+                                                       },
+                                        "service_used":  3,
+                                        "note":  "Conteo service + HTTP 422 dte_monthly_limit al POST sales sobre cuota"
+                                    }
+                   },
+                   {
+                       "id":  2,
+                       "name":  "starter annual revenue \u003e=10000 PROCESADO GT year (notes ignored)",
+                       "result":  "PASS",
+                       "detail":  "annual_revenue=10500 service_denial={\"message\":\"L\\u00edmite anual de facturaci\\u00f3n del plan Starter alcanzado para esta sucursal.\",\"error\":\"annual_revenue_limit\",\"used\":10500,\"limit\":10000} http=422 body={\"message\":\"L\\u00edmite anual de facturaci\\u00f3n del plan Starter alcanzado para esta sucursal.\",\"error\":\"annual_revenue_limit\",\"used\":10500,\"limit\":10000}",
+                       "http_status":  422,
+                       "evidence":  {
+                                        "annual_revenue":  10500,
+                                        "post_sales":  {
+                                                           "message":  "Límite anual de facturación del plan Starter alcanzado para esta sucursal.",
+                                                           "error":  "annual_revenue_limit",
+                                                           "used":  10500,
+                                                           "limit":  10000
+                                                       }
+                                    }
+                   },
+                   {
+                       "id":  3,
+                       "name":  "generarDTE / NC / ND return 422 before signing when over quota",
+                       "result":  "PASS",
+                       "detail":  "refresh_sale=302 refresh_cn=302 refresh_dn=302 statuses=PENDIENTE/PENDIENTE/PENDIENTE ctrl_sale=422 ctrl_body={\"message\":\"L\\u00edmite mensual de DTE alcanzado para esta sucursal.\",\"error\":\"dte_monthly_limit\",\"used\":3,\"limit\":2}",
+                       "http_status":  422,
+                       "evidence":  {
+                                        "refresh_http":  {
+                                                             "sale":  302,
+                                                             "cn":  302,
+                                                             "dn":  302
+                                                         },
+                                        "remain_pendiente":  {
+                                                                 "sale":  "PENDIENTE",
+                                                                 "cn":  "PENDIENTE",
+                                                                 "dn":  "PENDIENTE"
+                                                             },
+                                        "controller_json":  {
+                                                                "sale":  {
+                                                                             "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                                             "error":  "dte_monthly_limit",
+                                                                             "used":  3,
+                                                                             "limit":  2
+                                                                         },
+                                                                "cn":  {
+                                                                           "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                                           "error":  "dte_monthly_limit",
+                                                                           "used":  3,
+                                                                           "limit":  2
+                                                                       },
+                                                                "dn":  {
+                                                                           "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                                           "error":  "dte_monthly_limit",
+                                                                           "used":  3,
+                                                                           "limit":  2
+                                                                       }
+                                                            },
+                                        "note":  "refresh-dte HTTP mantiene PENDIENTE; generarDTE* confirma JSON 422 dte_monthly_limit (mismo soft-block que usa Sale/CN/ND store HTTP)"
+                                    }
+                   },
+                   {
+                       "id":  4,
+                       "name":  "POST sales over monthly quota -\u003e HTTP 422 dte_monthly_limit + sale PENDIENTE",
+                       "result":  "PASS",
+                       "detail":  "http=422 body={\"message\":\"L\\u00edmite mensual de DTE alcanzado para esta sucursal.\",\"error\":\"dte_monthly_limit\",\"used\":1,\"limit\":1} pending_before=0 pending_after=1 last_status=PENDIENTE",
+                       "http_status":  422,
+                       "evidence":  {
+                                        "response":  {
+                                                         "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                         "error":  "dte_monthly_limit",
+                                                         "used":  1,
+                                                         "limit":  1
+                                                     },
+                                        "pending_before":  0,
+                                        "pending_after":  1,
+                                        "latest_sale_status":  "PENDIENTE"
+                                    }
+                   },
+                   {
+                       "id":  5,
+                       "name":  "GET stores/{store}/dte-usage authz follows store view",
+                       "result":  "PASS",
+                       "detail":  "{\"guest\":{\"status\":302,\"redirect\":true},\"norole\":{\"login\":{\"ok\":true,\"status\":302,\"location\":\"http:\\/\\/127.0.0.1:8001\\/home\"},\"status\":403,\"body\":\"{\\n    \\\"message\\\": \\\"Acceso no autorizado.\\\",\\n    \\\"exception\\\": \\\"Symfony\\\\\\\\Component\\\\\\\\HttpKernel\\\\\\\\Exception\\\\\\\\AccessDeniedHttpException\\\",\\n    \\\"file\\\": \\\"C:\\\\\\\\gestock_saas\\\\\\\\vendor\\\\\\\\laravel\\\\\\\\framework\\\\\\\\src\\\\\\\\Illum\"},\"stranger\":{\"login\":{\"ok\":true,\"status\":302,\"location\":\"http:\\/\\/127.0.0.1:8001\\/home\"},\"status\":403,\"body\":\"{\\n    \\\"message\\\": \\\"Acceso no autorizado.\\\",\\n    \\\"exception\\\": \\\"Symfony\\\\\\\\Component\\\\\\\\HttpKernel\\\\\\\\Exception\\\\\\\\AccessDeniedHttpException\\\",\\n    \\\"file\\\": \\\"C:\\\\\\\\gestock_saas\\\\\\\\vendor\\\\\\\\laravel\\\\\\\\framework\\\\\\\\src\\\\\\\\Illum\"},\"admin_own\":{\"status\":200,\"json\":{\"used\":0,\"limit\":50,\"remaining\":50,\"plan\":\"starter\",\"pct\":0,\"warning_level\":\"ok\",\"message\":null}},\"admin_foreign\":{\"status\":403,\"body\":\"{\\n    \\\"message\\\": \\\"Acceso no autorizado.\\\",\\n    \\\"exception\\\": \\\"Symfony\\\\\\\\Component\\\\\\\\HttpKernel\\\\\\\\Exception\\\\\\\\AccessDeniedHttpException\\\",\\n    \\\"file\\\": \\\"C:\\\\\\\\gestock_saas\\\\\\\\vendor\\\\\\\\laravel\\\\\\\\framework\\\\\\\\src\\\\\\\\Illum\"},\"cashier\":{\"status\":200,\"json\":{\"used\":0,\"limit\":50,\"remaining\":50,\"plan\":\"starter\",\"pct\":0,\"warning_level\":\"ok\",\"message\":null}},\"sa_no_company\":{\"status\":403,\"body\":\"{\\n    \\\"message\\\": \\\"Acceso no autorizado.\\\",\\n    \\\"exception\\\": \\\"Symfony\\\\\\\\Component\\\\\\\\HttpKernel\\\\\\\\Exception\\\\\\\\AccessDeniedHttpException\\\",\\n    \\\"file\\\": \\\"C:\\\\\\\\gestock_saas\\\\\\\\vendor\\\\\\\\laravel\\\\\\\\framework\\\\\\\\src\\\\\\\\Illum\"},\"sa_select_company\":{\"status\":200},\"sa_after_select\":{\"status\":200,\"json\":{\"used\":0,\"limit\":50,\"remaining\":50,\"plan\":\"starter\",\"pct\":0,\"warning_level\":\"ok\",\"message\":null},\"body\":\"{\\\"used\\\":0,\\\"limit\\\":50,\\\"remaining\\\":50,\\\"plan\\\":\\\"starter\\\",\\\"pct\\\":0,\\\"warning_level\\\":\\\"ok\\\",\\\"message\\\":null}\"}}",
+                       "http_status":  200,
+                       "evidence":  {
+                                        "guest":  {
+                                                      "status":  302,
+                                                      "redirect":  true
+                                                  },
+                                        "norole":  {
+                                                       "login":  {
+                                                                     "ok":  true,
+                                                                     "status":  302,
+                                                                     "location":  "http://127.0.0.1:8001/home"
+                                                                 },
+                                                       "status":  403,
+                                                       "body":  "{\n    \"message\": \"Acceso no autorizado.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\AccessDeniedHttpException\",\n    \"file\": \"C:\\\\gestock_saas\\\\vendor\\\\laravel\\\\framework\\\\src\\\\Illum"
+                                                   },
+                                        "stranger":  {
+                                                         "login":  {
+                                                                       "ok":  true,
+                                                                       "status":  302,
+                                                                       "location":  "http://127.0.0.1:8001/home"
+                                                                   },
+                                                         "status":  403,
+                                                         "body":  "{\n    \"message\": \"Acceso no autorizado.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\AccessDeniedHttpException\",\n    \"file\": \"C:\\\\gestock_saas\\\\vendor\\\\laravel\\\\framework\\\\src\\\\Illum"
+                                                     },
+                                        "admin_own":  {
+                                                          "status":  200,
+                                                          "json":  {
+                                                                       "used":  0,
+                                                                       "limit":  50,
+                                                                       "remaining":  50,
+                                                                       "plan":  "starter",
+                                                                       "pct":  0,
+                                                                       "warning_level":  "ok",
+                                                                       "message":  null
+                                                                   }
+                                                      },
+                                        "admin_foreign":  {
+                                                              "status":  403,
+                                                              "body":  "{\n    \"message\": \"Acceso no autorizado.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\AccessDeniedHttpException\",\n    \"file\": \"C:\\\\gestock_saas\\\\vendor\\\\laravel\\\\framework\\\\src\\\\Illum"
+                                                          },
+                                        "cashier":  {
+                                                        "status":  200,
+                                                        "json":  {
+                                                                     "used":  0,
+                                                                     "limit":  50,
+                                                                     "remaining":  50,
+                                                                     "plan":  "starter",
+                                                                     "pct":  0,
+                                                                     "warning_level":  "ok",
+                                                                     "message":  null
+                                                                 }
+                                                    },
+                                        "sa_no_company":  {
+                                                              "status":  403,
+                                                              "body":  "{\n    \"message\": \"Acceso no autorizado.\",\n    \"exception\": \"Symfony\\\\Component\\\\HttpKernel\\\\Exception\\\\AccessDeniedHttpException\",\n    \"file\": \"C:\\\\gestock_saas\\\\vendor\\\\laravel\\\\framework\\\\src\\\\Illum"
+                                                          },
+                                        "sa_select_company":  {
+                                                                  "status":  200
+                                                              },
+                                        "sa_after_select":  {
+                                                                "status":  200,
+                                                                "json":  {
+                                                                             "used":  0,
+                                                                             "limit":  50,
+                                                                             "remaining":  50,
+                                                                             "plan":  "starter",
+                                                                             "pct":  0,
+                                                                             "warning_level":  "ok",
+                                                                             "message":  null
+                                                                         },
+                                                                "body":  "{\"used\":0,\"limit\":50,\"remaining\":50,\"plan\":\"starter\",\"pct\":0,\"warning_level\":\"ok\",\"message\":null}"
+                                                            }
+                                    }
+                   },
+                   {
+                       "id":  6,
+                       "name":  "starter ~40/50 critical + dashboard badge/CTA Basic 200",
+                       "result":  "PASS",
+                       "detail":  "usage={\"used\":40,\"limit\":50,\"remaining\":10,\"plan\":\"starter\",\"pct\":80,\"warning_level\":\"critical\",\"message\":\"Llevas 40 de 50 DTE este mes. Actualiza a Basic (200 DTE\\/mes) o contacta a soporte.\"} dash=200 critical=Y danger=Y cta=Y basic=Y",
+                       "http_status":  200,
+                       "evidence":  {
+                                        "dte_usage":  {
+                                                          "used":  40,
+                                                          "limit":  50,
+                                                          "remaining":  10,
+                                                          "plan":  "starter",
+                                                          "pct":  80,
+                                                          "warning_level":  "critical",
+                                                          "message":  "Llevas 40 de 50 DTE este mes. Actualiza a Basic (200 DTE/mes) o contacta a soporte."
+                                                      },
+                                        "dashboard_status":  200,
+                                        "html_flags":  {
+                                                           "hasCritical":  true,
+                                                           "hasDanger":  true,
+                                                           "hasCta":  true,
+                                                           "hasBasicHint":  true
+                                                       }
+                                    }
+                   }
+               ],
+    "optional":  [
+                     {
+                         "id":  "config_plans",
+                         "name":  "config plans starter/basic/premium/empresarial",
+                         "result":  "PASS",
+                         "detail":  "{\"starter_limit\":50,\"basic_limit\":200,\"premium_limit\":1000,\"empresarial_limit\":null,\"starter_annual\":10000}"
+                     },
+                     {
+                         "id":  "sa_only_create_store",
+                         "name":  "only superadmin can create store / set plan",
+                         "result":  "PASS",
+                         "detail":  "admin_create_status=403 sa_create_status=302 created=18 plan=starter limit=50",
+                         "evidence":  {
+                                          "admin_create_status":  403,
+                                          "sa_create_status":  302,
+                                          "created_store":  {
+                                                                "id":  18,
+                                                                "plan":  "starter",
+                                                                "dte_monthly_limit":  50,
+                                                                "email":  "smoke-sa-create-6abae31f15083@example.test"
+                                                            }
+                                      }
+                     }
+                 ],
+    "seed":  {
+                 "company_id":  4,
+                 "monthly_store_id":  12,
+                 "annual_store_id":  13,
+                 "sale_block_store_id":  14,
+                 "critical_store_id":  15,
+                 "authz_store_id":  16,
+                 "foreign_store_id":  17,
+                 "pending_sale_id":  737,
+                 "pending_cn_id":  165,
+                 "pending_dn_id":  56,
+                 "product_id":  60,
+                 "service_count_used":  3,
+                 "service_denial_at_limit2":  {
+                                                  "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                  "error":  "dte_monthly_limit",
+                                                  "used":  3,
+                                                  "limit":  2
+                                              },
+                 "service_denial_at_limit3":  {
+                                                  "message":  "Límite mensual de DTE alcanzado para esta sucursal.",
+                                                  "error":  "dte_monthly_limit",
+                                                  "used":  3,
+                                                  "limit":  3
+                                              },
+                 "annual_revenue":  10500,
+                 "annual_denial":  {
+                                       "message":  "Límite anual de facturación del plan Starter alcanzado para esta sucursal.",
+                                       "error":  "annual_revenue_limit",
+                                       "used":  10500,
+                                       "limit":  10000
+                                   },
+                 "critical_summary":  {
+                                          "used":  40,
+                                          "limit":  50,
+                                          "remaining":  10,
+                                          "plan":  "starter",
+                                          "pct":  80,
+                                          "warning_level":  "critical",
+                                          "message":  "Llevas 40 de 50 DTE este mes. Actualiza a Basic (200 DTE/mes) o contacta a soporte."
+                                      }
+             },
+    "notes":  "Puerto 8000 servia Gestock-API (otro repo); smoke live HTTP contra gestock_saas en http://127.0.0.1:8001. El shell tenia DB_CONNECTION=sqlite/:memory: heredado; se limpio para usar MySQL gestock_saas@3308. Fixtures aislados (emails smoke-omp-plan-01*@example.test). Check1: dte-usage used=3 (venta+NC+ND PROCESADO) y POST sales 422 dte_monthly_limit. Check2: revenue anual 10500 y POST 422 annual_revenue_limit (NC ignorada). Check3: refresh-dte deja PENDIENTE + generarDTE* JSON 422. Check4: POST sales 422 y venta queda PENDIENTE. Check5: guest/norole/stranger/SA-sin-empresa 401/403; admin/cashier/SA-con-empresa 200. Check6: warning_level=critical used=40 + badge dte-usage-critical/CTA Contactar soporte/Basic 200. Opcional: config plans OK; solo SA crea tienda (admin 403, SA 302 plan=starter limit=50). No push/merge/migrate:fresh."
+}

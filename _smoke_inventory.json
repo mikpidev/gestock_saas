@@ -1,0 +1,216 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "email": "yo@gestok.com",
+            "company_id": 1,
+            "store_id": 1,
+            "roles": [
+                "superadmin"
+            ]
+        },
+        {
+            "id": 2,
+            "email": "admin@gestok.com",
+            "company_id": null,
+            "store_id": null,
+            "roles": [
+                "admin"
+            ]
+        },
+        {
+            "id": 3,
+            "email": "user@gestok.com",
+            "company_id": null,
+            "store_id": null,
+            "roles": [
+                "user"
+            ]
+        },
+        {
+            "id": 4,
+            "email": "user@test",
+            "company_id": 1,
+            "store_id": 1,
+            "roles": [
+                "superadmin"
+            ]
+        },
+        {
+            "id": 5,
+            "email": "mpineda@gestock.com",
+            "company_id": 1,
+            "store_id": 3,
+            "roles": [
+                "superadmin"
+            ]
+        },
+        {
+            "id": 6,
+            "email": "qa-admin-repro@example.test",
+            "company_id": 1,
+            "store_id": 1,
+            "roles": [
+                "admin"
+            ]
+        },
+        {
+            "id": 7,
+            "email": "qa-user-repro@example.test",
+            "company_id": 1,
+            "store_id": 1,
+            "roles": [
+                "user"
+            ]
+        }
+    ],
+    "companies": [
+        {
+            "id": 1,
+            "company_name": "Mike Company",
+            "status": "activa"
+        },
+        {
+            "id": 2,
+            "company_name": "Mike Company 2",
+            "status": "activa"
+        },
+        {
+            "id": 3,
+            "company_name": "QA-REPRO-DELETE-ME",
+            "status": "inactiva"
+        }
+    ],
+    "stores": [
+        {
+            "id": 1,
+            "store_name": "LOGISTICA Y DISTRIBUCION TORRES, S.A. DE C.V. SOCIEDAD ANÓNIMA DE CAPITAL VARIABLE",
+            "plan": "empresarial",
+            "dte_monthly_limit": null,
+            "company_id": 1,
+            "status": "activa",
+            "email": "yo@gestok.com",
+            "establecimiento": "M001",
+            "punto_venta": "P001"
+        },
+        {
+            "id": 2,
+            "store_name": "Tienda Armando",
+            "plan": "basic",
+            "dte_monthly_limit": 200,
+            "company_id": 2,
+            "status": "activa",
+            "email": "mike@mike.com",
+            "establecimiento": null,
+            "punto_venta": null
+        },
+        {
+            "id": 3,
+            "store_name": "Gestock",
+            "plan": "basic",
+            "dte_monthly_limit": 200,
+            "company_id": 1,
+            "status": "suspendida",
+            "email": "gestock.sts@outlook.com",
+            "establecimiento": "M001",
+            "punto_venta": "P000"
+        },
+        {
+            "id": 4,
+            "store_name": "Cesar Armando Barahona",
+            "plan": "basic",
+            "dte_monthly_limit": 200,
+            "company_id": 1,
+            "status": "activa",
+            "email": "test@test.com",
+            "establecimiento": "M001",
+            "punto_venta": "P000"
+        }
+    ],
+    "tipo": [
+        {
+            "id": 1,
+            "codigo": "01",
+            "nombre": "Factura"
+        },
+        {
+            "id": 2,
+            "codigo": "03",
+            "nombre": "Comprobante de crédito fiscal"
+        },
+        {
+            "id": 3,
+            "codigo": "04",
+            "nombre": "Nota de remisión"
+        },
+        {
+            "id": 4,
+            "codigo": "05",
+            "nombre": "Nota de crédito"
+        },
+        {
+            "id": 5,
+            "codigo": "06",
+            "nombre": "Nota de débito"
+        },
+        {
+            "id": 6,
+            "codigo": "07",
+            "nombre": "Comprobante de retención"
+        },
+        {
+            "id": 7,
+            "codigo": "08",
+            "nombre": "Comprobante de liquidación"
+        },
+        {
+            "id": 8,
+            "codigo": "09",
+            "nombre": "Documento contable de liquidación"
+        },
+        {
+            "id": 9,
+            "codigo": "11",
+            "nombre": "Factura de exportación"
+        },
+        {
+            "id": 10,
+            "codigo": "14",
+            "nombre": "Factura de sujeto excluido"
+        },
+        {
+            "id": 11,
+            "codigo": "15",
+            "nombre": "Comprobante de donación"
+        }
+    ],
+    "plans": {
+        "starter": {
+            "label": "Starter",
+            "price_usd": 25,
+            "billing_period": "annual_one_shot",
+            "billing_label": "config_fee",
+            "includes_iva": false,
+            "dte_monthly_limit": 50,
+            "annual_revenue_limit": 10000
+        },
+        "basic": {
+            "price_usd": 25,
+            "includes_iva": false,
+            "dte_monthly_limit": 200,
+            "annual_revenue_limit": null
+        },
+        "premium": {
+            "price_usd": 40,
+            "includes_iva": false,
+            "dte_monthly_limit": 1000,
+            "annual_revenue_limit": null
+        },
+        "empresarial": {
+            "price_usd": 75,
+            "includes_iva": false,
+            "dte_monthly_limit": null,
+            "annual_revenue_limit": null
+        }
+    }
+}

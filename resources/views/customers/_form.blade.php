@@ -1,11 +1,12 @@
+@php $pfx = $idPrefix ?? 'edit'; @endphp
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="tipoDocumento">Tipo de Documento</label>
+        <label for="{{ $pfx }}_tipodocumento">Tipo de Documento</label>
     </div>
 
 
     <div class="col-md-6">
-        <select id="edit_tipodocumento" name="tipoDocumento" class="select2 form-control">
+        <select id="{{ $pfx }}_tipodocumento" name="tipoDocumento" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($tiposDocumento as $tipo)
             <option value="{{ $tipo->codigo }}"
@@ -31,7 +32,7 @@
     </div>
 
     <div class="col-md-6">
-        <input id="edit_numdocumento" type="text" name="numDocumento" maxlength="14"
+        <input id="{{ $pfx }}_numdocumento" type="text" name="numDocumento" maxlength="14"
             value="{{ old('numDocumento', $customer->numDocumento ?? '') }}" class="form-control">
         @error('numDocumento') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -46,7 +47,7 @@
     </div>
 
     <div class="col-md-6">
-        <input id="edit_nrc" type="text" name="nrc" maxlength="10"
+        <input id="{{ $pfx }}_nrc" type="text" name="nrc" maxlength="10"
             value="{{ old('nrc', $customer->nrc ?? '') }}" class="form-control">
         @error('nrc') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -54,10 +55,10 @@
 
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="nombre">Nombre</label>
+        <label for="nombre">Nombre *</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_nombre" type="text" name="nombre" value="{{ old('nombre', $customer->nombre ?? '') }}" class="form-control">
+        <input id="{{ $pfx }}_nombre" type="text" name="nombre" value="{{ old('nombre', $customer->nombre ?? '') }}" class="form-control" required>
         @error('nombre') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -67,7 +68,7 @@
         <label for="nombreComercial">Nombre Comercial</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_nombrecomercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
+        <input id="{{ $pfx }}_nombrecomercial" type="text" name="nombreComercial" value="{{ old('nombreComercial', $customer->nombreComercial ?? '') }}" class="form-control">
         @error('nombreComercial') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -81,7 +82,7 @@
         <label for="codActividad">Actividad Económica</label>
     </div>
     <div class="col-md-6">
-        <select id="edit_codactividad" name="codActividad" class="select2 form-control">
+        <select id="{{ $pfx }}_codactividad" name="codActividad" class="select2 form-control">
             <option value="">Seleccione</option>
             @foreach($actividades as $act)
             <option value="{{ $act->codigo }}"
@@ -101,7 +102,7 @@
         <label for="descActividad">Descripción de Actividad</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_descactividad" type="text" name="descActividad"
+        <input id="{{ $pfx }}_descactividad" type="text" name="descActividad"
             value="{{ old('descActividad', $customer->descActividad ?? '') }}" class="form-control">
         @error('descActividad') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -111,12 +112,12 @@
 {{-- Departamento --}}
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="edit_departamento_id">Departamento</label>
+        <label for="{{ $pfx }}_departamento_id">Departamento *</label>
     </div>
 
     <div class="col-md-6">
         <select
-            id="edit_departamento_id"
+            id="{{ $pfx }}_departamento_id"
             name="departamento_id"
             class="select2 form-control">
 
@@ -142,12 +143,12 @@
 {{-- Municipio --}}
 <div class="row mb-3 justify-content-center align-items-center">
     <div class="col-md-6">
-        <label for="edit_municipio_id">Municipio</label>
+        <label for="{{ $pfx }}_municipio_id">Municipio *</label>
     </div>
 
     <div class="col-md-6">
         <select
-            id="edit_municipio_id"
+            id="{{ $pfx }}_municipio_id"
             name="municipio_id"
             class="select2 form-control">
 
@@ -176,7 +177,7 @@
         <label for="direccion_complemento">Dirección Complementaria</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_direccion_complemento" type="text" name="direccion_complemento"
+        <input id="{{ $pfx }}_direccion_complemento" type="text" name="direccion_complemento"
             value="{{ old('direccion_complemento', $customer->direccion_complemento ?? '') }}" class="form-control">
         @error('direccion_complemento') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -190,7 +191,7 @@
         <label for="telefono">Teléfono</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_telefono" type="text" name="telefono" maxlength="15"
+        <input id="{{ $pfx }}_telefono" type="text" name="telefono" maxlength="15"
             value="{{ old('telefono', $customer->telefono ?? '') }}" class="form-control">
         @error('telefono') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -204,7 +205,7 @@
         <label for="correo">Correo Electrónico</label>
     </div>
     <div class="col-md-6">
-        <input id="edit_correo" type="email" name="correo"
+        <input id="{{ $pfx }}_correo" type="email" name="correo"
             value="{{ old('correo', $customer->correo ?? '') }}" class="form-control">
         @error('correo') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
@@ -225,76 +226,11 @@
 
         </button>
 
-        <button type="submit"
-            class="btn btn-modal"
-            data-redirect="{{ route('stores.customers.index', $store->id) }}">
-
+        <button type="submit" class="btn btn-modal">
             <span class="gradient-text">
                 Guardar
             </span>
-
         </button>
 
     </div>
 </div>
-
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
-<!-- Select2 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-<!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('customersForm'); // ID del form de customers
-        if (!form) return;
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(form);
-            const responseDiv = document.getElementById('formResponse');
-            const actionUrl = form.action; // URL dinámica del form
-
-            fetch(actionUrl, {
-                    method: 'POST', // Laravel acepta POST + @method('PUT') si es edición
-                    headers: {
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                        'Accept': 'application/json'
-                    },
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(result => {
-                    if (result.success) {
-                        responseDiv.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
-
-                        // Cerrar modal si existe
-                        const modalEl = form.closest('.modal');
-                        if (modalEl) {
-                            const modal = bootstrap.Modal.getInstance(modalEl);
-                            if (modal) modal.hide();
-                        }
-
-                        // Limpiar formulario
-                        form.reset();
-
-                        // Opcional: actualizar tabla de stores
-                        if (typeof refreshStoresList === 'function') {
-                            refreshStoresList(result.store);
-                        }
-
-                    } else {
-                        responseDiv.innerHTML = `<div class="alert alert-danger">${result.message || 'Ocurrió un error'}</div>`;
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    responseDiv.innerHTML = `<div class="alert alert-danger">Error al procesar la solicitud</div>`;
-                });
-        });
-    });
-</script>

@@ -113,16 +113,30 @@ class CustomersController extends Controller
     {
         $this->validateStoreAccess($store);
 
+        $request->merge($this->blankToNull($request->only([
+            'tipoDocumento',
+            'numDocumento',
+            'nrc',
+            'nombreComercial',
+            'codActividad',
+            'descActividad',
+            'departamento_id',
+            'municipio_id',
+            'direccion_complemento',
+            'telefono',
+            'correo',
+        ])));
+
         $request->validate([
-            'tipoDocumento' => 'nullable|string|max:2',
+            'tipoDocumento' => 'nullable|string|max:10',
             'numDocumento' => 'nullable|string|max:14',
             'nrc' => 'nullable|string|max:10',
             'nombre' => 'required|string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
             'codActividad' => 'nullable|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'departamento_id' => 'nullable|string|max:2',
-            'municipio_id' => 'nullable|string|max:2',
+            'departamento_id' => 'required|integer|exists:departamentos,id',
+            'municipio_id' => 'required|integer|exists:municipios,id',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
             'correo' => 'nullable|email|max:255',
@@ -143,12 +157,14 @@ class CustomersController extends Controller
             'correo',
         ]);
 
-        // Buscar el cliente incluyendo los eliminados
-        $customer = Customer::withTrashed()
-            ->where('store_id', $store->id)
-            ->where('tipoDocumento', $request->tipoDocumento)
-            ->where('numDocumento', $request->numDocumento)
-            ->first();
+        $customer = null;
+        if ($request->filled('numDocumento')) {
+            $customer = Customer::withTrashed()
+                ->where('store_id', $store->id)
+                ->where('numDocumento', $request->numDocumento)
+                ->when($request->tipoDocumento, fn ($q) => $q->where('tipoDocumento', $request->tipoDocumento))
+                ->first();
+        }
 
         if ($customer) {
 
@@ -231,16 +247,30 @@ class CustomersController extends Controller
             abort(403, 'No tienes permiso para acceder a este cliente.');
         }
 
+        $request->merge($this->blankToNull($request->only([
+            'tipoDocumento',
+            'numDocumento',
+            'nrc',
+            'nombreComercial',
+            'codActividad',
+            'descActividad',
+            'departamento_id',
+            'municipio_id',
+            'direccion_complemento',
+            'telefono',
+            'correo',
+        ])));
+
         $request->validate([
-            'tipoDocumento' => 'nullable|string|max:2',
-            'numDocumento' => 'nullable|string|max:14,' . $customer->id,
+            'tipoDocumento' => 'nullable|string|max:10',
+            'numDocumento' => 'nullable|string|max:14',
             'nrc' => 'nullable|string|max:10',
-            'nombre' => 'string|max:255',
+            'nombre' => 'required|string|max:255',
             'nombreComercial' => 'nullable|string|max:255',
             'codActividad' => 'nullable|string|max:10',
             'descActividad' => 'nullable|string|max:255',
-            'departamento_id' => 'string|max:2',
-            'municipio_id' => 'string|max:2',
+            'departamento_id' => 'required|integer|exists:departamentos,id',
+            'municipio_id' => 'required|integer|exists:municipios,id',
             'direccion_complemento' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
             'correo' => 'nullable|email|max:255',
@@ -282,5 +312,12 @@ class CustomersController extends Controller
         return redirect()
             ->route('stores.customers.index', $store)
             ->with('success', 'Cliente eliminado exitosamente.');
+    }
+
+    private function blankToNull(array $data): array
+    {
+        return collect($data)
+            ->map(fn ($value) => $value === '' || $value === null ? null : $value)
+            ->all();
     }
 }

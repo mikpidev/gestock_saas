@@ -1,0 +1,42 @@
+{
+    "company_id": 4,
+    "monthly_store_id": 12,
+    "annual_store_id": 13,
+    "sale_block_store_id": 14,
+    "critical_store_id": 15,
+    "authz_store_id": 16,
+    "foreign_store_id": 17,
+    "pending_sale_id": 737,
+    "pending_cn_id": 165,
+    "pending_dn_id": 56,
+    "product_id": 60,
+    "service_count_used": 3,
+    "service_denial_at_limit2": {
+        "message": "Límite mensual de DTE alcanzado para esta sucursal.",
+        "error": "dte_monthly_limit",
+        "used": 3,
+        "limit": 2
+    },
+    "service_denial_at_limit3": {
+        "message": "Límite mensual de DTE alcanzado para esta sucursal.",
+        "error": "dte_monthly_limit",
+        "used": 3,
+        "limit": 3
+    },
+    "annual_revenue": 10500,
+    "annual_denial": {
+        "message": "Límite anual de facturación del plan Starter alcanzado para esta sucursal.",
+        "error": "annual_revenue_limit",
+        "used": 10500,
+        "limit": 10000
+    },
+    "critical_summary": {
+        "used": 40,
+        "limit": 50,
+        "remaining": 10,
+        "plan": "starter",
+        "pct": 80,
+        "warning_level": "critical",
+        "message": "Llevas 40 de 50 DTE este mes. Actualiza a Basic (200 DTE\/mes) o contacta a soporte."
+    }
+}
