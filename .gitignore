@@ -42,6 +42,17 @@ Thumbs.db
 /bootstrap/cache/*
 /app/Jobs/GenerateTestSalesJob.php
 
+# MH certificates and smoke cookie jars — never commit
+storage/certs/*
+storage/certs/*.crt
+storage/certs/*.key
+storage/certs/*.p12
+storage/certs/*.pfx
+storage/certs/*.pem
+_smoke_cookies.txt
+*_cookies.txt
+_agent_tmp/
+
 # Node.js, Vite & Tailwind
 node_modules/
 npm-debug.log*
